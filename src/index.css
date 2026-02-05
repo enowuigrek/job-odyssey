@@ -1,0 +1,400 @@
+@import "tailwindcss";
+
+@theme {
+  /* Cyjan/Teal jako główny kolor */
+  --color-primary-50: #ecfeff;
+  --color-primary-100: #cffafe;
+  --color-primary-200: #a5f3fc;
+  --color-primary-300: #67e8f9;
+  --color-primary-400: #22d3ee;
+  --color-primary-500: #06b6d4;
+  --color-primary-600: #0891b2;
+  --color-primary-700: #0e7490;
+  --color-primary-800: #155e75;
+  --color-primary-900: #164e63;
+
+  /* Fiolet jako akcent */
+  --color-accent-50: #faf5ff;
+  --color-accent-100: #f3e8ff;
+  --color-accent-400: #c084fc;
+  --color-accent-500: #a855f7;
+  --color-accent-600: #9333ea;
+
+  --color-success-50: #ecfdf5;
+  --color-success-400: #34d399;
+  --color-success-500: #10b981;
+  --color-success-600: #059669;
+
+  --color-warning-50: #fffbeb;
+  --color-warning-400: #fbbf24;
+  --color-warning-500: #f59e0b;
+  --color-warning-600: #d97706;
+
+  --color-danger-50: #fef2f2;
+  --color-danger-400: #f87171;
+  --color-danger-500: #ef4444;
+  --color-danger-600: #dc2626;
+
+  /* Ciemny turkus - tła aplikacji (tryb ciemny) */
+  --color-dark-950: #0a1214;
+  --color-dark-900: #0d1a1f;
+  --color-dark-800: #122229;
+  --color-dark-700: #1a3038;
+  --color-dark-600: #234048;
+
+  /* Jasny motyw - tła */
+  --color-light-50: #ffffff;
+  --color-light-100: #f8fafc;
+  --color-light-200: #f1f5f9;
+  --color-light-300: #e2e8f0;
+  --color-light-400: #cbd5e1;
+}
+
+/* ============================================
+   DARK THEME (domyślny)
+   ============================================ */
+body, .dark-theme {
+  @apply antialiased;
+  color: #f1f5f9;
+  background-color: var(--color-dark-900);
+  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-weight: 200;
+  letter-spacing: 0.02em;
+}
+
+/* ============================================
+   LIGHT THEME
+   ============================================ */
+.light-theme {
+  color: #020617;
+  background-color: var(--color-light-100);
+  font-weight: 400;
+}
+
+.light-theme .bg-dark-950 { background-color: var(--color-light-50); }
+.light-theme .bg-dark-900 { background-color: var(--color-light-100); }
+.light-theme .bg-dark-800 { background-color: var(--color-light-200); }
+.light-theme .bg-dark-700 { background-color: var(--color-light-300); }
+.light-theme .bg-dark-600 { background-color: var(--color-light-400); }
+
+/* Tekst w jasnym motywie - BARDZO CIEMNE kolory dla lepszej czytelności */
+.light-theme .text-slate-100 { color: #020617; }
+.light-theme .text-slate-200 { color: #0f172a; }
+.light-theme .text-slate-300 { color: #1e293b; }
+.light-theme .text-slate-400 { color: #334155; }
+.light-theme .text-slate-500 { color: #475569; }
+.light-theme .text-white { color: #020617; }
+
+/* Placeholder w jasnym motywie */
+.light-theme .placeholder-slate-500::placeholder { color: #64748b; }
+.light-theme input::placeholder,
+.light-theme textarea::placeholder { color: #64748b !important; }
+
+/* Hover stany w jasnym motywie */
+.light-theme .hover\:bg-dark-700:hover { background-color: var(--color-light-300); }
+.light-theme .hover\:bg-dark-600:hover { background-color: var(--color-light-400); }
+
+/* Bordy w jasnym motywie */
+.light-theme .border-dark-700 { border-color: var(--color-light-300); }
+.light-theme .border-dark-600 { border-color: var(--color-light-400); }
+
+/* Divide w jasnym motywie */
+.light-theme .divide-dark-600 > :not([hidden]) ~ :not([hidden]) {
+  border-color: var(--color-light-300);
+}
+
+/* Karty i elementy UI w jasnym motywie */
+.light-theme .bg-dark-700\/50 { background-color: rgba(226, 232, 240, 0.7); }
+.light-theme .bg-primary-500\/10 { background-color: rgba(6, 182, 212, 0.15); }
+.light-theme .bg-primary-500\/20 { background-color: rgba(6, 182, 212, 0.2); }
+
+/* Badge kolory w jasnym motywie - ciemniejsze tła i tekst */
+.light-theme .bg-success-500\/20 { background-color: rgba(16, 185, 129, 0.2); }
+.light-theme .bg-warning-500\/20 { background-color: rgba(245, 158, 11, 0.2); }
+.light-theme .bg-danger-500\/20 { background-color: rgba(239, 68, 68, 0.2); }
+.light-theme .text-success-400 { color: #059669; }
+.light-theme .text-warning-400 { color: #d97706; }
+.light-theme .text-danger-400 { color: #dc2626; }
+.light-theme .text-primary-400 { color: #0891b2; }
+.light-theme .text-accent-400 { color: #9333ea; }
+
+/* Kolory tekstu w kartach statystyk */
+.light-theme .text-success-300 { color: #059669; }
+.light-theme .text-warning-300 { color: #d97706; }
+.light-theme .text-danger-300 { color: #dc2626; }
+
+/* Input/Select w jasnym motywie */
+.light-theme input,
+.light-theme textarea,
+.light-theme select {
+  background-color: var(--color-light-50) !important;
+  color: #0f172a !important;
+  border: 1px solid var(--color-light-400) !important;
+}
+
+.light-theme input:focus,
+.light-theme textarea:focus,
+.light-theme select:focus {
+  border-color: var(--color-primary-500) !important;
+}
+
+/* Label w jasnym motywie */
+.light-theme label {
+  color: #0f172a;
+  font-weight: 500;
+}
+
+/* Sidebar w jasnym motywie */
+.light-theme aside {
+  background-color: var(--color-light-200);
+  border-right: 1px solid var(--color-light-300);
+}
+
+.light-theme aside .text-white {
+  color: #0f172a;
+  font-weight: 600;
+}
+
+.light-theme aside .text-slate-400 {
+  color: #334155;
+}
+
+.light-theme aside .text-slate-300 {
+  color: #1e293b;
+}
+
+.light-theme aside .hover\:text-primary-300:hover {
+  color: var(--color-primary-600);
+}
+
+/* Navbar w jasnym motywie - lepsza widoczność */
+.light-theme nav .text-white {
+  color: #1e293b;
+}
+
+/* Modal backdrop w jasnym motywie */
+.light-theme .bg-black\/50 {
+  background-color: rgba(0, 0, 0, 0.4);
+}
+
+/* Przyciski w jasnym motywie */
+.light-theme .bg-dark-700 {
+  background-color: var(--color-light-300);
+}
+
+.light-theme button.bg-dark-700 {
+  color: #0f172a;
+  font-weight: 500;
+}
+
+/* Ogólnie grubszy tekst w jasnym motywie */
+.light-theme p,
+.light-theme span,
+.light-theme div {
+  font-weight: inherit;
+}
+
+.light-theme h1, .light-theme h2, .light-theme h3, .light-theme h4, .light-theme h5, .light-theme h6 {
+  font-weight: 600;
+}
+
+.light-theme .font-semibold {
+  font-weight: 700;
+}
+
+.light-theme .font-medium {
+  font-weight: 600;
+}
+
+.light-theme .font-bold {
+  font-weight: 800;
+}
+
+/* Kanban drop zone */
+.light-theme .border-dashed.border-dark-600 {
+  border-color: var(--color-light-400);
+}
+
+/* Ikony w jasnym motywie */
+.light-theme .text-slate-900 {
+  color: #0f172a;
+}
+
+/* Karty hover w jasnym motywie */
+.light-theme .hover\:shadow-md:hover {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+}
+
+/* Empty state tekst */
+.light-theme .text-slate-500 {
+  color: #334155;
+}
+
+/* Przyciski aktywne w przełączniku widoku */
+.light-theme button.bg-primary-500 {
+  color: white;
+}
+
+/* Ring focus w jasnym motywie */
+.light-theme .ring-primary-500 {
+  --tw-ring-color: var(--color-primary-500);
+}
+
+/* Danger zone w jasnym motywie */
+.light-theme .bg-danger-500\/10 { background-color: rgba(239, 68, 68, 0.1); }
+.light-theme .bg-danger-500\/20 { background-color: rgba(239, 68, 68, 0.15); }
+.light-theme .border-danger-500\/30 { border-color: rgba(239, 68, 68, 0.3); }
+
+/* Warning w jasnym motywie */
+.light-theme .bg-warning-500\/10 { background-color: rgba(245, 158, 11, 0.1); }
+.light-theme .border-warning-500\/30 { border-color: rgba(245, 158, 11, 0.3); }
+
+#root {
+  min-height: 100vh;
+}
+
+/* Mono font dla liczb */
+.font-mono {
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* ============================================
+   CUSTOM SCROLLBAR STYLES
+   ============================================ */
+
+/* Scrollbar dla całej aplikacji - ciemny motyw */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-dark-800);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-dark-600);
+  border-radius: 0;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-dark-700);
+}
+
+::-webkit-scrollbar-corner {
+  background: var(--color-dark-800);
+}
+
+/* Scrollbar dla jasnego motywu */
+.light-theme ::-webkit-scrollbar-track {
+  background: var(--color-light-200);
+}
+
+.light-theme ::-webkit-scrollbar-thumb {
+  background: var(--color-light-400);
+}
+
+.light-theme ::-webkit-scrollbar-thumb:hover {
+  background: var(--color-light-300);
+}
+
+.light-theme ::-webkit-scrollbar-corner {
+  background: var(--color-light-200);
+}
+
+/* Kanban scroll - w kolorze kafelków (dark-800), na dole okna */
+.kanban-scroll {
+  padding-bottom: 12px;
+}
+
+.kanban-scroll::-webkit-scrollbar {
+  height: 8px;
+}
+
+.kanban-scroll::-webkit-scrollbar-track {
+  background: var(--color-dark-900);
+}
+
+.kanban-scroll::-webkit-scrollbar-thumb {
+  background: var(--color-dark-700);
+}
+
+.kanban-scroll::-webkit-scrollbar-thumb:hover {
+  background: var(--color-dark-600);
+}
+
+.light-theme .kanban-scroll::-webkit-scrollbar-track {
+  background: var(--color-light-100);
+}
+
+.light-theme .kanban-scroll::-webkit-scrollbar-thumb {
+  background: var(--color-light-400);
+}
+
+.light-theme .kanban-scroll::-webkit-scrollbar-thumb:hover {
+  background: var(--color-light-300);
+}
+
+/* ============================================
+   DESIGN SYSTEM - Job Odyssey
+   Standard: kanciaste elementy, bez ramek
+   ============================================ */
+
+/* Klasy kolorów tła */
+.bg-dark-950 { background-color: var(--color-dark-950); }
+.bg-dark-900 { background-color: var(--color-dark-900); }
+.bg-dark-800 { background-color: var(--color-dark-800); }
+.bg-dark-700 { background-color: var(--color-dark-700); }
+.bg-dark-600 { background-color: var(--color-dark-600); }
+
+/* Reset - usuń domyślne ramki z wszystkich elementów */
+button, input, textarea, select {
+  border: none;
+  outline: none;
+}
+
+input:focus, textarea:focus, select:focus {
+  @apply ring-2 ring-primary-500;
+}
+
+/* Nagłówki - grubsze dla kontrastu z cienkim body */
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 300;
+  letter-spacing: 0.02em;
+}
+
+h1 { font-weight: 400; }
+
+/* Tekst podkreślony/ważny */
+strong, b {
+  font-weight: 400;
+}
+
+/* Globalny cursor-pointer dla przycisków i elementów klikalnych */
+button, a, [role="button"], .cursor-pointer {
+  cursor: pointer;
+}
+
+/* Style dla inputów typu date i time - jasniejsza ikona kalendarza */
+input[type="date"]::-webkit-calendar-picker-indicator,
+input[type="time"]::-webkit-calendar-picker-indicator,
+input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+  filter: invert(0.7) sepia(1) saturate(5) hue-rotate(140deg);
+  cursor: pointer;
+}
+
+/* ============================================
+   ELECTRON - Pasek do przeciągania okna
+   ============================================ */
+.drag-region {
+  -webkit-app-region: drag;
+}
+
+.no-drag {
+  -webkit-app-region: no-drag;
+}
+
+/* Kolor border dark */
+.border-dark-700 { border-color: var(--color-dark-700); }
+.border-dark-600 { border-color: var(--color-dark-600); }
+.divide-dark-600 > :not([hidden]) ~ :not([hidden]) { border-color: var(--color-dark-600); }

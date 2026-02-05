@@ -1,0 +1,7 @@
+export { DashboardPage } from './DashboardPage';
+export { ApplicationsPage } from './ApplicationsPage';
+export { InterviewsPage } from './InterviewsPage';
+export { CVPage } from './CVPage';
+export { QuestionsPage } from './QuestionsPage';
+export { StoriesPage } from './StoriesPage';
+export { SettingsPage } from './SettingsPage';
