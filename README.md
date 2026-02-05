@@ -1,124 +1,73 @@
+
+<p align="center">
+  <strong>JOB ODYSSEY</strong>
+</p>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/Status-Working%20Desktop%20App-brightgreen" />
+  <img src="https://img.shields.io/badge/Electron-Desktop-blueviolet" />
+  <img src="https://img.shields.io/badge/React-blue" />
+  <img src="https://img.shields.io/badge/Vite-purple" />
+</p>
+
 # Job Odyssey
 
-Osobisty tracker kariery -- aplikacja desktopowa i webowa do zarządzania procesem rekrutacji. Śledź aplikacje o pracę, rozmowy kwalifikacyjne, wersje CV, pytania rekrutacyjne i historie STAR w jednym miejscu.
+**A personal desktop job application tracker built to manage recruitment processes like a lightweight CRM.**
 
-Wszystkie dane przechowywane są lokalnie na Twoim urządzeniu. Nic nie trafia na żadne serwery.
+Job Odyssey is a desktop application (Electron) created to organize job applications, track their statuses, plan interviews, and store CV versions and custom questions.
 
-## Funkcjonalności
+Originally built for personal use during job searching, it evolved into a small recruitment dashboard inspired by CRM workflows.
 
-- **Dashboard** -- statystyki, nadchodzące rozmowy, wykresy statusów
-- **Aplikacje** -- widok listy i Kanban z drag & drop, filtrowanie, zmiana statusów
-- **Rozmowy kwalifikacyjne** -- planowanie, notatki po rozmowie, powiązanie z aplikacjami
-- **Baza CV** -- przechowywanie wielu wersji CV, tagowanie słowami kluczowymi (ATS)
-- **Pytania rekrutacyjne** -- baza pytań z kategoriami, poziomem trudności i własnymi odpowiedziami
-- **Historie STAR** -- biblioteka historii w formacie Situation-Task-Action-Result
-- **Eksport/Import** -- backup danych do JSON
-- **Ciemny i jasny motyw** -- z persystencją wyboru
+---
 
-## Stack technologiczny
+## 🚀 Status
 
-| Warstwa | Technologia |
-|---------|-------------|
-| Frontend | React 19, TypeScript, React Router 7 |
-| Styling | Tailwind CSS 4 |
-| Desktop | Electron 40 |
-| Build | Vite 7 |
-| Ikony | Lucide React |
-| Daty | date-fns |
+**Status:** Working desktop app (internal use)
 
-## Wymagania
+Public landing page and download instructions coming soon.
 
-- Node.js >= 18
-- npm >= 9
+---
 
-## Uruchomienie
+## ✨ Core Features
 
-### Przeglądarka (tryb deweloperski)
+- Job application tracking with status flow (saved, sent, invited, rejected)
+- Dashboard overview with statistics
+- Interview planning and history
+- CV database management
+- Custom questions storage
+- Simple CRM-like workflow
+- Local-first desktop app
+- Dark UI focused on clarity and focus
 
-```bash
-npm install
-npm run dev
-```
+---
 
-Aplikacja dostępna pod `http://localhost:5173`.
+## 🛠 Tech Stack
 
-### Electron (tryb deweloperski)
+- Electron
+- React
+- Vite
+- SCSS
 
-```bash
-npm install
-npm run electron:dev
-```
+---
 
-### Budowanie
+## 🎯 Project Highlights
 
-```bash
-# Web
-npm run build
+- Personal recruitment CRM concept
+- Desktop-first workflow
+- Centralized job search management
+- Real-world productivity use case
+- Built to simplify complex application processes
+- Designed and developed as a solo project
 
-# Electron -- macOS
-npm run electron:build:mac
+---
 
-# Electron -- Windows
-npm run electron:build:win
+## 👤 Author
 
-# Electron -- macOS + Windows
-npm run electron:build:all
-```
+Created by Łukasz Nowak  
+GitHub: https://github.com/enowuigrek
 
-Artefakty budowania Electron trafiają do katalogu `release/`.
+---
 
-## Struktura projektu
+## 📄 License
 
-```
-src/
-  App.tsx                 # Routing (HashRouter)
-  main.tsx                # Punkt wejścia React
-  index.css               # Tailwind + system motywów
-
-  pages/                  # Strony aplikacji
-    DashboardPage.tsx
-    ApplicationsPage.tsx
-    InterviewsPage.tsx
-    CVPage.tsx
-    QuestionsPage.tsx
-    StoriesPage.tsx
-    SettingsPage.tsx
-
-  components/
-    ui/                   # Komponenty bazowe (Button, Card, Modal, Badge, ...)
-    layout/               # Layout i Sidebar
-
-  contexts/
-    AppContext.tsx         # Globalny stan (useReducer + auto-zapis)
-    ThemeContext.tsx       # Ciemny/jasny motyw
-
-  types/                  # Definicje TypeScript
-  utils/
-    storage.ts            # Warstwa persystencji (localStorage / Electron IPC)
-
-electron/
-  main.cjs                # Proces główny Electron
-  preload.cjs             # Preload script (contextBridge)
-```
-
-## Przechowywanie danych
-
-- **Przeglądarka**: `localStorage` (klucz `job-odyssey-data`)
-- **Electron**: `~/Documents/JobOdyssey/data.json`, pliki CV w `~/Documents/JobOdyssey/cv-files/`
-
-## Skrypty
-
-| Komenda | Opis |
-|---------|------|
-| `npm run dev` | Serwer deweloperski Vite |
-| `npm run build` | Kompilacja TypeScript + build Vite |
-| `npm run lint` | ESLint |
-| `npm run preview` | Podgląd zbudowanej wersji |
-| `npm run electron:dev` | Vite + Electron równolegle |
-| `npm run electron:build:mac` | Build macOS |
-| `npm run electron:build:win` | Build Windows |
-| `npm run electron:build:all` | Build macOS + Windows |
-
-## Licencja
-
-Projekt prywatny. Copyright 2026 enowuigrek.
+Personal project
