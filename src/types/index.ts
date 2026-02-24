@@ -1,12 +1,14 @@
 // Status aplikacji o pracę
-// Uproszczone statusy: Zapisana → Wysłana → Odmowa (bez rozmowy) → Zaproszenie → Odmowa (po rozmowie) → Sukces
 export type ApplicationStatus =
-  | 'saved'           // Zapisana - do aplikowania
-  | 'applied'         // Wysłana - CV wysłane
-  | 'rejected_no_interview'  // Odmowa bez rozmowy
-  | 'interview'       // Zaproszenie na rozmowę
-  | 'rejected_after_interview'  // Odmowa po rozmowie
-  | 'success';        // Sukces - oferta/przyjęty
+  | 'saved'                    // Zapisana - do aplikowania
+  | 'applied'                  // Wysłana - CV wysłane
+  | 'interview'                // Zaproszenie na rozmowę
+  | 'pending'                  // Oczekiwanie na odpowiedź po rozmowie
+  | 'rejected_no_interview'    // Odmowa bez rozmowy (pracodawca)
+  | 'rejected_after_interview' // Odmowa po rozmowie (pracodawca)
+  | 'offer_declined'           // Otrzymałem ofertę, ale ją odrzuciłem
+  | 'withdrawn'                // Wycofałem swoją aplikację
+  | 'success';                 // Sukces - oferta przyjęta
 
 // Status rozmowy (uproszczony)
 export type InterviewStatus =

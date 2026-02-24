@@ -33,33 +33,36 @@ import { JobApplication, ApplicationStatus } from '../types';
 import { format, parseISO } from 'date-fns';
 import { pl } from 'date-fns/locale';
 
-const statusOptions = [
-  { value: '', label: 'Wszystkie statusy' },
+const statusOptions: { value: ApplicationStatus; label: string }[] = [
   { value: 'saved', label: 'Zapisana' },
   { value: 'applied', label: 'Wysłana' },
-  { value: 'rejected_no_interview', label: 'Odmowa' },
   { value: 'interview', label: 'Zaproszenie' },
-  { value: 'rejected_after_interview', label: 'Odmowa po rozmowie' },
+  { value: 'pending', label: 'Oczekiwanie' },
+  { value: 'rejected_no_interview', label: 'Odmowa' },
+  { value: 'rejected_after_interview', label: 'Odmowa po rozm.' },
+  { value: 'offer_declined', label: 'Odrzuciłem ofertę' },
+  { value: 'withdrawn', label: 'Wycofana' },
   { value: 'success', label: 'Sukces' },
 ];
-
-const allStatusOptions = statusOptions.filter((s) => s.value !== '');
 
 // Kolejność kolumn w widoku Kanban
 const kanbanColumns: ApplicationStatus[] = [
   'saved',
   'applied',
   'interview',
+  'pending',
+  'success',
   'rejected_no_interview',
   'rejected_after_interview',
-  'success',
+  'offer_declined',
+  'withdrawn',
 ];
 
 export function ApplicationsPage() {
   const { state, dispatch } = useApp();
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState('');
+  const [statusFilters, setStatusFilters] = useState<ApplicationStatus[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingApplication, setEditingApplication] = useState<JobApplication | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -87,20 +90,29 @@ export function ApplicationsPage() {
         const matchesSearch =
           app.companyName.toLowerCase().includes(searchQuery.toLowerCase()) ||
           app.position.toLowerCase().includes(searchQuery.toLowerCase());
-        const matchesStatus = !statusFilter || app.status === statusFilter;
+        const matchesStatus = statusFilters.length === 0 || statusFilters.includes(app.status);
         return matchesSearch && matchesStatus;
       })
       .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
-  }, [state.applications, searchQuery, statusFilter]);
+  }, [state.applications, searchQuery, statusFilters]);
+
+  const toggleStatusFilter = (status: ApplicationStatus) => {
+    setStatusFilters((prev) =>
+      prev.includes(status) ? prev.filter((s) => s !== status) : [...prev, status]
+    );
+  };
 
   // Grupowanie aplikacji według statusu dla widoku Kanban
   const applicationsByStatus = useMemo(() => {
     const grouped: Record<ApplicationStatus, JobApplication[]> = {
       saved: [],
       applied: [],
-      rejected_no_interview: [],
       interview: [],
+      pending: [],
+      rejected_no_interview: [],
       rejected_after_interview: [],
+      offer_declined: [],
+      withdrawn: [],
       success: [],
     };
     filteredApplications.forEach((app) => {
@@ -313,7 +325,7 @@ export function ApplicationsPage() {
               <div className="mt-4 mb-4">
                 <p className="text-xs text-slate-400 mb-2">Zmień status:</p>
                 <div className="flex flex-wrap gap-2">
-                  {allStatusOptions.map((opt) => (
+                  {statusOptions.map((opt) => (
                     <button
                       key={opt.value}
                       onClick={(e) => {
@@ -488,22 +500,37 @@ export function ApplicationsPage() {
       </div>
 
       {/* Filters */}
-      <div className={`flex gap-4 ${viewMode === 'kanban' ? 'mb-6' : ''}`}>
+      <div className={`space-y-3 ${viewMode === 'kanban' ? 'mb-4' : ''}`}>
         <input
           type="text"
           placeholder="Szukaj po firmie lub stanowisku..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="flex-1 px-4 py-2 bg-dark-700 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-primary-500"
+          className="w-full px-4 py-2 bg-dark-700 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-primary-500"
         />
-        {viewMode === 'list' && (
-          <Select
-            options={statusOptions}
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="w-48"
-          />
-        )}
+        <div className="flex flex-wrap gap-2">
+          {statusOptions.map((opt) => (
+            <button
+              key={opt.value}
+              onClick={() => toggleStatusFilter(opt.value)}
+              className={`px-3 py-1 text-xs transition-colors cursor-pointer ${
+                statusFilters.includes(opt.value)
+                  ? 'bg-primary-500 text-slate-900'
+                  : 'bg-dark-700 text-slate-400 hover:text-slate-100 hover:bg-dark-600'
+              }`}
+            >
+              {opt.label}
+            </button>
+          ))}
+          {statusFilters.length > 0 && (
+            <button
+              onClick={() => setStatusFilters([])}
+              className="px-3 py-1 text-xs text-slate-500 hover:text-slate-300 cursor-pointer"
+            >
+              Wyczyść
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Widok listy */}
@@ -514,12 +541,12 @@ export function ApplicationsPage() {
               icon={Building2}
               title="Brak aplikacji"
               description={
-                searchQuery || statusFilter
+                searchQuery || statusFilters.length > 0
                   ? 'Nie znaleziono aplikacji pasujących do filtrów'
                   : 'Dodaj swoją pierwszą aplikację o pracę'
               }
               action={
-                !searchQuery && !statusFilter ? (
+                !searchQuery && statusFilters.length === 0 ? (
                   <Button onClick={() => openModal()}>
                     <Plus className="w-4 h-4 mr-2" />
                     Dodaj aplikację
@@ -544,12 +571,12 @@ export function ApplicationsPage() {
             {kanbanColumns.map((status) => (
               <div
                 key={status}
-                className="w-96 flex-shrink-0"
+                className="w-80 flex-shrink-0 flex flex-col h-full"
                 onDragOver={(e) => handleDragOver(e, status)}
                 onDragLeave={handleDragLeave}
                 onDrop={(e) => handleDrop(e, status)}
               >
-                <div className="bg-dark-800 p-3 mb-3 flex items-center justify-between">
+                <div className="bg-dark-800 p-3 mb-2 flex items-center justify-between flex-shrink-0">
                   <div className="flex items-center gap-2">
                     <Badge variant={getStatusBadgeVariant(status)} size="sm">
                       {getStatusLabel(status)}
@@ -558,7 +585,7 @@ export function ApplicationsPage() {
                   </div>
                 </div>
                 <div
-                  className={`space-y-3 min-h-[200px] p-2 transition-colors ${
+                  className={`flex-1 overflow-y-auto kanban-scroll space-y-3 min-h-[200px] p-2 transition-colors ${
                     dragOverStatus === status ? 'bg-primary-500/10 border-2 border-dashed border-primary-500/50' : 'border-2 border-transparent'
                   }`}
                 >
@@ -642,7 +669,7 @@ export function ApplicationsPage() {
           <div className="grid grid-cols-2 gap-4">
             <Select
               label="Status"
-              options={allStatusOptions}
+              options={statusOptions}
               value={formData.status}
               onChange={(e) =>
                 setFormData({ ...formData, status: e.target.value as ApplicationStatus })

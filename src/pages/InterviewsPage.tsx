@@ -47,6 +47,7 @@ export function InterviewsPage() {
   const { state, dispatch } = useApp();
   const [searchParams, setSearchParams] = useSearchParams();
   const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilters, setStatusFilters] = useState<InterviewStatus[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingInterview, setEditingInterview] = useState<Interview | null>(null);
   const [viewMode, setViewMode] = useState<'list' | 'kanban'>('list');
@@ -85,6 +86,12 @@ export function InterviewsPage() {
     }
   }, [searchParams, state.applications, setSearchParams]);
 
+  const toggleStatusFilter = (status: InterviewStatus) => {
+    setStatusFilters((prev) =>
+      prev.includes(status) ? prev.filter((s) => s !== status) : [...prev, status]
+    );
+  };
+
   const filteredInterviews = useMemo(() => {
     return state.interviews
       .filter((interview) => {
@@ -92,10 +99,11 @@ export function InterviewsPage() {
         const matchesSearch =
           app?.companyName.toLowerCase().includes(searchQuery.toLowerCase()) ||
           app?.position.toLowerCase().includes(searchQuery.toLowerCase());
-        return matchesSearch;
+        const matchesStatus = statusFilters.length === 0 || statusFilters.includes(interview.status);
+        return matchesSearch && matchesStatus;
       })
       .sort((a, b) => new Date(b.scheduledDate).getTime() - new Date(a.scheduledDate).getTime());
-  }, [state.interviews, state.applications, searchQuery]);
+  }, [state.interviews, state.applications, searchQuery, statusFilters]);
 
   // Grupowanie rozmów według statusu dla widoku Kanban
   const interviewsByStatus = useMemo(() => {
@@ -483,14 +491,37 @@ export function InterviewsPage() {
       )}
 
       {/* Filters */}
-      <div className={`flex gap-4 ${viewMode === 'kanban' ? 'mb-6' : ''}`}>
+      <div className={`space-y-3 ${viewMode === 'kanban' ? 'mb-4' : ''}`}>
         <input
           type="text"
           placeholder="Szukaj po firmie lub stanowisku..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="flex-1 px-4 py-2 bg-dark-700 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-primary-500"
+          className="w-full px-4 py-2 bg-dark-700 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-primary-500"
         />
+        <div className="flex flex-wrap gap-2">
+          {statusOptions.map((opt) => (
+            <button
+              key={opt.value}
+              onClick={() => toggleStatusFilter(opt.value as InterviewStatus)}
+              className={`px-3 py-1 text-xs transition-colors cursor-pointer ${
+                statusFilters.includes(opt.value as InterviewStatus)
+                  ? 'bg-primary-500 text-slate-900'
+                  : 'bg-dark-700 text-slate-400 hover:text-slate-100 hover:bg-dark-600'
+              }`}
+            >
+              {opt.label}
+            </button>
+          ))}
+          {statusFilters.length > 0 && (
+            <button
+              onClick={() => setStatusFilters([])}
+              className="px-3 py-1 text-xs text-slate-500 hover:text-slate-300 cursor-pointer"
+            >
+              Wyczyść
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Widok listy */}
@@ -531,12 +562,12 @@ export function InterviewsPage() {
             {kanbanColumns.map((status) => (
               <div
                 key={status}
-                className="w-96 flex-shrink-0"
+                className="w-80 flex-shrink-0 flex flex-col h-full"
                 onDragOver={(e) => handleDragOver(e, status)}
                 onDragLeave={handleDragLeave}
                 onDrop={(e) => handleDrop(e, status)}
               >
-                <div className="bg-dark-800 p-3 mb-3 flex items-center justify-between">
+                <div className="bg-dark-800 p-3 mb-2 flex items-center justify-between flex-shrink-0">
                   <div className="flex items-center gap-2">
                     <Badge variant={getInterviewStatusBadgeVariant(status)} size="sm">
                       {getInterviewStatusLabel(status)}
@@ -545,7 +576,7 @@ export function InterviewsPage() {
                   </div>
                 </div>
                 <div
-                  className={`space-y-3 min-h-[200px] p-2 transition-colors ${
+                  className={`flex-1 overflow-y-auto kanban-scroll space-y-3 min-h-[200px] p-2 transition-colors ${
                     dragOverStatus === status ? 'bg-primary-500/10 border-2 border-dashed border-primary-500/50' : 'border-2 border-transparent'
                   }`}
                 >
@@ -556,13 +587,13 @@ export function InterviewsPage() {
                       {dragOverStatus === status ? 'Upuść tutaj' : 'Brak rozmów'}
                     </div>
                   ) : (
-                  interviewsByStatus[status].map((interview) => (
-                    <InterviewCard key={interview.id} interview={interview} compact draggable />
-                  ))
-                )}
+                    interviewsByStatus[status].map((interview) => (
+                      <InterviewCard key={interview.id} interview={interview} compact draggable />
+                    ))
+                  )}
+                </div>
               </div>
-            </div>
-          ))}
+            ))}
           </div>
         </div>
       )}

@@ -37,9 +37,12 @@ export function getStatusBadgeVariant(
   const map: Record<ApplicationStatus, 'default' | 'success' | 'warning' | 'danger' | 'info'> = {
     saved: 'default',
     applied: 'info',
-    rejected_no_interview: 'danger',
     interview: 'warning',
+    pending: 'warning',
+    rejected_no_interview: 'danger',
     rejected_after_interview: 'danger',
+    offer_declined: 'default',
+    withdrawn: 'default',
     success: 'success',
   };
   return map[status];
@@ -49,9 +52,12 @@ export function getStatusLabel(status: ApplicationStatus): string {
   const labels: Record<ApplicationStatus, string> = {
     saved: 'Zapisana',
     applied: 'Wysłana',
-    rejected_no_interview: 'Odmowa',
     interview: 'Zaproszenie',
+    pending: 'Oczekiwanie',
+    rejected_no_interview: 'Odmowa',
     rejected_after_interview: 'Odmowa po rozmowie',
+    offer_declined: 'Odrzuciłem ofertę',
+    withdrawn: 'Wycofana',
     success: 'Sukces',
   };
   return labels[status];

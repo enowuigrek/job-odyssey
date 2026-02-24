@@ -33,6 +33,15 @@ function createWindow() {
     },
   });
 
+  // Otwieraj wszystkie linki zewnętrzne (target="_blank") w domyślnej przeglądarce systemowej
+  const { shell } = require('electron');
+  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+      shell.openExternal(url);
+    }
+    return { action: 'deny' };
+  });
+
   // W trybie dev ładuj z Vite, w produkcji z buildu
   if (process.env.NODE_ENV === 'development') {
     mainWindow.loadURL('http://localhost:5173');

@@ -7,6 +7,7 @@ import {
   CV,
   RecruitmentQuestion,
   StarStory,
+  ApplicationStatus,
 } from '../types';
 import { loadState, loadStateAsync, saveState, isElectron } from '../utils/storage';
 
@@ -86,15 +87,36 @@ function reducer(state: AppState, action: Action): AppState {
           },
         ],
       };
-    case 'UPDATE_INTERVIEW':
+    case 'UPDATE_INTERVIEW': {
+      const oldInterview = state.interviews.find((i) => i.id === action.payload.id);
+      const newInterviews = state.interviews.map((int) =>
+        int.id === action.payload.id
+          ? { ...action.payload, updatedAt: now }
+          : int
+      );
+
+      // Gdy rozmowa zmienia status z "zaplanowana" na inny → aplikacja przeskakuje z
+      // "Zaproszenie" na "Oczekiwanie" (rozmowa się odbyła, czekamy na odpowiedź)
+      let newApplications = state.applications;
+      if (
+        oldInterview &&
+        oldInterview.status === 'scheduled' &&
+        action.payload.status !== 'scheduled'
+      ) {
+        newApplications = state.applications.map((app) => {
+          if (app.id === action.payload.applicationId && app.status === 'interview') {
+            return { ...app, status: 'pending' as ApplicationStatus, updatedAt: now };
+          }
+          return app;
+        });
+      }
+
       return {
         ...state,
-        interviews: state.interviews.map((int) =>
-          int.id === action.payload.id
-            ? { ...action.payload, updatedAt: now }
-            : int
-        ),
+        interviews: newInterviews,
+        applications: newApplications,
       };
+    }
     case 'DELETE_INTERVIEW':
       return {
         ...state,

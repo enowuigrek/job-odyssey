@@ -48,8 +48,8 @@ export function DashboardPage() {
 
   const stats = useMemo(() => {
     const now = new Date();
-    // Aktywne = wysłane lub na etapie rozmów
-    const activeStatuses = ['applied', 'interview'];
+    // Aktywne = wysłane lub na etapie rozmów / oczekiwania
+    const activeStatuses = ['applied', 'interview', 'pending'];
 
     const totalApplications = state.applications.length;
     const activeApplications = state.applications.filter((a) =>
@@ -100,21 +100,31 @@ export function DashboardPage() {
 
   // Dane do wykresu aplikacji według statusu
   const applicationsByStatus = useMemo(() => {
-    const statuses: ApplicationStatus[] = ['saved', 'applied', 'interview', 'rejected_no_interview', 'rejected_after_interview', 'success'];
+    const statuses: ApplicationStatus[] = [
+      'saved', 'applied', 'interview', 'pending',
+      'rejected_no_interview', 'rejected_after_interview',
+      'offer_declined', 'withdrawn', 'success',
+    ];
     const colors: Record<ApplicationStatus, string> = {
       saved: 'bg-slate-500',
       applied: 'bg-primary-500',
       interview: 'bg-warning-500',
+      pending: 'bg-yellow-600',
       rejected_no_interview: 'bg-danger-500',
       rejected_after_interview: 'bg-danger-400',
+      offer_declined: 'bg-slate-400',
+      withdrawn: 'bg-slate-600',
       success: 'bg-success-500',
     };
     const labels: Record<ApplicationStatus, string> = {
       saved: 'Zapisana',
       applied: 'Wysłana',
       interview: 'Zaproszenie',
+      pending: 'Oczekiwanie',
       rejected_no_interview: 'Odmowa',
       rejected_after_interview: 'Odmowa po rozm.',
+      offer_declined: 'Odrzuciłem',
+      withdrawn: 'Wycofana',
       success: 'Sukces',
     };
 
