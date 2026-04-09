@@ -1,6 +1,7 @@
 import { useState, useMemo, useRef } from 'react';
 import { Plus, FileText, Star, Trash2, Edit, Tag, Upload, Download, FolderOpen } from 'lucide-react';
 import { useApp } from '../contexts/AppContext';
+import { useAuth } from '../contexts/AuthContext';
 import {
   Button,
   Input,
@@ -14,14 +15,17 @@ import {
 import { CV } from '../types';
 import { format, parseISO } from 'date-fns';
 import { pl } from 'date-fns/locale';
-import { saveCVFile, loadCVFile, deleteCVFile, openDataFolder, openCVFile } from '../utils/storage';
+import { openDataFolder } from '../utils/storage';
+import { uploadCVFile, getCVFileUrl, deleteCVFileFromStorage } from '../lib/db';
 
 export function CVPage() {
   const { state, dispatch, isElectronApp } = useApp();
+  const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCV, setEditingCV] = useState<CV | null>(null);
   const [uploadingFile, setUploadingFile] = useState<File | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [formData, setFormData] = useState({
@@ -42,7 +46,6 @@ export function CVPage() {
         return matchesSearch;
       })
       .sort((a, b) => {
-        // Default CV first, then by update date
         if (a.isDefault && !b.isDefault) return -1;
         if (!a.isDefault && b.isDefault) return 1;
         return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
@@ -84,7 +87,6 @@ export function CVPage() {
     const file = e.target.files?.[0];
     if (file) {
       setUploadingFile(file);
-      // Auto-fill name if empty
       if (!formData.name) {
         setFormData({ ...formData, name: file.name.replace(/\.[^.]+$/, '') });
       }
@@ -93,26 +95,26 @@ export function CVPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsUploading(true);
 
-    let fileName: string | undefined;
+    let fileName: string | undefined = editingCV?.fileName;
 
-    // Handle file upload if in Electron mode and file selected
-    if (isElectronApp && uploadingFile) {
-      const reader = new FileReader();
-      const fileData = await new Promise<string>((resolve, reject) => {
-        reader.onload = () => resolve(reader.result as string);
-        reader.onerror = reject;
-        reader.readAsDataURL(uploadingFile);
-      });
+    if (uploadingFile && user) {
+      // Użyj timestamp jako unikalnej nazwy — niezależne od ID CV
+      const uniqueFileName = `${Date.now()}_${uploadingFile.name}`;
 
-      // Zachowaj oryginalną nazwę pliku
-      fileName = uploadingFile.name;
+      // Usuń stary plik jeśli zastępujemy
+      if (editingCV?.fileName) {
+        await deleteCVFileFromStorage(editingCV.fileName);
+      }
 
-      const result = await saveCVFile(fileName, fileData);
-      if (!result.success) {
-        alert(`Błąd przy zapisie pliku: ${result.error}`);
+      const result = await uploadCVFile(user.id, 'files', uniqueFileName, uploadingFile);
+      if (!result) {
+        alert('Błąd przy upload pliku. Spróbuj ponownie.');
+        setIsUploading(false);
         return;
       }
+      fileName = result.path;
     }
 
     const cvData = {
@@ -123,112 +125,88 @@ export function CVPage() {
         : undefined,
       notes: formData.notes || undefined,
       isDefault: formData.isDefault,
-      fileName: fileName || editingCV?.fileName,
+      fileName,
     };
 
     if (editingCV) {
-      dispatch({
-        type: 'UPDATE_CV',
-        payload: {
-          ...editingCV,
-          ...cvData,
-        },
-      });
+      dispatch({ type: 'UPDATE_CV', payload: { ...editingCV, ...cvData } });
     } else {
-      dispatch({
-        type: 'ADD_CV',
-        payload: cvData,
-      });
+      dispatch({ type: 'ADD_CV', payload: cvData });
     }
 
-    // If this CV is set as default, remove default from others
     if (formData.isDefault) {
       state.cvs.forEach((cv) => {
         if (cv.isDefault && cv.id !== editingCV?.id) {
-          dispatch({
-            type: 'UPDATE_CV',
-            payload: {
-              ...cv,
-              isDefault: false,
-            },
-          });
+          dispatch({ type: 'UPDATE_CV', payload: { ...cv, isDefault: false } });
         }
       });
     }
 
     closeModal();
+    setIsUploading(false);
   };
 
   const handleDelete = async (id: string) => {
     const cv = state.cvs.find(c => c.id === id);
     if (confirm('Czy na pewno chcesz usunąć to CV?')) {
-      // Delete file if exists
-      if (isElectronApp && cv?.fileName) {
-        await deleteCVFile(cv.fileName);
+      if (cv?.fileName && !isElectronApp) {
+        await deleteCVFileFromStorage(cv.fileName);
       }
       dispatch({ type: 'DELETE_CV', payload: id });
     }
   };
 
   const handleDownloadCV = async (cv: CV) => {
-    if (!isElectronApp || !cv.fileName) {
+    if (!cv.fileName) {
       alert('Plik CV niedostępny');
       return;
     }
 
-    const result = await loadCVFile(cv.fileName);
-    if (!result.success || !result.data) {
-      alert(`Błąd przy pobieraniu pliku: ${result.error}`);
-      return;
+    if (isElectronApp) {
+      // Electron: stare zachowanie
+      const { loadCVFile } = await import('../utils/storage');
+      const result = await loadCVFile(cv.fileName);
+      if (!result.success || !result.data) {
+        alert(`Błąd przy pobieraniu pliku: ${result.error}`);
+        return;
+      }
+      const link = document.createElement('a');
+      link.href = result.data;
+      link.download = cv.fileName.split('/').pop() ?? cv.fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } else {
+      // Web: Supabase Storage signed URL
+      const url = await getCVFileUrl(cv.fileName);
+      if (!url) {
+        alert('Nie można pobrać pliku. Spróbuj ponownie.');
+        return;
+      }
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = cv.fileName.split('/').pop() ?? cv.fileName;
+      link.target = '_blank';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
     }
-
-    // Create download link
-    const link = document.createElement('a');
-    link.href = result.data;
-    link.download = cv.fileName;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
   };
 
   const handleSetDefault = (cv: CV) => {
-    // Remove default from all others
     state.cvs.forEach((otherCv) => {
       if (otherCv.isDefault && otherCv.id !== cv.id) {
-        dispatch({
-          type: 'UPDATE_CV',
-          payload: {
-            ...otherCv,
-            isDefault: false,
-          },
-        });
+        dispatch({ type: 'UPDATE_CV', payload: { ...otherCv, isDefault: false } });
       }
     });
-    // Set this one as default
-    dispatch({
-      type: 'UPDATE_CV',
-      payload: {
-        ...cv,
-        isDefault: true,
-      },
-    });
-  };
-
-  const handleOpenCV = async (cv: CV) => {
-    if (!isElectronApp || !cv.fileName) {
-      alert('Otwieranie plików dostępne tylko w trybie Electron');
-      return;
-    }
-
-    const result = await openCVFile(cv.fileName);
-    if (!result.success) {
-      alert(`Błąd przy otwieraniu pliku: ${result.error}`);
-    }
+    dispatch({ type: 'UPDATE_CV', payload: { ...cv, isDefault: true } });
   };
 
   const getUsageCount = (cvId: string) => {
     return state.applications.filter((app) => app.cvId === cvId).length;
   };
+
+  const hasFileSupport = isElectronApp || !!user;
 
   return (
     <div className="space-y-6">
@@ -253,7 +231,6 @@ export function CVPage() {
           </Button>
         </div>
       </div>
-
 
       {/* Search */}
       <div>
@@ -292,16 +269,7 @@ export function CVPage() {
               <CardBody>
                 <div className="flex items-start justify-between mb-3">
                   <div>
-                    {cv.fileName && isElectronApp ? (
-                      <button
-                        onClick={() => handleOpenCV(cv)}
-                        className="font-semibold text-slate-100 hover:text-primary-400 transition-colors cursor-pointer text-left"
-                      >
-                        {cv.name}
-                      </button>
-                    ) : (
-                      <h3 className="font-semibold text-slate-100">{cv.name}</h3>
-                    )}
+                    <h3 className="font-semibold text-slate-100">{cv.name}</h3>
                     {cv.targetPosition && (
                       <p className="text-sm text-slate-400">{cv.targetPosition}</p>
                     )}
@@ -326,22 +294,20 @@ export function CVPage() {
                       </span>
                     ))}
                     {cv.keywords.length > 5 && (
-                      <span className="text-xs text-slate-500">
-                        +{cv.keywords.length - 5} więcej
-                      </span>
+                      <span className="text-xs text-slate-500">+{cv.keywords.length - 5} więcej</span>
                     )}
                   </div>
                 )}
 
                 <div className="flex items-center justify-between text-sm text-slate-400 mb-3">
                   <span>Użyte w {getUsageCount(cv.id)} aplikacjach</span>
-                  <span>
-                    {format(parseISO(cv.updatedAt), 'd MMM yyyy', { locale: pl })}
-                  </span>
+                  <span>{format(parseISO(cv.updatedAt), 'd MMM yyyy', { locale: pl })}</span>
                 </div>
 
                 {cv.fileName && (
-                  <p className="text-xs text-slate-500 mb-3 truncate">{cv.fileName}</p>
+                  <p className="text-xs text-slate-500 mb-3 truncate">
+                    {cv.fileName.split('/').pop()}
+                  </p>
                 )}
 
                 {cv.notes && (
@@ -358,7 +324,7 @@ export function CVPage() {
                       Domyślne
                     </button>
                   )}
-                  {cv.fileName && isElectronApp && (
+                  {cv.fileName && (
                     <button
                       onClick={() => handleDownloadCV(cv)}
                       className="p-1.5 text-slate-500 hover:text-success-400 hover:bg-success-500/10 transition-colors cursor-pointer"
@@ -405,8 +371,8 @@ export function CVPage() {
         size="md"
       >
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* File upload section - only in Electron */}
-          {isElectronApp && (
+          {/* File upload */}
+          {hasFileSupport && (
             <div className="bg-dark-700/50 p-4 text-center">
               {uploadingFile ? (
                 <div className="flex items-center justify-center gap-2 text-success-400">
@@ -423,7 +389,7 @@ export function CVPage() {
               ) : editingCV?.fileName ? (
                 <div className="flex items-center justify-center gap-2 text-slate-400">
                   <FileText className="w-5 h-5" />
-                  <span>Aktualny plik: {editingCV.fileName}</span>
+                  <span>Aktualny plik: {editingCV.fileName.split('/').pop()}</span>
                 </div>
               ) : (
                 <button
@@ -435,12 +401,7 @@ export function CVPage() {
                   <span>Kliknij aby wybrać plik CV (PDF, DOC, DOCX)</span>
                 </button>
               )}
-              {!uploadingFile && !editingCV?.fileName && (
-                <p className="text-xs text-slate-500 mt-2">
-                  Plik zostanie zapisany w folderze JobOdyssey w Dokumentach
-                </p>
-              )}
-              {(editingCV?.fileName && !uploadingFile) && (
+              {!uploadingFile && editingCV?.fileName && (
                 <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
@@ -456,7 +417,7 @@ export function CVPage() {
             label="Nazwa CV *"
             value={formData.name}
             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-            placeholder="np. CV Frontend Developer Senior"
+            placeholder="np. CV Key Account Manager"
             required
           />
 
@@ -464,7 +425,7 @@ export function CVPage() {
             label="Docelowe stanowisko"
             value={formData.targetPosition}
             onChange={(e) => setFormData({ ...formData, targetPosition: e.target.value })}
-            placeholder="np. Senior Frontend Developer"
+            placeholder="np. Key Account Manager B2B"
           />
 
           <div>
@@ -474,10 +435,10 @@ export function CVPage() {
             <Input
               value={formData.keywords}
               onChange={(e) => setFormData({ ...formData, keywords: e.target.value })}
-              placeholder="react, typescript, nextjs, tailwind (oddziel przecinkami)"
+              placeholder="b2b, sprzedaż, crm, negocjacje (oddziel przecinkami)"
             />
             <p className="mt-1 text-xs text-slate-400">
-              Dodaj słowa kluczowe z opisu stanowiska, aby zwiększyć szanse przejścia przez ATS
+              Dodaj słowa kluczowe z opisu stanowiska
             </p>
           </div>
 
@@ -502,7 +463,9 @@ export function CVPage() {
             <Button type="button" variant="secondary" onClick={closeModal}>
               Anuluj
             </Button>
-            <Button type="submit">{editingCV ? 'Zapisz zmiany' : 'Dodaj CV'}</Button>
+            <Button type="submit" disabled={isUploading}>
+              {isUploading ? 'Wysyłanie pliku...' : editingCV ? 'Zapisz zmiany' : 'Dodaj CV'}
+            </Button>
           </div>
         </form>
       </Modal>

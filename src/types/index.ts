@@ -2,6 +2,7 @@
 export type ApplicationStatus =
   | 'saved'                    // Zapisana - do aplikowania
   | 'applied'                  // Wysłana - CV wysłane
+  | 'cv_viewed'                // CV przeglądane - rekruter kliknął link
   | 'interview'                // Zaproszenie na rozmowę
   | 'pending'                  // Oczekiwanie na odpowiedź po rozmowie
   | 'rejected_no_interview'    // Odmowa bez rozmowy (pracodawca)

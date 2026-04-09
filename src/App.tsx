@@ -1,7 +1,9 @@
-import { HashRouter, Routes, Route } from 'react-router-dom';
+import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { AppProvider } from './contexts/AppContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { Layout } from './components/layout/Layout';
+import { LoginPage } from './pages/LoginPage';
 import {
   DashboardPage,
   ApplicationsPage,
@@ -12,11 +14,24 @@ import {
   SettingsPage,
 } from './pages';
 
-function App() {
+function AppRoutes() {
+  const { user, isLoading } = useAuth();
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-dark-900 flex items-center justify-center">
+        <div className="text-slate-400">Ładowanie...</div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <LoginPage />;
+  }
+
   return (
-    <ThemeProvider>
-      <AppProvider>
-        <HashRouter>
+    <AppProvider>
+      <HashRouter>
         <Routes>
           <Route path="/" element={<Layout />}>
             <Route index element={<DashboardPage />} />
@@ -26,10 +41,20 @@ function App() {
             <Route path="questions" element={<QuestionsPage />} />
             <Route path="stories" element={<StoriesPage />} />
             <Route path="settings" element={<SettingsPage />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
           </Route>
         </Routes>
-        </HashRouter>
-      </AppProvider>
+      </HashRouter>
+    </AppProvider>
+  );
+}
+
+function App() {
+  return (
+    <ThemeProvider>
+      <AuthProvider>
+        <AppRoutes />
+      </AuthProvider>
     </ThemeProvider>
   );
 }

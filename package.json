@@ -66,6 +66,7 @@
     }
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.103.0",
     "date-fns": "^4.1.0",
     "lucide-react": "^0.563.0",
     "react": "^19.2.0",

@@ -37,6 +37,7 @@ export function getStatusBadgeVariant(
   const map: Record<ApplicationStatus, 'default' | 'success' | 'warning' | 'danger' | 'info'> = {
     saved: 'default',
     applied: 'info',
+    cv_viewed: 'success',
     interview: 'warning',
     pending: 'warning',
     rejected_no_interview: 'danger',
@@ -52,6 +53,7 @@ export function getStatusLabel(status: ApplicationStatus): string {
   const labels: Record<ApplicationStatus, string> = {
     saved: 'Zapisana',
     applied: 'Wysłana',
+    cv_viewed: 'CV przeglądane',
     interview: 'Zaproszenie',
     pending: 'Oczekiwanie',
     rejected_no_interview: 'Odmowa',

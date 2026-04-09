@@ -1,5 +1,5 @@
-import { useState, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useMemo, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Plus,
   Building2,
@@ -14,8 +14,10 @@ import {
   List,
   GripVertical,
   MessageSquare,
+  MousePointerClick,
 } from 'lucide-react';
 import { useApp } from '../contexts/AppContext';
+import { TrackingLinksModal } from '../components/tracking/TrackingLinksModal';
 import {
   Button,
   Input,
@@ -36,6 +38,7 @@ import { pl } from 'date-fns/locale';
 const statusOptions: { value: ApplicationStatus; label: string }[] = [
   { value: 'saved', label: 'Zapisana' },
   { value: 'applied', label: 'Wysłana' },
+  { value: 'cv_viewed', label: 'CV przeglądane' },
   { value: 'interview', label: 'Zaproszenie' },
   { value: 'pending', label: 'Oczekiwanie' },
   { value: 'rejected_no_interview', label: 'Odmowa' },
@@ -49,6 +52,7 @@ const statusOptions: { value: ApplicationStatus; label: string }[] = [
 const kanbanColumns: ApplicationStatus[] = [
   'saved',
   'applied',
+  'cv_viewed',
   'interview',
   'pending',
   'success',
@@ -61,6 +65,7 @@ const kanbanColumns: ApplicationStatus[] = [
 export function ApplicationsPage() {
   const { state, dispatch } = useApp();
   const navigate = useNavigate();
+  const location = useLocation();
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilters, setStatusFilters] = useState<ApplicationStatus[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -69,7 +74,22 @@ export function ApplicationsPage() {
   const [viewMode, setViewMode] = useState<'list' | 'kanban'>('list');
   const [draggedApp, setDraggedApp] = useState<JobApplication | null>(null);
   const [dragOverStatus, setDragOverStatus] = useState<ApplicationStatus | null>(null);
+
+  // Otwórz tracking modal jeśli przyszliśmy z powiadomienia
+  useEffect(() => {
+    const openFor = (location.state as { openTrackingFor?: string } | null)?.openTrackingFor;
+    if (openFor) {
+      const app = state.applications.find(a => a.id === openFor);
+      if (app) {
+        setExpandedId(openFor);
+        setTrackingApp(app);
+      }
+      // Wyczyść state żeby nie otwierało się ponownie
+      navigate('/applications', { replace: true, state: {} });
+    }
+  }, [location.state, state.applications, navigate]);
   const [interviewPromptApp, setInterviewPromptApp] = useState<JobApplication | null>(null);
+  const [trackingApp, setTrackingApp] = useState<JobApplication | null>(null);
 
   const [formData, setFormData] = useState({
     companyName: '',
@@ -424,6 +444,14 @@ export function ApplicationsPage() {
                     Otwórz ofertę
                   </a>
                 )}
+                <button
+                  onClick={(e) => { e.stopPropagation(); setTrackingApp(app); }}
+                  className="flex items-center gap-1 px-3 py-1.5 text-xs text-slate-400 hover:text-green-400 hover:bg-green-500/10 transition-colors cursor-pointer"
+                  title="Śledzone linki CV"
+                >
+                  <MousePointerClick className="w-4 h-4" />
+                  Śledź CV
+                </button>
                 <div className="flex-1" />
                 <button
                   onClick={(e) => {
@@ -733,6 +761,15 @@ export function ApplicationsPage() {
           </div>
         </div>
       </Modal>
+
+      {/* Tracking Links Modal */}
+      {trackingApp && (
+        <TrackingLinksModal
+          isOpen={!!trackingApp}
+          onClose={() => setTrackingApp(null)}
+          application={trackingApp}
+        />
+      )}
     </div>
   );
 }
