@@ -205,19 +205,19 @@ body, .dark-theme {
 }
 
 .light-theme h1, .light-theme h2, .light-theme h3, .light-theme h4, .light-theme h5, .light-theme h6 {
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .light-theme .font-semibold {
-  font-weight: 700;
-}
-
-.light-theme .font-medium {
   font-weight: 600;
 }
 
+.light-theme .font-medium {
+  font-weight: 500;
+}
+
 .light-theme .font-bold {
-  font-weight: 800;
+  font-weight: 700;
 }
 
 /* Kanban drop zone */
@@ -261,6 +261,21 @@ body, .dark-theme {
 
 #root {
   min-height: 100vh;
+}
+
+/* ============================================
+   MOBILE BOTTOM NAV - light theme overrides
+   ============================================ */
+.light-theme nav.fixed.bottom-0 {
+  background-color: var(--color-light-200);
+  border-top-color: var(--color-light-300);
+}
+
+/* Modal - pełna szerokość na małych ekranach */
+@media (max-width: 640px) {
+  .modal-content {
+    margin: 0 8px;
+  }
 }
 
 /* Mono font dla liczb */

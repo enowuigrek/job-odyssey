@@ -110,16 +110,16 @@ export function SettingsPage() {
       {/* About */}
       <Card>
         <CardBody className="text-center">
-          <h3 className="text-lg font-semibold text-slate-100 mb-2">Job Odyssey</h3>
-          <p className="text-sm text-slate-400 mb-4">
+          <h3 className="text-xl font-semibold text-slate-100 mb-2">Job Odyssey</h3>
+          <p className="text-base text-slate-400 mb-4">
             Twój osobisty asystent w poszukiwaniu pracy
           </p>
-          <p className="text-xs text-slate-500 mb-3">
+          <p className="text-sm text-slate-500 mb-3">
             Dane przechowywane w chmurze z bezpiecznym uwierzytelnianiem.
             <br />
             Dostęp tylko dla zalogowanych użytkowników.
           </p>
-          <p className="text-xs text-slate-600">
+          <p className="text-sm text-slate-500">
             Stworzone przez{' '}
             <a
               href="https://lukasznowak.dev"

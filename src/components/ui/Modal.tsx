@@ -38,7 +38,7 @@ export function Modal({ isOpen, onClose, title, children, size = 'md', disableBa
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
-      <div className="flex min-h-screen items-center justify-center p-4">
+      <div className="flex min-h-screen items-end sm:items-center justify-center p-2 sm:p-4">
         {/* Backdrop */}
         <div
           className="fixed inset-0 bg-black/70 backdrop-blur-sm transition-opacity"
