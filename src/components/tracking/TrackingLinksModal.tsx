@@ -266,7 +266,7 @@ export function TrackingLinksModal({ isOpen, onClose, application, onFirstClick 
       console.log(`✅ Podmieniono ${replacedCount} linków w PDF`);
 
       // Pobierz plik
-      const blob = new Blob([taggedPdf], { type: 'application/pdf' });
+      const blob = new Blob([taggedPdf.buffer as ArrayBuffer], { type: 'application/pdf' });
       const downloadUrl = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = downloadUrl;

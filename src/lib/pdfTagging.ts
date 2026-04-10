@@ -48,13 +48,14 @@ export async function tagPdfLinks(
   let replacedCount = 0;
 
   // ── Krok 1: podmień istniejące adnotacje URI ──────────────────────────────
+  const ctx = pdfDoc.context;
   for (const page of pages) {
     const annots = page.node.lookup(PDFName.of('Annots'));
     if (!(annots instanceof PDFArray)) continue;
 
     for (let i = 0; i < annots.size(); i++) {
       const annotRef = annots.get(i);
-      const annot = annots.context.lookup(annotRef);
+      const annot = ctx.lookup(annotRef);
       if (!(annot instanceof PDFDict)) continue;
 
       const subtype = annot.get(PDFName.of('Subtype'));
@@ -62,7 +63,7 @@ export async function tagPdfLinks(
 
       const action = annot.get(PDFName.of('A'));
       if (!action) continue;
-      const actionDict = annots.context.lookup(action);
+      const actionDict = ctx.lookup(action);
       if (!(actionDict instanceof PDFDict)) continue;
 
       const actionType = actionDict.get(PDFName.of('S'));
@@ -94,6 +95,7 @@ export async function extractPdfLinks(pdfBytes: ArrayBuffer | Uint8Array): Promi
   const pdfDoc = await PDFDocument.load(pdfBytes);
   const pages = pdfDoc.getPages();
   const links: string[] = [];
+  const ctx = pdfDoc.context;
 
   for (const page of pages) {
     const annots = page.node.lookup(PDFName.of('Annots'));
@@ -101,7 +103,7 @@ export async function extractPdfLinks(pdfBytes: ArrayBuffer | Uint8Array): Promi
 
     for (let i = 0; i < annots.size(); i++) {
       const annotRef = annots.get(i);
-      const annot = annots.context.lookup(annotRef);
+      const annot = ctx.lookup(annotRef);
       if (!(annot instanceof PDFDict)) continue;
 
       const subtype = annot.get(PDFName.of('Subtype'));
@@ -109,7 +111,7 @@ export async function extractPdfLinks(pdfBytes: ArrayBuffer | Uint8Array): Promi
 
       const action = annot.get(PDFName.of('A'));
       if (!action) continue;
-      const actionDict = annots.context.lookup(action);
+      const actionDict = ctx.lookup(action);
       if (!(actionDict instanceof PDFDict)) continue;
 
       const actionType = actionDict.get(PDFName.of('S'));

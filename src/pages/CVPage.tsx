@@ -214,7 +214,7 @@ export function CVPage() {
     setIsUploading(false);
   };
 
-  const finalizeCvSave = (mappings?: CvLinkMapping[]) => {
+  const finalizeCvSave = (_mappings?: CvLinkMapping[]) => {
     if (!pendingCvData) return;
     const { cvData, isEditing, editingCVSnapshot } = pendingCvData;
 

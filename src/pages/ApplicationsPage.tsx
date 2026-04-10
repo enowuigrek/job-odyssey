@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Plus,
   Building2,
+  Briefcase,
   MapPin,
   Calendar,
   ExternalLink,
