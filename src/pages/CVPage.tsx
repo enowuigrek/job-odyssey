@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import { Plus, FileText, Star, Trash2, Edit, Tag, Upload, Download, FolderOpen } from 'lucide-react';
 
 import { useApp } from '../contexts/AppContext';
@@ -49,6 +49,21 @@ export function CVPage() {
 
   // Hook used for type-safe access — direct localStorage writes happen in finalize handler
   useCVLinkMappings(pendingCvId);
+
+  // Ref to store pending mappings that need to be saved after CV is added to state
+  const pendingMappingSave = useRef<{ fileName: string; mappings: CvLinkMapping[] } | null>(null);
+
+  // Effect: save mappings once the CV appears in state (fixes stale closure in setTimeout)
+  useEffect(() => {
+    if (!pendingMappingSave.current) return;
+    const { fileName, mappings } = pendingMappingSave.current;
+    const addedCv = state.cvs.find(cv => cv.fileName === fileName);
+    if (addedCv) {
+      const key = `cv-link-mappings-${addedCv.id}`;
+      localStorage.setItem(key, JSON.stringify(mappings));
+      pendingMappingSave.current = null;
+    }
+  }, [state.cvs]);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -238,26 +253,15 @@ export function CVPage() {
   };
 
   const handleLinkDetectionSave = (mappings: CvLinkMapping[]) => {
-    // Znajdź nowo dodane CV po fileName
     if (pendingCvData && pendingCvId) {
-      // Zapisz mapowania – po dispatch CV będzie miało właściwe id z AppContext
-      // Opóźniamy zapis mapowań do momentu kiedy CV pojawi się w state
-      // Najpierw dispatch CV żeby dostać właściwe id
-      finalizeCvSave(mappings);
-
-      // Poczekaj chwilę żeby AppContext przetworzyło dispatch, potem zapisz mapowania
-      // po znalezieniu CV z tym samym fileName
+      // Zaplanuj zapis mapowań — useEffect zapisze je gdy CV pojawi się w state
       if (mappings.length > 0 && pendingCvData.cvData.fileName) {
-        const targetFileName = pendingCvData.cvData.fileName;
-        // Opóźnione zapisanie mapowań — szukamy CV po fileName w store
-        setTimeout(() => {
-          const addedCv = state.cvs.find(cv => cv.fileName === targetFileName);
-          if (addedCv) {
-            const key = `cv-link-mappings-${addedCv.id}`;
-            localStorage.setItem(key, JSON.stringify(mappings));
-          }
-        }, 500);
+        pendingMappingSave.current = {
+          fileName: pendingCvData.cvData.fileName,
+          mappings,
+        };
       }
+      finalizeCvSave(mappings);
     } else {
       finalizeCvSave(mappings);
     }

@@ -115,12 +115,20 @@ export function SettingsPage() {
             Twój osobisty asystent w poszukiwaniu pracy
           </p>
           <p className="text-xs text-slate-500 mb-3">
-            Wszystkie dane są przechowywane lokalnie.
+            Dane przechowywane w chmurze z bezpiecznym uwierzytelnianiem.
             <br />
-            Twoje dane nigdy nie opuszczają Twojego urządzenia.
+            Dostęp tylko dla zalogowanych użytkowników.
           </p>
           <p className="text-xs text-slate-600">
-            Stworzone przez <span className="text-primary-400">enowuigrek</span>
+            Stworzone przez{' '}
+            <a
+              href="https://lukasznowak.dev"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-primary-400 hover:text-primary-300 transition-colors"
+            >
+              Łukasz Nowak
+            </a>
           </p>
         </CardBody>
       </Card>
