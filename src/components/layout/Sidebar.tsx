@@ -5,8 +5,6 @@ import {
   Briefcase,
   MessageSquare,
   FileText,
-  HelpCircle,
-  BookOpen,
   Settings,
   PanelLeftClose,
   PanelLeft,
@@ -16,7 +14,9 @@ import {
   LogOut,
   X,
   Trash2,
+  Link as LinkIcon,
 } from 'lucide-react';
+import { CountBadge } from '../ui/CountBadge';
 import { useClickNotifications } from '../../hooks/useClickNotifications';
 import { useAuth } from '../../contexts/AuthContext';
 import { useApp } from '../../contexts/AppContext';
@@ -28,8 +28,7 @@ const navItems = [
   { to: '/applications', icon: Briefcase, label: 'Aplikacje' },
   { to: '/interviews', icon: MessageSquare, label: 'Rozmowy' },
   { to: '/cv', icon: FileText, label: 'Baza CV' },
-  { to: '/questions', icon: HelpCircle, label: 'Pytania' },
-  { to: '/stories', icon: BookOpen, label: 'Historie STAR' },
+  { to: '/links', icon: LinkIcon, label: 'Moje linki' },
 ];
 
 export function Sidebar() {
@@ -143,8 +142,8 @@ export function Sidebar() {
             <div className="relative flex-shrink-0">
               <Bell className="w-5 h-5" />
               {unreadCount > 0 && (
-                <span className="absolute -top-1.5 -right-1.5 bg-green-500 text-white text-xs w-4 h-4 flex items-center justify-center font-bold">
-                  {unreadCount > 9 ? '9+' : unreadCount}
+                <span className="absolute -top-2 -right-2">
+                  <CountBadge count={unreadCount} variant="success" />
                 </span>
               )}
             </div>
@@ -183,7 +182,9 @@ export function Sidebar() {
                     <p className="text-sm text-slate-400">Brak powiadomień</p>
                   </div>
                 ) : (
-                  notifications.map(n => (
+                  notifications.map(n => {
+                    const app = state.applications.find(a => a.id === n.applicationId);
+                    return (
                     <div
                       key={n.id}
                       className="group flex items-start gap-3 px-4 py-3 border-b border-dark-700 hover:bg-dark-700 transition-colors cursor-pointer"
@@ -191,7 +192,9 @@ export function Sidebar() {
                     >
                       <MousePointerClick className="w-4 h-4 text-green-400 flex-shrink-0 mt-0.5" />
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-slate-100 truncate">{n.label}</p>
+                        <p className="text-sm font-medium text-slate-100 truncate">
+                          {app ? `${app.companyName} — ${n.label}` : n.label}
+                        </p>
                         <div className="flex items-center gap-1 mt-0.5 text-xs text-slate-400">
                           <Clock className="w-3 h-3" />
                           {format(parseISO(n.clickedAt), 'd MMM, HH:mm', { locale: pl })}
@@ -205,7 +208,8 @@ export function Sidebar() {
                         <X className="w-3.5 h-3.5" />
                       </button>
                     </div>
-                  ))
+                  );})
+
                 )}
               </div>
 

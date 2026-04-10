@@ -30,6 +30,8 @@ import {
   Textarea,
   getStatusBadgeVariant,
   getStatusLabel,
+  PageHeader,
+  useConfirm,
 } from '../components/ui';
 import { JobApplication, ApplicationStatus } from '../types';
 import { format, parseISO } from 'date-fns';
@@ -71,7 +73,8 @@ export function ApplicationsPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingApplication, setEditingApplication] = useState<JobApplication | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
-  const [viewMode, setViewMode] = useState<'list' | 'kanban'>('list');
+  const [viewMode, setViewMode] = useState<'list' | 'kanban'>('kanban');
+  const { confirm, ConfirmDialog } = useConfirm();
   const [draggedApp, setDraggedApp] = useState<JobApplication | null>(null);
   const [dragOverStatus, setDragOverStatus] = useState<ApplicationStatus | null>(null);
 
@@ -102,6 +105,7 @@ export function ApplicationsPage() {
     appliedDate: new Date().toISOString().split('T')[0],
     notes: '',
     source: '',
+    cvId: '' as string | undefined,
   });
 
   const filteredApplications = useMemo(() => {
@@ -127,6 +131,7 @@ export function ApplicationsPage() {
     const grouped: Record<ApplicationStatus, JobApplication[]> = {
       saved: [],
       applied: [],
+      cv_viewed: [],
       interview: [],
       pending: [],
       rejected_no_interview: [],
@@ -155,9 +160,12 @@ export function ApplicationsPage() {
         appliedDate: application.appliedDate || '',
         notes: application.notes || '',
         source: application.source || '',
+        cvId: application.cvId || '',
       });
     } else {
       setEditingApplication(null);
+      // Domyślnie wybierz domyślne CV
+      const defaultCv = state.cvs.find(cv => cv.isDefault);
       setFormData({
         companyName: '',
         position: '',
@@ -169,6 +177,7 @@ export function ApplicationsPage() {
         appliedDate: new Date().toISOString().split('T')[0],
         notes: '',
         source: '',
+        cvId: defaultCv?.id || '',
       });
     }
     setIsModalOpen(true);
@@ -200,10 +209,15 @@ export function ApplicationsPage() {
     closeModal();
   };
 
-  const handleDelete = (id: string) => {
-    if (confirm('Czy na pewno chcesz usunąć tę aplikację? Usunięte zostaną również powiązane rozmowy.')) {
-      dispatch({ type: 'DELETE_APPLICATION', payload: id });
-    }
+  const handleDelete = async (id: string) => {
+    const ok = await confirm({
+      title: 'Usuń aplikację',
+      message: 'Czy na pewno chcesz usunąć tę aplikację? Usunięte zostaną również powiązane rozmowy.',
+      confirmLabel: 'Usuń',
+      variant: 'danger',
+    });
+    if (!ok) return;
+    dispatch({ type: 'DELETE_APPLICATION', payload: id });
   };
 
   const handleStatusChange = (app: JobApplication, newStatus: ApplicationStatus, skipInterviewPrompt = false) => {
@@ -343,25 +357,17 @@ export function ApplicationsPage() {
             <div className="px-4 pb-4 border-t border-dark-600">
               {/* Szybka zmiana statusu */}
               <div className="mt-4 mb-4">
-                <p className="text-xs text-slate-400 mb-2">Zmień status:</p>
-                <div className="flex flex-wrap gap-2">
-                  {statusOptions.map((opt) => (
-                    <button
-                      key={opt.value}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleStatusChange(app, opt.value as ApplicationStatus);
-                      }}
-                      className={`px-3 py-1 text-xs transition-colors cursor-pointer ${
-                        app.status === opt.value
-                          ? 'bg-primary-500 text-slate-900'
-                          : 'bg-dark-700 text-slate-300 hover:bg-dark-600'
-                      }`}
-                    >
-                      {opt.label}
-                    </button>
+                <label className="text-xs text-slate-400 mb-1 block">Zmień status:</label>
+                <select
+                  value={app.status}
+                  onChange={(e) => { e.stopPropagation(); handleStatusChange(app, e.target.value as ApplicationStatus); }}
+                  onClick={(e) => e.stopPropagation()}
+                  className="w-full px-3 py-2 bg-dark-700 text-slate-100 border border-dark-600 text-sm focus:outline-none focus:ring-1 focus:ring-primary-500 cursor-pointer"
+                >
+                  {statusOptions.map(opt => (
+                    <option key={opt.value} value={opt.value}>{opt.label}</option>
                   ))}
-                </div>
+                </select>
               </div>
 
               {/* Szczegóły */}
@@ -497,34 +503,36 @@ export function ApplicationsPage() {
   return (
     <div className={`${viewMode === 'kanban' ? 'flex flex-col h-full -m-8 -mt-10 p-8 pt-10' : 'space-y-6'}`}>
       {/* Header */}
-      <div className={`flex items-center justify-between ${viewMode === 'kanban' ? 'mb-6' : ''}`}>
-        <div>
-          <h1 className="text-2xl font-bold text-slate-100">Aplikacje</h1>
-          <p className="text-slate-400 mt-1">Zarządzaj swoimi aplikacjami o pracę</p>
-        </div>
-        <div className="flex items-center gap-3">
-          {/* Przełącznik widoku */}
-          <div className="flex bg-dark-700">
-            <button
-              onClick={() => setViewMode('list')}
-              className={`p-2 cursor-pointer ${viewMode === 'list' ? 'bg-primary-500 text-slate-900' : 'text-slate-400 hover:text-slate-100'}`}
-              title="Widok listy"
-            >
-              <List className="w-5 h-5" />
-            </button>
-            <button
-              onClick={() => setViewMode('kanban')}
-              className={`p-2 cursor-pointer ${viewMode === 'kanban' ? 'bg-primary-500 text-slate-900' : 'text-slate-400 hover:text-slate-100'}`}
-              title="Widok Kanban"
-            >
-              <LayoutGrid className="w-5 h-5" />
-            </button>
-          </div>
-          <Button onClick={() => openModal()}>
-            <Plus className="w-4 h-4 mr-2" />
-            Nowa aplikacja
-          </Button>
-        </div>
+      <div className={viewMode === 'kanban' ? 'mb-6' : ''}>
+        <PageHeader
+          icon={Briefcase}
+          title="Aplikacje"
+          description="Zarządzaj swoimi aplikacjami o pracę"
+          actions={
+            <>
+              <div className="flex bg-dark-700">
+                <button
+                  onClick={() => setViewMode('list')}
+                  className={`p-2 cursor-pointer ${viewMode === 'list' ? 'bg-primary-500 text-slate-900' : 'text-slate-400 hover:text-slate-100'}`}
+                  title="Widok listy"
+                >
+                  <List className="w-5 h-5" />
+                </button>
+                <button
+                  onClick={() => setViewMode('kanban')}
+                  className={`p-2 cursor-pointer ${viewMode === 'kanban' ? 'bg-primary-500 text-slate-900' : 'text-slate-400 hover:text-slate-100'}`}
+                  title="Widok Kanban"
+                >
+                  <LayoutGrid className="w-5 h-5" />
+                </button>
+              </div>
+              <Button onClick={() => openModal()}>
+                <Plus className="w-4 h-4 mr-2" />
+                Nowa aplikacja
+              </Button>
+            </>
+          }
+        />
       </div>
 
       {/* Filters */}
@@ -711,6 +719,30 @@ export function ApplicationsPage() {
             />
           </div>
 
+          {/* Wybór CV */}
+          <div>
+            <label className="block text-sm font-medium text-slate-300 mb-1">
+              CV do tej aplikacji
+            </label>
+            <select
+              value={formData.cvId || ''}
+              onChange={(e) => setFormData({ ...formData, cvId: e.target.value || undefined })}
+              className="w-full px-3 py-2 bg-dark-700 text-slate-100 border border-dark-600 focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm"
+            >
+              <option value="">— Bez CV —</option>
+              {state.cvs.map(cv => (
+                <option key={cv.id} value={cv.id}>
+                  {cv.name}{cv.fileName ? ' 📎' : ''}{cv.isDefault ? ' ★' : ''}
+                </option>
+              ))}
+            </select>
+            {formData.cvId && !state.cvs.find(cv => cv.id === formData.cvId)?.fileName && (
+              <p className="mt-1 text-xs text-amber-400">
+                To CV nie ma załączonego pliku PDF — nie będzie można wygenerować otagowanego PDF.
+              </p>
+            )}
+          </div>
+
           <Textarea
             label="Notatki"
             value={formData.notes}
@@ -770,6 +802,8 @@ export function ApplicationsPage() {
           application={trackingApp}
         />
       )}
+
+      <ConfirmDialog />
     </div>
   );
 }

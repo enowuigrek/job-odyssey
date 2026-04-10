@@ -58,7 +58,8 @@ body, .dark-theme {
   color: #f1f5f9;
   background-color: var(--color-dark-900);
   font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-  font-weight: 200;
+  font-size: 15px;
+  font-weight: 300;
   letter-spacing: 0.02em;
 }
 

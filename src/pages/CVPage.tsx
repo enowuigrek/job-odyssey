@@ -1,5 +1,6 @@
 import { useState, useMemo, useRef } from 'react';
 import { Plus, FileText, Star, Trash2, Edit, Tag, Upload, Download, FolderOpen } from 'lucide-react';
+
 import { useApp } from '../contexts/AppContext';
 import { useAuth } from '../contexts/AuthContext';
 import {
@@ -11,22 +12,43 @@ import {
   Modal,
   EmptyState,
   Textarea,
+  PageHeader,
+  useConfirm,
 } from '../components/ui';
 import { CV } from '../types';
 import { format, parseISO } from 'date-fns';
 import { pl } from 'date-fns/locale';
 import { openDataFolder } from '../utils/storage';
 import { uploadCVFile, getCVFileUrl, deleteCVFileFromStorage } from '../lib/db';
-
+import { extractTextUrls, extractPdfLinks } from '../lib/pdfTagging';
+import { useCVLinkMappings, CvLinkMapping } from '../hooks/useCVLinkMappings';
+import { useUserLinks } from '../hooks/useUserLinks';
+import { CvLinkDetectionModal } from '../components/cv/CvLinkDetectionModal';
 export function CVPage() {
   const { state, dispatch, isElectronApp } = useApp();
   const { user } = useAuth();
+  const { links: userLinks } = useUserLinks();
   const [searchQuery, setSearchQuery] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCV, setEditingCV] = useState<CV | null>(null);
   const [uploadingFile, setUploadingFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { confirm, ConfirmDialog } = useConfirm();
+
+  // Link detection flow
+  const [showLinkDetection, setShowLinkDetection] = useState(false);
+  const [detectedUrls, setDetectedUrls] = useState<string[]>([]);
+  const [pendingCvId, setPendingCvId] = useState<string | undefined>(undefined);
+  const [pendingCvData, setPendingCvData] = useState<{
+    cvData: Omit<CV, 'id' | 'createdAt' | 'updatedAt'>;
+    isEditing: boolean;
+    editingCVSnapshot: CV | null;
+  } | null>(null);
+
+  // Hook used for type-safe access — direct localStorage writes happen in finalize handler
+  useCVLinkMappings(pendingCvId);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -95,22 +117,38 @@ export function CVPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    setFormError(null);
+
+    // Plik wymagany przy nowym CV
+    if (!editingCV && !uploadingFile) {
+      setFormError('Dodaj plik CV (PDF, DOC, DOCX) — bez pliku nie ma co śledzić.');
+      return;
+    }
+
     setIsUploading(true);
 
     let fileName: string | undefined = editingCV?.fileName;
 
+    let newCvId: string | undefined;
+
     if (uploadingFile && user) {
-      // Użyj timestamp jako unikalnej nazwy — niezależne od ID CV
-      const uniqueFileName = `${Date.now()}_${uploadingFile.name}`;
+      // Użyj timestamp jako unikalnej nazwy — sanityzuj (brak spacji i polskich znaków)
+      const safeName = uploadingFile.name
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // usuń polskie znaki
+        .replace(/\s+/g, '_')                              // spacje → podkreślniki
+        .replace(/[^a-zA-Z0-9._-]/g, '');                 // tylko bezpieczne znaki
+      const uniqueFileName = `${Date.now()}_${safeName}`;
 
       // Usuń stary plik jeśli zastępujemy
       if (editingCV?.fileName) {
         await deleteCVFileFromStorage(editingCV.fileName);
       }
 
-      const result = await uploadCVFile(user.id, 'files', uniqueFileName, uploadingFile);
-      if (!result) {
-        alert('Błąd przy upload pliku. Spróbuj ponownie.');
+      const arrayBuffer = await uploadingFile.arrayBuffer();
+      const result = await uploadCVFile(user.id, 'files', uniqueFileName, new Blob([arrayBuffer], { type: uploadingFile.type }));
+      if (!result || result.error) {
+        setFormError(`Błąd przy upload pliku: ${result?.error ?? 'nieznany błąd'}. Sprawdź konsolę (F12).`);
         setIsUploading(false);
         return;
       }
@@ -127,6 +165,36 @@ export function CVPage() {
       isDefault: formData.isDefault,
       fileName,
     };
+
+    // Jeśli to nowe CV z plikiem PDF — uruchom wykrywanie linków
+    const isPdf = fileName?.toLowerCase().endsWith('.pdf');
+    if (!editingCV && fileName && isPdf && user) {
+      try {
+        const signedUrl = await getCVFileUrl(fileName);
+        if (signedUrl) {
+          const response = await fetch(signedUrl);
+          const pdfBytes = await response.arrayBuffer();
+          const [textUrls, annotUrls] = await Promise.all([
+            extractTextUrls(pdfBytes),
+            extractPdfLinks(pdfBytes),
+          ]);
+          const combined = [...new Set([...textUrls, ...annotUrls])];
+
+          // Generuj tymczasowe ID dla nowego CV (zostanie nadpisane przez dispatch)
+          const tempId = crypto.randomUUID();
+          newCvId = tempId;
+          setPendingCvId(tempId);
+          setPendingCvData({ cvData, isEditing: false, editingCVSnapshot: null });
+          setDetectedUrls(combined);
+          setShowLinkDetection(true);
+          setIsUploading(false);
+          closeModal();
+          return;
+        }
+      } catch (err) {
+        console.warn('Link detection failed, continuing without it:', err);
+      }
+    }
 
     if (editingCV) {
       dispatch({ type: 'UPDATE_CV', payload: { ...editingCV, ...cvData } });
@@ -146,19 +214,77 @@ export function CVPage() {
     setIsUploading(false);
   };
 
+  const finalizeCvSave = (mappings?: CvLinkMapping[]) => {
+    if (!pendingCvData) return;
+    const { cvData, isEditing, editingCVSnapshot } = pendingCvData;
+
+    if (isEditing && editingCVSnapshot) {
+      dispatch({ type: 'UPDATE_CV', payload: { ...editingCVSnapshot, ...cvData } });
+    } else {
+      dispatch({ type: 'ADD_CV', payload: cvData });
+    }
+
+    if (cvData.isDefault) {
+      state.cvs.forEach((cv) => {
+        if (cv.isDefault) {
+          dispatch({ type: 'UPDATE_CV', payload: { ...cv, isDefault: false } });
+        }
+      });
+    }
+
+    setPendingCvData(null);
+    setDetectedUrls([]);
+    setShowLinkDetection(false);
+  };
+
+  const handleLinkDetectionSave = (mappings: CvLinkMapping[]) => {
+    // Znajdź nowo dodane CV po fileName
+    if (pendingCvData && pendingCvId) {
+      // Zapisz mapowania – po dispatch CV będzie miało właściwe id z AppContext
+      // Opóźniamy zapis mapowań do momentu kiedy CV pojawi się w state
+      // Najpierw dispatch CV żeby dostać właściwe id
+      finalizeCvSave(mappings);
+
+      // Poczekaj chwilę żeby AppContext przetworzyło dispatch, potem zapisz mapowania
+      // po znalezieniu CV z tym samym fileName
+      if (mappings.length > 0 && pendingCvData.cvData.fileName) {
+        const targetFileName = pendingCvData.cvData.fileName;
+        // Opóźnione zapisanie mapowań — szukamy CV po fileName w store
+        setTimeout(() => {
+          const addedCv = state.cvs.find(cv => cv.fileName === targetFileName);
+          if (addedCv) {
+            const key = `cv-link-mappings-${addedCv.id}`;
+            localStorage.setItem(key, JSON.stringify(mappings));
+          }
+        }, 500);
+      }
+    } else {
+      finalizeCvSave(mappings);
+    }
+  };
+
+  const handleLinkDetectionClose = () => {
+    finalizeCvSave();
+  };
+
   const handleDelete = async (id: string) => {
     const cv = state.cvs.find(c => c.id === id);
-    if (confirm('Czy na pewno chcesz usunąć to CV?')) {
-      if (cv?.fileName && !isElectronApp) {
-        await deleteCVFileFromStorage(cv.fileName);
-      }
-      dispatch({ type: 'DELETE_CV', payload: id });
+    const ok = await confirm({
+      title: 'Usuń CV',
+      message: 'Czy na pewno chcesz usunąć to CV?',
+      confirmLabel: 'Usuń',
+      variant: 'danger',
+    });
+    if (!ok) return;
+    if (cv?.fileName && !isElectronApp) {
+      await deleteCVFileFromStorage(cv.fileName);
     }
+    dispatch({ type: 'DELETE_CV', payload: id });
   };
 
   const handleDownloadCV = async (cv: CV) => {
     if (!cv.fileName) {
-      alert('Plik CV niedostępny');
+      console.warn('Plik CV niedostępny');
       return;
     }
 
@@ -167,7 +293,7 @@ export function CVPage() {
       const { loadCVFile } = await import('../utils/storage');
       const result = await loadCVFile(cv.fileName);
       if (!result.success || !result.data) {
-        alert(`Błąd przy pobieraniu pliku: ${result.error}`);
+        console.error(`Błąd przy pobieraniu pliku: ${result.error}`);
         return;
       }
       const link = document.createElement('a');
@@ -180,7 +306,7 @@ export function CVPage() {
       // Web: Supabase Storage signed URL
       const url = await getCVFileUrl(cv.fileName);
       if (!url) {
-        alert('Nie można pobrać pliku. Spróbuj ponownie.');
+        console.error('Nie można pobrać pliku.');
         return;
       }
       const link = document.createElement('a');
@@ -211,26 +337,25 @@ export function CVPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-100">Baza CV</h1>
-          <p className="text-slate-400 mt-1">
-            Zarządzaj wersjami CV dostosowanymi do różnych stanowisk
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          {isElectronApp && (
-            <Button variant="secondary" onClick={() => openDataFolder()}>
-              <FolderOpen className="w-4 h-4 mr-2" />
-              Otwórz folder
+      <PageHeader
+        icon={FileText}
+        title="Baza CV"
+        description="Zarządzaj wersjami CV dostosowanymi do różnych stanowisk"
+        actions={
+          <>
+            {isElectronApp && (
+              <Button variant="secondary" onClick={() => openDataFolder()}>
+                <FolderOpen className="w-4 h-4 mr-2" />
+                Otwórz folder
+              </Button>
+            )}
+            <Button onClick={() => openModal()}>
+              <Plus className="w-4 h-4 mr-2" />
+              Nowe CV
             </Button>
-          )}
-          <Button onClick={() => openModal()}>
-            <Plus className="w-4 h-4 mr-2" />
-            Nowe CV
-          </Button>
-        </div>
-      </div>
+          </>
+        }
+      />
 
       {/* Search */}
       <div>
@@ -363,6 +488,16 @@ export function CVPage() {
         className="hidden"
       />
 
+      {/* Link detection modal */}
+      <CvLinkDetectionModal
+        isOpen={showLinkDetection}
+        onClose={handleLinkDetectionClose}
+        onSave={handleLinkDetectionSave}
+        detectedUrls={detectedUrls}
+        userLinks={userLinks}
+        cvName={pendingCvData?.cvData.name ?? ''}
+      />
+
       {/* Modal */}
       <Modal
         isOpen={isModalOpen}
@@ -459,6 +594,10 @@ export function CVPage() {
             <span className="text-sm text-slate-300">Ustaw jako domyślne CV</span>
           </label>
 
+          {formError && (
+            <p className="text-sm text-danger-400 bg-danger-500/10 px-3 py-2">{formError}</p>
+          )}
+
           <div className="flex justify-end gap-3 pt-4 border-t border-dark-700">
             <Button type="button" variant="secondary" onClick={closeModal}>
               Anuluj
@@ -469,6 +608,8 @@ export function CVPage() {
           </div>
         </form>
       </Modal>
+
+      <ConfirmDialog />
     </div>
   );
 }

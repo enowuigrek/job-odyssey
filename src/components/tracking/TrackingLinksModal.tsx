@@ -1,15 +1,19 @@
 import { useState, useEffect } from 'react';
-import { Link, ExternalLink, Copy, Check, Plus, Trash2, MousePointerClick, Clock } from 'lucide-react';
-import { Modal, Button, Badge } from '../ui';
+import { Link, ExternalLink, Copy, Check, Plus, Trash2, MousePointerClick, Clock, FileDown } from 'lucide-react';
+import { Modal, Button, Badge, CountBadge } from '../ui';
 import { useAuth } from '../../contexts/AuthContext';
+import { useApp } from '../../contexts/AppContext';
 import { useUserLinks } from '../../hooks/useUserLinks';
 import {
   createTrackingLinks,
   getTrackingLinksForApplication,
   getClicksForApplication,
+  getCVFileUrl,
   TrackingLink,
   TrackingClick,
 } from '../../lib/db';
+import { tagPdfLinks, extractPdfLinks, buildTrackUrl, LinkMapping } from '../../lib/pdfTagging';
+import { getCVLinkMappings } from '../../hooks/useCVLinkMappings';
 import { JobApplication } from '../../types';
 import { format, parseISO } from 'date-fns';
 import { pl } from 'date-fns/locale';
@@ -42,31 +46,59 @@ interface Props {
 
 export function TrackingLinksModal({ isOpen, onClose, application, onFirstClick }: Props) {
   const { user } = useAuth();
+  const { getCVById } = useApp();
   const { links: userLinks } = useUserLinks();
   const [existingLinks, setExistingLinks] = useState<TrackingLink[]>([]);
   const [clicks, setClicks] = useState<TrackingClick[]>([]);
   const [linkInputs, setLinkInputs] = useState<LinkInput[]>([]);
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
+  const [pdfError, setPdfError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [copiedToken, setCopiedToken] = useState<string | null>(null);
   const [tab, setTab] = useState<'links' | 'clicks'>('links');
 
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen || !user) return;
     setIsLoading(true);
 
     Promise.all([
       getTrackingLinksForApplication(application.id),
       getClicksForApplication(application.id),
-    ]).then(([links, clicks]) => {
-      setExistingLinks(links);
+    ]).then(async ([links, clicks]) => {
       setClicks(clicks);
-      setIsLoading(false);
 
       if (clicks.length > 0 && onFirstClick) onFirstClick();
+
+      // Jeśli brak linków, a mamy domyślne linki użytkownika → auto-generuj
+      if (links.length === 0 && userLinks.length > 0) {
+        const validLinks = userLinks.filter(l => l.url.trim());
+        if (validLinks.length > 0) {
+          const toCreate = validLinks.map(l => ({
+            userId: user.id,
+            applicationId: application.id,
+            token: `${application.id.slice(0, 6)}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`,
+            label: l.label,
+            targetUrl: l.url.trim(),
+          }));
+          try {
+            const created = await createTrackingLinks(toCreate);
+            setExistingLinks(created);
+          } catch {
+            setExistingLinks([]);
+          }
+        } else {
+          setExistingLinks([]);
+        }
+      } else {
+        setExistingLinks(links);
+      }
+
+      setIsLoading(false);
     });
 
-    // Pre-fill z profilu użytkownika
+    // Formularz do ręcznego dodawania linków
     if (userLinks.length > 0) {
       setLinkInputs(userLinks.map(l => ({
         label: l.label,
@@ -79,7 +111,7 @@ export function TrackingLinksModal({ isOpen, onClose, application, onFirstClick 
         { label: 'GitHub', targetUrl: '', preset: 'github' },
       ]);
     }
-  }, [isOpen, application.id, onFirstClick, userLinks]);
+  }, [isOpen, application.id, onFirstClick, user, userLinks]);
 
   const addLinkInput = () => {
     setLinkInputs([...linkInputs, { label: '', targetUrl: '', preset: 'custom' }]);
@@ -123,6 +155,15 @@ export function TrackingLinksModal({ isOpen, onClose, application, onFirstClick 
     }
   };
 
+  const refreshClicks = async () => {
+    setIsRefreshing(true);
+    const updated = await getClicksForApplication(application.id);
+    setClicks(updated);
+    if (updated.length > 0 && onFirstClick) onFirstClick();
+    setIsRefreshing(false);
+    if (tab === 'links') setTab('clicks');
+  };
+
   const copyToClipboard = async (token: string) => {
     await navigator.clipboard.writeText(trackUrl(token));
     setCopiedToken(token);
@@ -134,6 +175,112 @@ export function TrackingLinksModal({ isOpen, onClose, application, onFirstClick 
       .map(l => `${l.label}: ${trackUrl(l.token)}`)
       .join('\n');
     await navigator.clipboard.writeText(text);
+  };
+
+  const handleGeneratePdf = async () => {
+    if (existingLinks.length === 0) return;
+    setPdfError(null);
+
+    // Sprawdź czy aplikacja ma przypisane CV z plikiem
+    const cv = application.cvId ? getCVById(application.cvId) : undefined;
+    if (!cv?.fileName) {
+      setPdfError('Brak pliku CV przypisanego do tej aplikacji. Przypisz CV z plikiem PDF w edycji aplikacji.');
+      return;
+    }
+
+    // Sprawdź czy to PDF
+    const ext = cv.fileName.split('.').pop()?.toLowerCase();
+    if (ext !== 'pdf') {
+      setPdfError('Generator obsługuje tylko pliki PDF. Prześlij CV w formacie PDF.');
+      return;
+    }
+
+    setIsGeneratingPdf(true);
+    try {
+      // Pobierz plik CV z Supabase Storage
+      const url = await getCVFileUrl(cv.fileName);
+      if (!url) {
+        setPdfError('Nie udało się pobrać pliku CV.');
+        return;
+      }
+
+      const response = await fetch(url);
+      const buffer = await response.arrayBuffer();
+      // Konwertuj do Uint8Array i twórz osobne kopie dla każdego wywołania pdf-lib
+      const pdfBytes = new Uint8Array(buffer);
+
+      // Diagnostyka — jakie linki są w PDF?
+      const foundInPdf = await extractPdfLinks(pdfBytes.slice(0));
+      console.log('Linki znalezione w PDF:', foundInPdf);
+      console.log('Szukane linki (target_url):', existingLinks.map(l => l.targetUrl));
+
+      // Sprawdź czy mamy zapisane mapowania linków dla tego CV
+      const savedMappings = application.cvId ? getCVLinkMappings(application.cvId) : [];
+
+      let mappings: LinkMapping[];
+
+      if (savedMappings.length > 0) {
+        // Użyj zapisanych mapowań — dopasuj do existingLinks po label lub normalizeUrl
+        const normalizeUrl = (u: string) =>
+          u.replace(/^https?:\/\//, '').replace(/^www\./, '').replace(/\/+$/, '').toLowerCase().trim();
+
+        mappings = savedMappings.flatMap(sm => {
+          // Znajdź pasujący tracking link po label lub po URL
+          const match = existingLinks.find(l =>
+            l.label.toLowerCase() === sm.label.toLowerCase() ||
+            normalizeUrl(l.targetUrl) === normalizeUrl(sm.originalUrl)
+          );
+          if (!match) return [];
+          return [{
+            originalUrl: sm.originalUrl,
+            trackedUrl: trackUrl(match.token),
+            label: sm.label,
+          }];
+        });
+
+        // Jeśli mapowania nie pokrywają wszystkich linków → uzupełnij fallbackiem
+        if (mappings.length === 0) {
+          mappings = existingLinks.map(link => ({
+            originalUrl: link.targetUrl,
+            trackedUrl: trackUrl(link.token),
+            label: link.label,
+          }));
+        }
+      } else {
+        // Fallback: użyj targetUrl z existingLinks jako originalUrl
+        mappings = existingLinks.map(link => ({
+          originalUrl: link.targetUrl,
+          trackedUrl: trackUrl(link.token),
+          label: link.label,
+        }));
+      }
+
+      // Podmień linki w PDF (adnotacje + overlay na tekście)
+      const { pdf: taggedPdf, replacedCount } = await tagPdfLinks(pdfBytes.slice(0), mappings);
+
+      if (replacedCount === 0) {
+        setPdfError(`Nie znaleziono pasujących URL-i w PDF. Znalezione adnotacje: ${foundInPdf.length > 0 ? foundInPdf.join(', ') : 'brak'}. Sprawdź czy URL w "Moje linki" zgadza się z tym w CV (F12 → Console).`);
+        return;
+      }
+
+      console.log(`✅ Podmieniono ${replacedCount} linków w PDF`);
+
+      // Pobierz plik
+      const blob = new Blob([taggedPdf], { type: 'application/pdf' });
+      const downloadUrl = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = downloadUrl;
+      a.download = `CV_${application.companyName.replace(/[^a-zA-Z0-9]/g, '_')}_tracked.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(downloadUrl);
+    } catch (err) {
+      console.error('PDF generation error:', err);
+      setPdfError('Błąd przy generowaniu PDF. Sprawdź czy plik CV jest poprawnym PDF.');
+    } finally {
+      setIsGeneratingPdf(false);
+    }
   };
 
   // Mapa token → liczba klików
@@ -158,31 +305,27 @@ export function TrackingLinksModal({ isOpen, onClose, application, onFirstClick 
         <div className="space-y-4">
           {/* Tabs */}
           {hasExistingLinks && (
-            <div className="flex bg-dark-700 rounded p-1 gap-1">
+            <div className="flex bg-dark-700 p-1 gap-1">
               <button
                 onClick={() => setTab('links')}
-                className={`flex-1 py-1.5 text-sm font-medium rounded transition-colors flex items-center justify-center gap-1.5 ${
+                className={`flex-1 py-1.5 text-sm font-medium transition-colors flex items-center justify-center gap-1.5 ${
                   tab === 'links' ? 'bg-primary-600 text-white' : 'text-slate-400 hover:text-slate-200'
                 }`}
               >
                 <Link className="w-4 h-4" />
                 Linki
-                <span className="bg-slate-600 text-slate-200 text-xs w-5 h-5 rounded-full flex items-center justify-center">
-                  {existingLinks.length}
-                </span>
+                <CountBadge count={existingLinks.length} variant="default" />
               </button>
               <button
                 onClick={() => setTab('clicks')}
-                className={`flex-1 py-1.5 text-sm font-medium rounded transition-colors flex items-center justify-center gap-1.5 ${
+                className={`flex-1 py-1.5 text-sm font-medium transition-colors flex items-center justify-center gap-1.5 ${
                   tab === 'clicks' ? 'bg-primary-600 text-white' : 'text-slate-400 hover:text-slate-200'
                 }`}
               >
                 <MousePointerClick className="w-4 h-4" />
                 Kliknięcia
                 {clicks.length > 0 && (
-                  <span className="bg-green-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-bold">
-                    {clicks.length}
-                  </span>
+                  <CountBadge count={clicks.length} variant="success" />
                 )}
               </button>
             </div>
@@ -196,18 +339,32 @@ export function TrackingLinksModal({ isOpen, onClose, application, onFirstClick 
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <p className="text-sm font-medium text-slate-300">Wygenerowane URL-e do CV</p>
-                    <button
-                      onClick={copyAllLinks}
-                      className="text-xs text-primary-400 hover:text-primary-300 flex items-center gap-1"
-                    >
-                      <Copy className="w-3 h-3" />
-                      Kopiuj wszystkie
-                    </button>
+                    <div className="flex items-center gap-3">
+                      <button
+                        onClick={handleGeneratePdf}
+                        disabled={isGeneratingPdf}
+                        className="text-xs text-green-400 hover:text-green-300 flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                        title="Pobierz PDF z podmienionymi linkami"
+                      >
+                        <FileDown className="w-3 h-3" />
+                        {isGeneratingPdf ? 'Generuję...' : 'Pobierz PDF'}
+                      </button>
+                      <button
+                        onClick={copyAllLinks}
+                        className="text-xs text-primary-400 hover:text-primary-300 flex items-center gap-1"
+                      >
+                        <Copy className="w-3 h-3" />
+                        Kopiuj wszystkie
+                      </button>
+                    </div>
                   </div>
+                  {pdfError && (
+                    <p className="text-xs text-danger-400 bg-danger-500/10 px-3 py-2">{pdfError}</p>
+                  )}
                   {existingLinks.map(link => {
                     const linkClicks = clicksByToken[link.token] ?? [];
                     return (
-                      <div key={link.id} className="bg-dark-700 p-3 rounded flex items-start justify-between gap-3">
+                      <div key={link.id} className="bg-dark-700 p-3 flex items-start justify-between gap-3">
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-2 mb-1">
                             <span className="text-sm font-medium text-slate-200">{link.label}</span>
@@ -218,19 +375,30 @@ export function TrackingLinksModal({ isOpen, onClose, application, onFirstClick 
                               </Badge>
                             )}
                           </div>
-                          <p className="text-xs text-slate-500 truncate">{trackUrl(link.token)}</p>
+                          <p className="text-xs text-slate-500 truncate">→ {link.targetUrl}</p>
                         </div>
-                        <button
-                          onClick={() => copyToClipboard(link.token)}
-                          className="flex-shrink-0 p-1.5 text-slate-400 hover:text-primary-400 transition-colors"
-                          title="Kopiuj URL"
-                        >
-                          {copiedToken === link.token ? (
-                            <Check className="w-4 h-4 text-green-400" />
-                          ) : (
-                            <Copy className="w-4 h-4" />
-                          )}
-                        </button>
+                        <div className="flex items-center gap-1 flex-shrink-0">
+                          <a
+                            href={trackUrl(link.token)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="p-1.5 text-slate-400 hover:text-green-400 transition-colors"
+                            title="Testuj link (otwórz w przeglądarce)"
+                          >
+                            <ExternalLink className="w-4 h-4" />
+                          </a>
+                          <button
+                            onClick={() => copyToClipboard(link.token)}
+                            className="p-1.5 text-slate-400 hover:text-primary-400 transition-colors"
+                            title="Kopiuj URL"
+                          >
+                            {copiedToken === link.token ? (
+                              <Check className="w-4 h-4 text-green-400" />
+                            ) : (
+                              <Copy className="w-4 h-4" />
+                            )}
+                          </button>
+                        </div>
                       </div>
                     );
                   })}
@@ -254,12 +422,12 @@ export function TrackingLinksModal({ isOpen, onClose, application, onFirstClick 
 
               <div className="space-y-3">
                 {linkInputs.map((input, index) => (
-                  <div key={index} className="bg-dark-700/50 p-3 rounded space-y-2">
+                  <div key={index} className="bg-dark-700/50 p-3 space-y-2">
                     <div className="flex items-center gap-2">
                       <select
                         value={input.preset}
                         onChange={e => updateLinkInput(index, 'preset', e.target.value)}
-                        className="px-2 py-1.5 bg-dark-600 text-slate-200 text-sm rounded border border-dark-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                        className="px-2 py-1.5 bg-dark-600 text-slate-200 text-sm border border-dark-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
                       >
                         {PRESETS.map(p => (
                           <option key={p.key} value={p.key}>{p.label}</option>
@@ -271,7 +439,7 @@ export function TrackingLinksModal({ isOpen, onClose, application, onFirstClick 
                           value={input.label}
                           onChange={e => updateLinkInput(index, 'label', e.target.value)}
                           placeholder="Nazwa linku (np. Portfolio)"
-                          className="flex-1 px-2 py-1.5 bg-dark-600 text-slate-200 text-sm rounded border border-dark-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                          className="flex-1 px-2 py-1.5 bg-dark-600 text-slate-200 text-sm border border-dark-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
                         />
                       )}
                       <button
@@ -286,7 +454,7 @@ export function TrackingLinksModal({ isOpen, onClose, application, onFirstClick 
                       value={input.targetUrl}
                       onChange={e => updateLinkInput(index, 'targetUrl', e.target.value)}
                       placeholder={PRESETS.find(p => p.key === input.preset)?.placeholder}
-                      className="w-full px-2 py-1.5 bg-dark-600 text-slate-200 text-sm rounded border border-dark-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                      className="w-full px-2 py-1.5 bg-dark-600 text-slate-200 text-sm border border-dark-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
                     />
                   </div>
                 ))}
@@ -315,12 +483,26 @@ export function TrackingLinksModal({ isOpen, onClose, application, onFirstClick 
           {/* Tab: Kliknięcia */}
           {hasExistingLinks && tab === 'clicks' && (
             <div className="space-y-3">
+              {/* Nagłówek z odświeżaniem */}
+              <div className="flex items-center justify-between">
+                <p className="text-xs text-slate-500">Kliknięcia są odświeżane co 30s automatycznie.</p>
+                <button
+                  onClick={refreshClicks}
+                  disabled={isRefreshing}
+                  className="flex items-center gap-1 text-xs text-primary-400 hover:text-primary-300 disabled:opacity-50"
+                >
+                  <Clock className={`w-3 h-3 ${isRefreshing ? 'animate-spin' : ''}`} />
+                  {isRefreshing ? 'Sprawdzam...' : 'Odśwież teraz'}
+                </button>
+              </div>
+
               {clicks.length === 0 ? (
-                <div className="py-8 text-center">
+                <div className="py-6 text-center">
                   <MousePointerClick className="w-10 h-10 text-slate-600 mx-auto mb-3" />
                   <p className="text-slate-400">Brak kliknięć</p>
                   <p className="text-sm text-slate-500 mt-1">
-                    Wyślij CV z trackowanymi linkami — tu zobaczysz aktywność rekrutera.
+                    Pobierz otagowany PDF i wyślij rekruterowi.<br />
+                    Otwórz link w przeglądarce (ikona <ExternalLink className="w-3 h-3 inline" /> w zakładce Linki) żeby przetestować.
                   </p>
                 </div>
               ) : (
@@ -337,7 +519,7 @@ export function TrackingLinksModal({ isOpen, onClose, application, onFirstClick 
                       return (
                         <div
                           key={link.id}
-                          className={`p-3 rounded border ${
+                          className={`p-3 border ${
                             linkClicks.length > 0
                               ? 'border-green-500/30 bg-green-500/5'
                               : 'border-dark-600 bg-dark-700/50'
@@ -348,7 +530,7 @@ export function TrackingLinksModal({ isOpen, onClose, application, onFirstClick 
                               {linkClicks.length > 0 ? (
                                 <Check className="w-4 h-4 text-green-400 flex-shrink-0" />
                               ) : (
-                                <div className="w-4 h-4 rounded-full border border-slate-600 flex-shrink-0" />
+                                <div className="w-4 h-4 flex-shrink-0 border border-slate-600 flex-shrink-0" />
                               )}
                               <span className={`text-sm font-medium ${
                                 linkClicks.length > 0 ? 'text-green-400' : 'text-slate-400'
@@ -398,7 +580,14 @@ export function TrackingLinksModal({ isOpen, onClose, application, onFirstClick 
                   </div>
                 </>
               )}
-              <div className="flex justify-end pt-2">
+              <div className="flex justify-between items-center pt-2 border-t border-dark-600">
+                <button
+                  onClick={() => setTab('links')}
+                  className="text-xs text-slate-400 hover:text-primary-400 flex items-center gap-1"
+                >
+                  <Link className="w-3 h-3" />
+                  Wróć do linków
+                </button>
                 <Button variant="secondary" onClick={onClose}>Zamknij</Button>
               </div>
             </div>

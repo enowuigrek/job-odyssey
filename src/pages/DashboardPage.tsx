@@ -10,6 +10,7 @@ import {
   PieChart,
   Calendar,
   MessageSquare,
+  LayoutDashboard,
 } from 'lucide-react';
 import { useApp } from '../contexts/AppContext';
 import { Card, CardBody, Badge, getStatusBadgeVariant, getStatusLabel, getInterviewStatusLabel } from '../components/ui';
@@ -48,8 +49,8 @@ export function DashboardPage() {
 
   const stats = useMemo(() => {
     const now = new Date();
-    // Aktywne = wysłane lub na etapie rozmów / oczekiwania
-    const activeStatuses = ['applied', 'interview', 'pending'];
+    // Aktywne = wysłane, CV przeglądane, lub na etapie rozmów / oczekiwania
+    const activeStatuses = ['applied', 'cv_viewed', 'interview', 'pending'];
 
     const totalApplications = state.applications.length;
     const activeApplications = state.applications.filter((a) =>
@@ -101,13 +102,14 @@ export function DashboardPage() {
   // Dane do wykresu aplikacji według statusu
   const applicationsByStatus = useMemo(() => {
     const statuses: ApplicationStatus[] = [
-      'saved', 'applied', 'interview', 'pending',
+      'saved', 'applied', 'cv_viewed', 'interview', 'pending',
       'rejected_no_interview', 'rejected_after_interview',
       'offer_declined', 'withdrawn', 'success',
     ];
     const colors: Record<ApplicationStatus, string> = {
       saved: 'bg-slate-500',
       applied: 'bg-primary-500',
+      cv_viewed: 'bg-green-500',
       interview: 'bg-warning-500',
       pending: 'bg-yellow-600',
       rejected_no_interview: 'bg-danger-500',
@@ -119,6 +121,7 @@ export function DashboardPage() {
     const labels: Record<ApplicationStatus, string> = {
       saved: 'Zapisana',
       applied: 'Wysłana',
+      cv_viewed: 'CV przeglądane',
       interview: 'Zaproszenie',
       pending: 'Oczekiwanie',
       rejected_no_interview: 'Odmowa',
@@ -162,7 +165,10 @@ export function DashboardPage() {
       {/* Header z datą i zegarem */}
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-slate-100 uppercase tracking-wide">Dashboard</h1>
+          <div className="flex items-center gap-2 mb-1">
+            <LayoutDashboard className="w-7 h-7 text-primary-400 flex-shrink-0" />
+            <h1 className="text-3xl font-bold text-slate-100 uppercase tracking-wide">Dashboard</h1>
+          </div>
           <p className="text-slate-400 mt-2">Przegląd Twojej podróży rekrutacyjnej</p>
         </div>
         <div className="text-right">

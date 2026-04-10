@@ -12,6 +12,7 @@ import {
   QuestionsPage,
   StoriesPage,
   SettingsPage,
+  LinksPage,
 } from './pages';
 
 function AppRoutes() {
@@ -38,6 +39,7 @@ function AppRoutes() {
             <Route path="applications" element={<ApplicationsPage />} />
             <Route path="interviews" element={<InterviewsPage />} />
             <Route path="cv" element={<CVPage />} />
+            <Route path="links" element={<LinksPage />} />
             <Route path="questions" element={<QuestionsPage />} />
             <Route path="stories" element={<StoriesPage />} />
             <Route path="settings" element={<SettingsPage />} />

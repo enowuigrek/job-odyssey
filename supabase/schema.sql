@@ -149,5 +149,8 @@ CREATE POLICY "cv_upload" ON storage.objects FOR INSERT TO authenticated
 CREATE POLICY "cv_read" ON storage.objects FOR SELECT TO authenticated
   USING (bucket_id = 'cv-files' AND auth.uid()::text = (storage.foldername(name))[1]);
 
+CREATE POLICY "cv_update" ON storage.objects FOR UPDATE TO authenticated
+  USING (bucket_id = 'cv-files' AND auth.uid()::text = (storage.foldername(name))[1]);
+
 CREATE POLICY "cv_delete" ON storage.objects FOR DELETE TO authenticated
   USING (bucket_id = 'cv-files' AND auth.uid()::text = (storage.foldername(name))[1]);

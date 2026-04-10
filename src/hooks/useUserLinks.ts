@@ -34,12 +34,18 @@ export function useUserLinks() {
     setLinks(updated);
   }, [user]);
 
+  const ensureHttps = (url: string) => {
+    if (!url) return url;
+    if (/^https?:\/\//i.test(url)) return url;
+    return `https://${url}`;
+  };
+
   const addLink = useCallback((link: Omit<UserLink, 'id'>) => {
-    save([...links, { ...link, id: crypto.randomUUID() }]);
+    save([...links, { ...link, url: ensureHttps(link.url), id: crypto.randomUUID() }]);
   }, [links, save]);
 
   const updateLink = useCallback((id: string, patch: Partial<Omit<UserLink, 'id'>>) => {
-    save(links.map(l => l.id === id ? { ...l, ...patch } : l));
+    save(links.map(l => l.id === id ? { ...l, ...patch, url: patch.url ? ensureHttps(patch.url) : l.url } : l));
   }, [links, save]);
 
   const removeLink = useCallback((id: string) => {

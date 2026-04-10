@@ -7,12 +7,13 @@ interface ModalProps {
   title: string;
   children: ReactNode;
   size?: 'sm' | 'md' | 'lg' | 'xl';
+  disableBackdropClose?: boolean;
 }
 
-export function Modal({ isOpen, onClose, title, children, size = 'md' }: ModalProps) {
+export function Modal({ isOpen, onClose, title, children, size = 'md', disableBackdropClose = false }: ModalProps) {
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape' && !disableBackdropClose) onClose();
     };
 
     if (isOpen) {
@@ -24,7 +25,7 @@ export function Modal({ isOpen, onClose, title, children, size = 'md' }: ModalPr
       document.removeEventListener('keydown', handleEscape);
       document.body.style.overflow = 'unset';
     };
-  }, [isOpen, onClose]);
+  }, [isOpen, onClose, disableBackdropClose]);
 
   if (!isOpen) return null;
 
@@ -41,7 +42,7 @@ export function Modal({ isOpen, onClose, title, children, size = 'md' }: ModalPr
         {/* Backdrop */}
         <div
           className="fixed inset-0 bg-black/70 backdrop-blur-sm transition-opacity"
-          onClick={onClose}
+          onClick={disableBackdropClose ? undefined : onClose}
         />
 
         {/* Modal */}

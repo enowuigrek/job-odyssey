@@ -263,13 +263,23 @@ export async function uploadCVFile(
   userId: string,
   cvId: string,
   fileName: string,
-  fileData: ArrayBuffer | Blob
-): Promise<{ path: string } | null> {
+  fileData: ArrayBuffer | Blob | File
+): Promise<{ path: string; error?: string } | null> {
   const path = `${userId}/${cvId}/${fileName}`;
-  const { error } = await supabase.storage.from('cv-files').upload(path, fileData, { upsert: true });
+
+  // Determine content type
+  const contentType = fileData instanceof File
+    ? fileData.type
+    : 'application/octet-stream';
+
+  const { error } = await supabase.storage.from('cv-files').upload(path, fileData, {
+    upsert: true,
+    contentType,
+  });
+
   if (error) {
-    console.error('Upload error:', error);
-    return null;
+    console.error('Upload error:', error.message, error);
+    return { path, error: error.message };
   }
   return { path };
 }

@@ -14,6 +14,7 @@ import {
   ChevronUp,
   MapPin,
   ExternalLink,
+  MessageSquare,
 } from 'lucide-react';
 import { useApp } from '../contexts/AppContext';
 import {
@@ -28,6 +29,8 @@ import {
   Textarea,
   getInterviewStatusBadgeVariant,
   getInterviewStatusLabel,
+  PageHeader,
+  useConfirm,
 } from '../components/ui';
 import { Interview, InterviewStatus } from '../types';
 import { format, parseISO, isToday } from 'date-fns';
@@ -50,7 +53,8 @@ export function InterviewsPage() {
   const [statusFilters, setStatusFilters] = useState<InterviewStatus[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingInterview, setEditingInterview] = useState<Interview | null>(null);
-  const [viewMode, setViewMode] = useState<'list' | 'kanban'>('list');
+  const [viewMode, setViewMode] = useState<'list' | 'kanban'>('kanban');
+  const { confirm, ConfirmDialog } = useConfirm();
   const [draggedInterview, setDraggedInterview] = useState<Interview | null>(null);
   const [dragOverStatus, setDragOverStatus] = useState<InterviewStatus | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -190,8 +194,9 @@ export function InterviewsPage() {
     closeModal();
   };
 
-  const handleDelete = (id: string) => {
-    if (confirm('Czy na pewno chcesz usunąć tę rozmowę?')) {
+  const handleDelete = async (id: string) => {
+    const ok = await confirm({ title: 'Usuń rozmowę', message: 'Czy na pewno chcesz usunąć tę rozmowę?', confirmLabel: 'Usuń', variant: 'danger' });
+    if (ok) {
       dispatch({ type: 'DELETE_INTERVIEW', payload: id });
     }
   };
@@ -454,34 +459,36 @@ export function InterviewsPage() {
   return (
     <div className={`${viewMode === 'kanban' ? 'flex flex-col h-full -m-8 -mt-10 p-8 pt-10' : 'space-y-6'}`}>
       {/* Header */}
-      <div className={`flex items-center justify-between ${viewMode === 'kanban' ? 'mb-6' : ''}`}>
-        <div>
-          <h1 className="text-2xl font-bold text-slate-100">Rozmowy kwalifikacyjne</h1>
-          <p className="text-slate-400 mt-1">Śledź swoje rozmowy i wyciągaj wnioski</p>
-        </div>
-        <div className="flex items-center gap-3">
-          {/* Przełącznik widoku */}
-          <div className="flex bg-dark-700">
-            <button
-              onClick={() => setViewMode('list')}
-              className={`p-2 cursor-pointer ${viewMode === 'list' ? 'bg-primary-500 text-slate-900' : 'text-slate-400 hover:text-slate-100'}`}
-              title="Widok listy"
-            >
-              <List className="w-5 h-5" />
-            </button>
-            <button
-              onClick={() => setViewMode('kanban')}
-              className={`p-2 cursor-pointer ${viewMode === 'kanban' ? 'bg-primary-500 text-slate-900' : 'text-slate-400 hover:text-slate-100'}`}
-              title="Widok Kanban"
-            >
-              <LayoutGrid className="w-5 h-5" />
-            </button>
-          </div>
-          <Button onClick={() => openModal()} disabled={state.applications.length === 0}>
-            <Plus className="w-4 h-4 mr-2" />
-            Nowa rozmowa
-          </Button>
-        </div>
+      <div className={viewMode === 'kanban' ? 'mb-6' : ''}>
+        <PageHeader
+          icon={MessageSquare}
+          title="Rozmowy kwalifikacyjne"
+          description="Śledź swoje rozmowy i wyciągaj wnioski"
+          actions={
+            <>
+              <div className="flex bg-dark-700">
+                <button
+                  onClick={() => setViewMode('list')}
+                  className={`p-2 cursor-pointer ${viewMode === 'list' ? 'bg-primary-500 text-slate-900' : 'text-slate-400 hover:text-slate-100'}`}
+                  title="Widok listy"
+                >
+                  <List className="w-5 h-5" />
+                </button>
+                <button
+                  onClick={() => setViewMode('kanban')}
+                  className={`p-2 cursor-pointer ${viewMode === 'kanban' ? 'bg-primary-500 text-slate-900' : 'text-slate-400 hover:text-slate-100'}`}
+                  title="Widok Kanban"
+                >
+                  <LayoutGrid className="w-5 h-5" />
+                </button>
+              </div>
+              <Button onClick={() => openModal()} disabled={state.applications.length === 0}>
+                <Plus className="w-4 h-4 mr-2" />
+                Nowa rozmowa
+              </Button>
+            </>
+          }
+        />
       </div>
 
       {state.applications.length === 0 && (
@@ -697,6 +704,7 @@ export function InterviewsPage() {
           </div>
         </form>
       </Modal>
+      <ConfirmDialog />
     </div>
   );
 }
