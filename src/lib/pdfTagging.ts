@@ -35,7 +35,9 @@ async function decompressFlate(data: Uint8Array): Promise<Uint8Array> {
     throw new Error('DecompressionStream not available');
   }
   const ds = new DecompressionStream('deflate');
-  const blob = new Blob([data.buffer as ArrayBuffer]);
+  // Slice to exact byte range — data.buffer may be a larger underlying buffer
+  const plainBuffer = data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength) as ArrayBuffer;
+  const blob = new Blob([plainBuffer]);
   const decompressed = blob.stream().pipeThrough(ds);
   const reader = decompressed.getReader();
 

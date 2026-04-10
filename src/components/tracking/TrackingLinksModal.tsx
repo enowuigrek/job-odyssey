@@ -255,8 +255,14 @@ export function TrackingLinksModal({ isOpen, onClose, application, onFirstClick 
         }));
       }
 
-      // Podmień linki w PDF (adnotacje + overlay na tekście)
-      const { pdf: taggedPdf, replacedCount } = await tagPdfLinks(pdfBytes.slice(0), mappings);
+      // Podmień linki w PDF (adnotacje + overlay na tekście) — max 30s
+      const timeoutPromise = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('TIMEOUT')), 30_000)
+      );
+      const { pdf: taggedPdf, replacedCount } = await Promise.race([
+        tagPdfLinks(pdfBytes.slice(0), mappings),
+        timeoutPromise,
+      ]);
 
       if (replacedCount === 0) {
         setPdfError(`Nie znaleziono pasujących URL-i w PDF. Znalezione adnotacje: ${foundInPdf.length > 0 ? foundInPdf.join(', ') : 'brak'}. Sprawdź czy URL w "Moje linki" zgadza się z tym w CV (F12 → Console).`);
@@ -277,7 +283,11 @@ export function TrackingLinksModal({ isOpen, onClose, application, onFirstClick 
       URL.revokeObjectURL(downloadUrl);
     } catch (err) {
       console.error('PDF generation error:', err);
-      setPdfError('Błąd przy generowaniu PDF. Sprawdź czy plik CV jest poprawnym PDF.');
+      if (err instanceof Error && err.message === 'TIMEOUT') {
+        setPdfError('Generowanie trwało zbyt długo. PDF może być zbyt duży lub uszkodzony.');
+      } else {
+        setPdfError('Błąd przy generowaniu PDF. Sprawdź czy plik CV jest poprawnym PDF.');
+      }
     } finally {
       setIsGeneratingPdf(false);
     }

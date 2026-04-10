@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
   Plus,
+  Filter,
   Calendar,
   Clock,
   Trash2,
@@ -58,6 +59,7 @@ export function InterviewsPage() {
   const [draggedInterview, setDraggedInterview] = useState<Interview | null>(null);
   const [dragOverStatus, setDragOverStatus] = useState<InterviewStatus | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [filtersOpen, setFiltersOpen] = useState(false);
 
   const toggleExpand = (id: string) => {
     setExpandedId(expandedId === id ? null : id);
@@ -483,8 +485,8 @@ export function InterviewsPage() {
                 </button>
               </div>
               <Button onClick={() => openModal()} disabled={state.applications.length === 0}>
-                <Plus className="w-4 h-4 mr-2" />
-                Nowa rozmowa
+                <Plus className="w-4 h-4 sm:mr-2" />
+                <span className="hidden sm:inline">Nowa rozmowa</span>
               </Button>
             </>
           }
@@ -498,7 +500,7 @@ export function InterviewsPage() {
       )}
 
       {/* Filters */}
-      <div className={`space-y-3 ${viewMode === 'kanban' ? 'mb-4' : ''}`}>
+      <div className={`space-y-2 ${viewMode === 'kanban' ? 'mb-4' : ''}`}>
         <input
           type="text"
           placeholder="Szukaj po firmie lub stanowisku..."
@@ -506,7 +508,51 @@ export function InterviewsPage() {
           onChange={(e) => setSearchQuery(e.target.value)}
           className="w-full px-4 py-2 bg-dark-700 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-primary-500"
         />
-        <div className="flex flex-wrap gap-2">
+
+        {/* Mobile: toggle button */}
+        <div className="sm:hidden">
+          <button
+            onClick={() => setFiltersOpen(v => !v)}
+            className="flex items-center gap-2 px-3 py-1.5 text-xs bg-dark-700 text-slate-300 cursor-pointer"
+          >
+            <Filter className="w-3.5 h-3.5" />
+            Filtruj
+            {statusFilters.length > 0 && (
+              <span className="bg-primary-500 text-slate-900 text-[10px] font-bold px-1.5 py-0.5">
+                {statusFilters.length}
+              </span>
+            )}
+            <ChevronDown className={`w-3.5 h-3.5 transition-transform ${filtersOpen ? 'rotate-180' : ''}`} />
+          </button>
+          {filtersOpen && (
+            <div className="mt-2 flex flex-wrap gap-2 p-3 bg-dark-800 border border-dark-600">
+              {statusOptions.map((opt) => (
+                <button
+                  key={opt.value}
+                  onClick={() => toggleStatusFilter(opt.value as InterviewStatus)}
+                  className={`px-3 py-1 text-xs transition-colors cursor-pointer ${
+                    statusFilters.includes(opt.value as InterviewStatus)
+                      ? 'bg-primary-500 text-slate-900'
+                      : 'bg-dark-700 text-slate-400'
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+              {statusFilters.length > 0 && (
+                <button
+                  onClick={() => { setStatusFilters([]); setFiltersOpen(false); }}
+                  className="px-3 py-1 text-xs text-slate-500 cursor-pointer"
+                >
+                  Wyczyść
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Desktop: chips inline */}
+        <div className="hidden sm:flex flex-wrap gap-2">
           {statusOptions.map((opt) => (
             <button
               key={opt.value}
@@ -564,12 +610,12 @@ export function InterviewsPage() {
 
       {/* Widok Kanban - rozciąga się na całą pozostałą wysokość */}
       {viewMode === 'kanban' && (
-        <div className="flex-1 overflow-x-auto overflow-y-hidden kanban-scroll -mx-8 px-8 -mb-10">
-          <div className="flex gap-4 h-full pb-4" style={{ minWidth: 'max-content' }}>
+        <div className="flex-1 overflow-x-auto overflow-y-hidden kanban-scroll -mx-4 px-4 md:-mx-8 md:px-8 -mb-10">
+          <div className="flex gap-3 h-full pb-4" style={{ minWidth: 'max-content' }}>
             {kanbanColumns.map((status) => (
               <div
                 key={status}
-                className="w-80 flex-shrink-0 flex flex-col h-full"
+                className="w-72 md:w-80 flex-shrink-0 flex flex-col h-full"
                 onDragOver={(e) => handleDragOver(e, status)}
                 onDragLeave={handleDragLeave}
                 onDrop={(e) => handleDrop(e, status)}
@@ -624,7 +670,7 @@ export function InterviewsPage() {
             required
           />
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Select
               label="Status"
               options={statusOptions}
@@ -647,7 +693,7 @@ export function InterviewsPage() {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Input
               label="Data *"
               type="date"
