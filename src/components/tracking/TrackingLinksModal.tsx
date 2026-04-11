@@ -1,19 +1,15 @@
 import { useState, useEffect } from 'react';
-import { Link, ExternalLink, Copy, Check, Plus, Trash2, MousePointerClick, Clock, FileDown } from 'lucide-react';
+import { Link, ExternalLink, Copy, Check, Plus, Trash2, MousePointerClick, Clock } from 'lucide-react';
 import { Modal, Button, Badge, CountBadge } from '../ui';
 import { useAuth } from '../../contexts/AuthContext';
-import { useApp } from '../../contexts/AppContext';
 import { useUserLinks } from '../../hooks/useUserLinks';
 import {
   createTrackingLinks,
   getTrackingLinksForApplication,
   getClicksForApplication,
-  getCVFileUrl,
   TrackingLink,
   TrackingClick,
 } from '../../lib/db';
-import { replacePlaceholderLinks, PlaceholderReplacement, extractPdfLinks, buildTrackUrl } from '../../lib/pdfTagging';
-import { getPlaceholderUrl } from '../../lib/placeholders';
 import { JobApplication } from '../../types';
 import { format, parseISO } from 'date-fns';
 import { pl } from 'date-fns/locale';
@@ -46,13 +42,10 @@ interface Props {
 
 export function TrackingLinksModal({ isOpen, onClose, application, onFirstClick }: Props) {
   const { user } = useAuth();
-  const { getCVById } = useApp();
   const { links: userLinks } = useUserLinks();
   const [existingLinks, setExistingLinks] = useState<TrackingLink[]>([]);
   const [clicks, setClicks] = useState<TrackingClick[]>([]);
   const [linkInputs, setLinkInputs] = useState<LinkInput[]>([]);
-  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
-  const [pdfError, setPdfError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -177,91 +170,6 @@ export function TrackingLinksModal({ isOpen, onClose, application, onFirstClick 
     await navigator.clipboard.writeText(text);
   };
 
-  const handleGeneratePdf = async () => {
-    if (existingLinks.length === 0) return;
-    setPdfError(null);
-
-    // Sprawdź czy aplikacja ma przypisane CV z plikiem
-    const cv = application.cvId ? getCVById(application.cvId) : undefined;
-    if (!cv?.fileName) {
-      setPdfError('Brak pliku CV przypisanego do tej aplikacji. Przypisz CV z plikiem PDF w edycji aplikacji.');
-      return;
-    }
-
-    const ext = cv.fileName.split('.').pop()?.toLowerCase();
-    if (ext !== 'pdf') {
-      setPdfError('Generator obsługuje tylko pliki PDF.');
-      return;
-    }
-
-    setIsGeneratingPdf(true);
-    try {
-      const url = await getCVFileUrl(cv.fileName);
-      if (!url) {
-        setPdfError('Nie udało się pobrać pliku CV.');
-        return;
-      }
-
-      const response = await fetch(url);
-      const pdfBytes = new Uint8Array(await response.arrayBuffer());
-
-      // Buduj mapowania: placeholder URL → tracked URL
-      // Każdy tracking link ma label (np. "LinkedIn") → placeholder = jo.placeholder/linkedin
-      const replacements: PlaceholderReplacement[] = existingLinks.map(link => ({
-        placeholder: getPlaceholderUrl(link.label),
-        trackedUrl: trackUrl(link.token),
-      }));
-
-      console.log('Placeholder replacements:', replacements);
-
-      // Diagnostyka — jakie linki są w PDF?
-      const foundInPdf = await extractPdfLinks(pdfBytes.slice(0));
-      console.log('Adnotacje znalezione w PDF:', foundInPdf);
-
-      // Podmień placeholdery w PDF (adnotacje + fallback na tekst) — max 15s
-      const timeout = new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error('TIMEOUT')), 15_000)
-      );
-      const { pdf: taggedPdf, replacedCount } = await Promise.race([
-        replacePlaceholderLinks(pdfBytes, replacements),
-        timeout,
-      ]);
-
-      if (replacedCount === 0) {
-        const placeholderList = replacements.map(r => r.placeholder).join(', ');
-        setPdfError(
-          `Nie znaleziono placeholderów w PDF.\n\n` +
-          `Szukane: ${placeholderList}\n` +
-          `Znalezione w PDF: ${foundInPdf.length > 0 ? foundInPdf.join(', ') : 'brak'}\n\n` +
-          `Wklej placeholder URL z „Moje linki" do swojego CV jako tekst (np. LinkedIn: https://jo.placeholder/linkedin), potem prześlij PDF ponownie.`
-        );
-        return;
-      }
-
-      console.log(`✅ Podmieniono ${replacedCount} placeholderów w PDF`);
-
-      const pdfBuffer = (taggedPdf.buffer as ArrayBuffer).slice(taggedPdf.byteOffset, taggedPdf.byteOffset + taggedPdf.byteLength);
-      const blob = new Blob([pdfBuffer], { type: 'application/pdf' });
-      const downloadUrl = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = downloadUrl;
-      a.download = `CV_${application.companyName.replace(/[^a-zA-Z0-9]/g, '_')}_tracked.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(downloadUrl);
-    } catch (err) {
-      console.error('PDF generation error:', err);
-      if (err instanceof Error && err.message === 'TIMEOUT') {
-        setPdfError('Generowanie trwało zbyt długo (>15s). Spróbuj ponownie lub użyj mniejszego PDF.');
-      } else {
-        setPdfError('Błąd przy generowaniu PDF. Sprawdź czy plik CV jest poprawnym PDF.');
-      }
-    } finally {
-      setIsGeneratingPdf(false);
-    }
-  };
-
   // Mapa token → liczba klików
   const clicksByToken = clicks.reduce<Record<string, TrackingClick[]>>((acc, click) => {
     if (!acc[click.token]) acc[click.token] = [];
@@ -318,28 +226,14 @@ export function TrackingLinksModal({ isOpen, onClose, application, onFirstClick 
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <p className="text-sm font-medium text-slate-300">Wygenerowane URL-e do CV</p>
-                    <div className="flex items-center gap-3">
-                      <button
-                        onClick={handleGeneratePdf}
-                        disabled={isGeneratingPdf}
-                        className="text-xs text-green-400 hover:text-green-300 flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
-                        title="Pobierz PDF z podmienionymi linkami"
-                      >
-                        <FileDown className="w-3 h-3" />
-                        {isGeneratingPdf ? 'Generuję...' : 'Pobierz PDF'}
-                      </button>
-                      <button
-                        onClick={copyAllLinks}
-                        className="text-xs text-primary-400 hover:text-primary-300 flex items-center gap-1"
-                      >
-                        <Copy className="w-3 h-3" />
-                        Kopiuj wszystkie
-                      </button>
-                    </div>
+                    <button
+                      onClick={copyAllLinks}
+                      className="text-xs text-primary-400 hover:text-primary-300 flex items-center gap-1"
+                    >
+                      <Copy className="w-3 h-3" />
+                      Kopiuj wszystkie
+                    </button>
                   </div>
-                  {pdfError && (
-                    <p className="text-xs text-danger-400 bg-danger-500/10 px-3 py-2">{pdfError}</p>
-                  )}
                   {existingLinks.map(link => {
                     const linkClicks = clicksByToken[link.token] ?? [];
                     return (

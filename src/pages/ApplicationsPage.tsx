@@ -16,11 +16,21 @@ import {
   GripVertical,
   MessageSquare,
   MousePointerClick,
+  FileDown,
   Linkedin,
   Globe,
 } from 'lucide-react';
 import { useApp } from '../contexts/AppContext';
+import { useAuth } from '../contexts/AuthContext';
 import { TrackingLinksModal } from '../components/tracking/TrackingLinksModal';
+import { useUserLinks } from '../hooks/useUserLinks';
+import {
+  createTrackingLinks,
+  getTrackingLinksForApplication,
+  getCVFileUrl,
+} from '../lib/db';
+import { replacePlaceholderLinks, PlaceholderReplacement } from '../lib/pdfTagging';
+import { getPlaceholderUrl } from '../lib/placeholders';
 import {
   Button,
   Input,
@@ -115,8 +125,13 @@ function SourceIcon({ url, className = 'w-4 h-4' }: { url?: string; className?: 
   }
 }
 
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
+const TRACK_BASE = `${SUPABASE_URL}/functions/v1/track`;
+
 export function ApplicationsPage() {
   const { state, dispatch } = useApp();
+  const { user } = useAuth();
+  const { links: userLinks } = useUserLinks();
   const navigate = useNavigate();
   const location = useLocation();
   const [searchQuery, setSearchQuery] = useState('');
@@ -161,6 +176,85 @@ export function ApplicationsPage() {
     cvId: '' as string | undefined,
   });
   const [autoSource, setAutoSource] = useState('');
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
+  const [pdfError, setPdfError] = useState<string | null>(null);
+  const [pdfSuccess, setPdfSuccess] = useState(false);
+
+  /** Generuj otagowany PDF z poziomu formularza edycji */
+  const handleGeneratePdf = async () => {
+    if (!editingApplication || !user) return;
+    const cvId = formData.cvId || editingApplication.cvId;
+    const cv = cvId ? state.cvs.find(c => c.id === cvId) : undefined;
+    if (!cv?.fileName) {
+      setPdfError('Przypisz CV z plikiem PDF.');
+      return;
+    }
+    const ext = cv.fileName.split('.').pop()?.toLowerCase();
+    if (ext !== 'pdf') { setPdfError('Obsługiwane tylko pliki PDF.'); return; }
+
+    setPdfError(null);
+    setPdfSuccess(false);
+    setIsGeneratingPdf(true);
+
+    try {
+      // 1. Pobierz/utwórz tracking linki
+      let trackingLinks = await getTrackingLinksForApplication(editingApplication.id);
+      if (trackingLinks.length === 0 && userLinks.length > 0) {
+        const validLinks = userLinks.filter(l => l.url.trim());
+        if (validLinks.length > 0) {
+          trackingLinks = await createTrackingLinks(validLinks.map(l => ({
+            userId: user.id,
+            applicationId: editingApplication.id,
+            token: `${editingApplication.id.slice(0, 6)}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`,
+            label: l.label,
+            targetUrl: l.url.trim(),
+          })));
+        }
+      }
+      if (trackingLinks.length === 0) {
+        setPdfError('Brak linków do śledzenia. Dodaj linki w „Moje linki".');
+        return;
+      }
+
+      // 2. Pobierz PDF
+      const fileUrl = await getCVFileUrl(cv.fileName);
+      if (!fileUrl) { setPdfError('Nie udało się pobrać pliku CV.'); return; }
+      const response = await fetch(fileUrl);
+      const pdfBytes = new Uint8Array(await response.arrayBuffer());
+
+      // 3. Podmień placeholdery
+      const replacements: PlaceholderReplacement[] = trackingLinks.map(link => ({
+        placeholder: getPlaceholderUrl(link.label),
+        trackedUrl: `${TRACK_BASE}?t=${link.token}`,
+      }));
+
+      const { pdf: taggedPdf, replacedCount } = await replacePlaceholderLinks(pdfBytes, replacements);
+
+      if (replacedCount === 0) {
+        const placeholderList = replacements.map(r => r.placeholder).join(', ');
+        setPdfError(`Nie znaleziono placeholderów w PDF.\nSzukane: ${placeholderList}\nWklej placeholder URL z „Moje linki" do CV i prześlij PDF ponownie.`);
+        return;
+      }
+
+      // 4. Pobierz
+      const pdfBuffer = (taggedPdf.buffer as ArrayBuffer).slice(taggedPdf.byteOffset, taggedPdf.byteOffset + taggedPdf.byteLength);
+      const blob = new Blob([pdfBuffer], { type: 'application/pdf' });
+      const downloadUrl = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = downloadUrl;
+      a.download = `CV_${editingApplication.companyName.replace(/[^a-zA-Z0-9]/g, '_')}_tracked.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(downloadUrl);
+      setPdfSuccess(true);
+    } catch (err) {
+      console.error('PDF generation error:', err);
+      setPdfError('Błąd przy generowaniu PDF.');
+    } finally {
+      setIsGeneratingPdf(false);
+    }
+  };
 
   const filteredApplications = useMemo(() => {
     return state.applications
@@ -235,6 +329,8 @@ export function ApplicationsPage() {
       });
       setAutoSource('');
     }
+    setPdfError(null);
+    setPdfSuccess(false);
     setIsModalOpen(true);
   };
 
@@ -879,6 +975,33 @@ export function ApplicationsPage() {
             onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
             placeholder="Dodatkowe informacje..."
           />
+
+          {/* Generuj otagowane CV — tylko w trybie edycji */}
+          {editingApplication && formData.cvId && state.cvs.find(cv => cv.id === formData.cvId)?.fileName && (
+            <div className="space-y-2 pt-3 border-t border-dark-600">
+              <div className="flex items-center justify-between">
+                <label className="text-sm font-medium text-slate-300">Otagowane CV</label>
+                <button
+                  type="button"
+                  onClick={handleGeneratePdf}
+                  disabled={isGeneratingPdf}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-green-600 hover:bg-green-500 text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                >
+                  <FileDown className="w-3.5 h-3.5" />
+                  {isGeneratingPdf ? 'Generuję...' : 'Pobierz otagowane CV'}
+                </button>
+              </div>
+              {pdfError && (
+                <p className="text-xs text-danger-400 bg-danger-500/10 px-3 py-2 whitespace-pre-wrap">{pdfError}</p>
+              )}
+              {pdfSuccess && (
+                <p className="text-xs text-green-400 bg-green-500/10 px-3 py-2">PDF pobrany pomyślnie!</p>
+              )}
+              <p className="text-[11px] text-slate-500">
+                Podmienia placeholdery (jo.placeholder/...) na śledzone URL-e i pobiera PDF.
+              </p>
+            </div>
+          )}
 
           <div className="flex justify-end gap-3 pt-4 border-t border-dark-600">
             <Button type="button" variant="secondary" onClick={closeModal}>

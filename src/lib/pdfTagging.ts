@@ -431,130 +431,77 @@ interface UrlPosition {
 }
 
 /**
- * Yields control back to the browser to prevent main-thread freeze.
+ * Fast placeholder position finder — avoids full tokenization.
+ * Searches raw decompressed stream text for placeholder markers and extracts
+ * approximate positions from nearby PDF operators (Tm, Td, Tf).
+ * This is orders of magnitude faster than tokenize+extractTextSegments.
  */
-function yieldToMain(): Promise<void> {
-  return new Promise(resolve => setTimeout(resolve, 0));
-}
-
-/**
- * Quick check: does the raw stream text likely contain a placeholder URL?
- * Checks both literal and hex-encoded ASCII forms.
- */
-function streamMayContainPlaceholder(rawText: string, markers: string[]): boolean {
-  for (const marker of markers) {
-    // Literal check (most common — text in parentheses)
-    if (rawText.includes(marker)) return true;
-    // Hex-encoded ASCII check (for hex strings <...>)
-    const hexMarker = Array.from(marker).map(c => c.charCodeAt(0).toString(16).padStart(2, '0')).join('');
-    if (rawText.toLowerCase().includes(hexMarker)) return true;
-  }
-  return false;
-}
-
-/**
- * Finds text positions of URLs in a page's content streams.
- * Matches by normalizing both the text and the URL to find.
- */
-async function findUrlPositionsOnPage(
+async function findPlaceholderPositionsFast(
   page: PDFPage,
   ctx: ReturnType<PDFDocument['getPages']>[0]['doc']['context'],
   urlsToFind: string[]
 ): Promise<UrlPosition[]> {
   const results: UrlPosition[] = [];
   const streams = getPageStreams(page, ctx);
-
-  // Build short marker strings for quick pre-filter
-  const markers = ['jo.placeholder'];
+  const MARKER = 'jo.placeholder';
 
   for (const stream of streams) {
-    let text: string;
+    let rawText: string;
     try {
-      text = await readStreamText(stream);
+      rawText = await readStreamText(stream);
     } catch { continue; }
 
-    // ── Quick pre-filter: skip streams without placeholder markers ──
-    if (!streamMayContainPlaceholder(text, markers)) {
-      continue;
-    }
+    // Quick check — skip streams without placeholder marker
+    if (!rawText.includes(MARKER)) continue;
 
-    // Yield to main thread before heavy tokenization
-    await yieldToMain();
-
-    const segments = extractTextSegments(text);
-    if (segments.length === 0) continue;
-
-    // Build a concatenated "text line" map — consecutive segments on the same y-line
-    // so we can find URLs that span multiple TJ/Tj calls
-    const lines: { segments: TextSegment[]; fullText: string }[] = [];
-    let currentLine: TextSegment[] = [];
-    let lastY = -Infinity;
-
-    for (const seg of segments) {
-      if (Math.abs(seg.y - lastY) > 1) {
-        // New line
-        if (currentLine.length > 0) {
-          lines.push({ segments: currentLine, fullText: currentLine.map(s => s.text).join('') });
-        }
-        currentLine = [seg];
-        lastY = seg.y;
-      } else {
-        currentLine.push(seg);
-        lastY = seg.y;
-      }
-    }
-    if (currentLine.length > 0) {
-      lines.push({ segments: currentLine, fullText: currentLine.map(s => s.text).join('') });
-    }
-
-    // Search for each URL in the concatenated lines
     for (const urlToFind of urlsToFind) {
       if (results.some(r => normalizeUrl(r.url) === normalizeUrl(urlToFind))) continue;
 
-      const normUrl = normalizeUrl(urlToFind);
+      // Search for the marker in raw stream
+      const idx = rawText.indexOf(MARKER);
+      if (idx === -1) continue;
 
-      for (const line of lines) {
-        const normLine = normalizeUrl(line.fullText);
-        // Check if this line contains the URL (or the URL contains this line segment)
-        if (!normLine.includes(normUrl) && !normUrl.includes(normLine)) continue;
+      // Extract context before the match for position extraction (max 3000 chars)
+      const contextBefore = rawText.substring(Math.max(0, idx - 3000), idx);
 
-        // Find which segments contribute to the URL match
-        const firstSeg = line.segments[0];
-        const lastSeg = line.segments[line.segments.length - 1];
+      let x = 72, y = 700, fontSize = 10;
 
-        // Try to narrow down to the segments that actually contain the URL
-        let matchStart = firstSeg;
-        let matchEnd = lastSeg;
-        let accumulated = '';
-
-        for (const seg of line.segments) {
-          accumulated += seg.text;
-          const normAccum = normalizeUrl(accumulated);
-
-          if (!matchStart && normAccum.length > 0 && normUrl.startsWith(normAccum.substring(0, 5))) {
-            matchStart = seg;
-          }
-
-          if (normAccum.includes(normUrl) || (normUrl.length > 10 && normAccum.includes(normUrl.substring(0, normUrl.length - 2)))) {
-            matchEnd = seg;
-            break;
-          }
-        }
-
-        const urlX = matchStart.x;
-        const urlY = matchStart.y;
-        const urlWidth = (matchEnd.x + matchEnd.width) - matchStart.x;
-        const urlHeight = matchStart.fontSize;
-
-        results.push({
-          url: urlToFind,
-          x: urlX - 2, // small padding
-          y: urlY - 2,
-          width: Math.max(urlWidth + 4, normUrl.length * matchStart.fontSize * 0.52),
-          height: urlHeight + 4,
-        });
-        break;
+      // Find last text matrix "a b c d tx ty Tm"
+      const tmMatches = [...contextBefore.matchAll(/([-.\d]+)\s+([-.\d]+)\s+([-.\d]+)\s+([-.\d]+)\s+([-.\d]+)\s+([-.\d]+)\s+Tm/g)];
+      if (tmMatches.length > 0) {
+        const last = tmMatches[tmMatches.length - 1];
+        x = parseFloat(last[5]);
+        y = parseFloat(last[6]);
+        const matSize = Math.abs(parseFloat(last[4]));
+        if (matSize > 1) fontSize = matSize;
       }
+
+      // Apply Td offsets after last Tm
+      const lastTmEnd = tmMatches.length > 0
+        ? (tmMatches[tmMatches.length - 1].index! + tmMatches[tmMatches.length - 1][0].length)
+        : 0;
+      const afterTm = contextBefore.substring(lastTmEnd);
+      const tdMatches = [...afterTm.matchAll(/([-.\d]+)\s+([-.\d]+)\s+T[dD]/g)];
+      for (const td of tdMatches) {
+        x += parseFloat(td[1]);
+        y += parseFloat(td[2]);
+      }
+
+      // Find font size from "/<name> <size> Tf"
+      const tfMatches = [...contextBefore.matchAll(/\/\w+\s+([\d.]+)\s+Tf/g)];
+      if (tfMatches.length > 0) {
+        const sz = parseFloat(tfMatches[tfMatches.length - 1][1]);
+        if (sz > 0) fontSize = sz;
+      }
+
+      const urlWidth = urlToFind.length * fontSize * 0.5;
+      results.push({
+        url: urlToFind,
+        x: x - 2,
+        y: y - 2,
+        width: Math.max(urlWidth, 150) + 4,
+        height: fontSize + 4,
+      });
     }
   }
 
@@ -663,9 +610,8 @@ export async function tagPdfLinks(
     console.log('[tagPdfLinks] Brak adnotacji — szukam URL w tekście:', urlsToFind);
 
     for (let pi = 0; pi < pages.length; pi++) {
-      await yieldToMain();
       try {
-        const positions = await findUrlPositionsOnPage(pages[pi], ctx, urlsToFind);
+        const positions = await findPlaceholderPositionsFast(pages[pi], ctx, urlsToFind);
         if (positions.length > 0) {
           console.log(`[tagPdfLinks] Strona ${pi + 1}: znaleziono`, positions);
           replacedCount += addOverlayAnnotations(pdfDoc, pages[pi], positions, mappings);
@@ -850,10 +796,8 @@ export async function replacePlaceholderLinks(
     }));
 
     for (let pi = 0; pi < pages.length; pi++) {
-      // Yield between pages to prevent browser freeze
-      await yieldToMain();
       try {
-        const positions = await findUrlPositionsOnPage(pages[pi], ctx, placeholderUrls);
+        const positions = await findPlaceholderPositionsFast(pages[pi], ctx, placeholderUrls);
         if (positions.length > 0) {
           console.log(`[replacePlaceholderLinks] Strona ${pi + 1}: znaleziono`, positions);
           replacedCount += addOverlayAnnotations(pdfDoc, pages[pi], positions, mappings);
