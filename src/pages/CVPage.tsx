@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef } from 'react';
+import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { Plus, FileText, Star, Trash2, Edit, Tag, Upload, Download, FolderOpen } from 'lucide-react';
 
 import { useApp } from '../contexts/AppContext';
@@ -31,6 +31,16 @@ export function CVPage() {
   const [formError, setFormError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { confirm, ConfirmDialog } = useConfirm();
+
+  // Listen for FAB click from Layout
+  const openModalFab = useCallback(() => openModal(), []);
+  useEffect(() => {
+    const handler = (e: Event) => {
+      if ((e as CustomEvent).detail === '/cv') openModalFab();
+    };
+    window.addEventListener('fab-click', handler);
+    return () => window.removeEventListener('fab-click', handler);
+  }, [openModalFab]);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -251,7 +261,7 @@ export function CVPage() {
                 Otwórz folder
               </Button>
             )}
-            <Button onClick={() => openModal()}>
+            <Button onClick={() => openModal()} className="hidden md:flex">
               <Plus className="w-4 h-4 mr-2" />
               Nowe CV
             </Button>

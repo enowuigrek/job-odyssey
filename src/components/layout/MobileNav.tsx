@@ -1,12 +1,12 @@
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Briefcase, MessageSquare, FileText, Settings } from 'lucide-react';
+import { LayoutDashboard, Briefcase, MessageSquare, FileText, Link as LinkIcon } from 'lucide-react';
 
 const mobileNavItems = [
   { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
   { to: '/applications', icon: Briefcase, label: 'Aplikacje' },
   { to: '/interviews', icon: MessageSquare, label: 'Rozmowy' },
   { to: '/cv', icon: FileText, label: 'CV' },
-  { to: '/settings', icon: Settings, label: 'Więcej' },
+  { to: '/links', icon: LinkIcon, label: 'Linki' },
 ];
 
 export function MobileNav() {

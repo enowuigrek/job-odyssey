@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
   Plus,
@@ -91,6 +91,16 @@ export function InterviewsPage() {
       setSearchParams({});
     }
   }, [searchParams, state.applications, setSearchParams]);
+
+  // Listen for FAB click from Layout
+  const openModalFab = useCallback(() => { if (state.applications.length > 0) openModal(); }, [state.applications.length]);
+  useEffect(() => {
+    const handler = (e: Event) => {
+      if ((e as CustomEvent).detail === '/interviews') openModalFab();
+    };
+    window.addEventListener('fab-click', handler);
+    return () => window.removeEventListener('fab-click', handler);
+  }, [openModalFab]);
 
   const toggleStatusFilter = (status: InterviewStatus) => {
     setStatusFilters((prev) =>
@@ -459,7 +469,7 @@ export function InterviewsPage() {
   };
 
   return (
-    <div className={`${viewMode === 'kanban' ? 'flex flex-col h-full -m-8 -mt-10 p-8 pt-10' : 'space-y-6'}`}>
+    <div className={`${viewMode === 'kanban' ? 'flex flex-col h-full -mx-4 -mt-2 px-4 pt-2 md:-mx-8 md:-mt-10 md:px-8 md:pt-10' : 'space-y-6'}`}>
       {/* Header */}
       <div className={viewMode === 'kanban' ? 'mb-6' : ''}>
         <PageHeader
@@ -484,9 +494,9 @@ export function InterviewsPage() {
                   <LayoutGrid className="w-5 h-5" />
                 </button>
               </div>
-              <Button onClick={() => openModal()} disabled={state.applications.length === 0}>
-                <Plus className="w-4 h-4 sm:mr-2" />
-                <span className="hidden sm:inline">Nowa rozmowa</span>
+              <Button onClick={() => openModal()} disabled={state.applications.length === 0} className="hidden md:flex">
+                <Plus className="w-4 h-4 mr-2" />
+                Nowa rozmowa
               </Button>
             </>
           }
@@ -609,47 +619,54 @@ export function InterviewsPage() {
       )}
 
       {/* Widok Kanban - rozciąga się na całą pozostałą wysokość */}
-      {viewMode === 'kanban' && (
-        <div className="flex-1 overflow-x-auto overflow-y-hidden kanban-scroll -mx-4 px-4 md:-mx-8 md:px-8 -mb-10">
-          <div className="flex gap-3 h-full pb-4" style={{ minWidth: 'max-content' }}>
-            {kanbanColumns.map((status) => (
-              <div
-                key={status}
-                className="w-72 md:w-80 flex-shrink-0 flex flex-col h-full"
-                onDragOver={(e) => handleDragOver(e, status)}
-                onDragLeave={handleDragLeave}
-                onDrop={(e) => handleDrop(e, status)}
-              >
-                <div className="bg-dark-800 p-3 mb-2 flex items-center justify-between flex-shrink-0">
-                  <div className="flex items-center gap-2">
-                    <Badge variant={getInterviewStatusBadgeVariant(status)} size="sm">
-                      {getInterviewStatusLabel(status)}
-                    </Badge>
-                    <span className="text-xs text-slate-500">({interviewsByStatus[status].length})</span>
+      {viewMode === 'kanban' && (() => {
+        const hasFilters = statusFilters.length > 0 || searchQuery.length > 0;
+        const visibleColumns = hasFilters
+          ? kanbanColumns.filter(s => interviewsByStatus[s].length > 0)
+          : kanbanColumns;
+
+        return (
+          <div className="flex-1 overflow-x-auto overflow-y-hidden kanban-scroll -mx-4 px-4 md:-mx-8 md:px-8 -mb-10">
+            <div className="flex gap-3 h-full pb-4" style={{ minWidth: 'max-content' }}>
+              {visibleColumns.map((status) => (
+                <div
+                  key={status}
+                  className="w-[calc(100vw-2rem)] md:w-80 flex-shrink-0 flex flex-col h-full"
+                  onDragOver={(e) => handleDragOver(e, status)}
+                  onDragLeave={handleDragLeave}
+                  onDrop={(e) => handleDrop(e, status)}
+                >
+                  <div className="bg-dark-800 p-3 mb-2 flex items-center justify-between flex-shrink-0">
+                    <div className="flex items-center gap-2">
+                      <Badge variant={getInterviewStatusBadgeVariant(status)} size="sm">
+                        {getInterviewStatusLabel(status)}
+                      </Badge>
+                      <span className="text-xs text-slate-500">({interviewsByStatus[status].length})</span>
+                    </div>
+                  </div>
+                  <div
+                    className={`flex-1 overflow-y-auto kanban-scroll space-y-3 min-h-[200px] p-2 transition-colors ${
+                      dragOverStatus === status ? 'bg-primary-500/10 border-2 border-dashed border-primary-500/50' : 'border-2 border-transparent'
+                    }`}
+                  >
+                    {interviewsByStatus[status].length === 0 ? (
+                      <div className={`text-center py-8 text-slate-500 text-sm ${
+                        dragOverStatus !== status ? 'border-2 border-dashed border-dark-600' : ''
+                      }`}>
+                        {dragOverStatus === status ? 'Upuść tutaj' : 'Brak rozmów'}
+                      </div>
+                    ) : (
+                      interviewsByStatus[status].map((interview) => (
+                        <InterviewCard key={interview.id} interview={interview} compact draggable />
+                      ))
+                    )}
                   </div>
                 </div>
-                <div
-                  className={`flex-1 overflow-y-auto kanban-scroll space-y-3 min-h-[200px] p-2 transition-colors ${
-                    dragOverStatus === status ? 'bg-primary-500/10 border-2 border-dashed border-primary-500/50' : 'border-2 border-transparent'
-                  }`}
-                >
-                  {interviewsByStatus[status].length === 0 ? (
-                    <div className={`text-center py-8 text-slate-500 text-sm ${
-                      dragOverStatus !== status ? 'border-2 border-dashed border-dark-600' : ''
-                    }`}>
-                      {dragOverStatus === status ? 'Upuść tutaj' : 'Brak rozmów'}
-                    </div>
-                  ) : (
-                    interviewsByStatus[status].map((interview) => (
-                      <InterviewCard key={interview.id} interview={interview} compact draggable />
-                    ))
-                  )}
-                </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* Modal */}
       <Modal

@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useRef } from 'react';
+import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Plus,
@@ -159,6 +159,16 @@ export function ApplicationsPage() {
       navigate('/applications', { replace: true, state: {} });
     }
   }, [location.state, state.applications, navigate]);
+  // Listen for FAB click from Layout
+  const openModalCallback = useCallback(() => openModal(), []);
+  useEffect(() => {
+    const handler = (e: Event) => {
+      if ((e as CustomEvent).detail === '/applications') openModalCallback();
+    };
+    window.addEventListener('fab-click', handler);
+    return () => window.removeEventListener('fab-click', handler);
+  }, [openModalCallback]);
+
   const [interviewPromptApp, setInterviewPromptApp] = useState<JobApplication | null>(null);
   const [trackingApp, setTrackingApp] = useState<JobApplication | null>(null);
 
@@ -681,7 +691,7 @@ export function ApplicationsPage() {
   };
 
   return (
-    <div className={`${viewMode === 'kanban' ? 'flex flex-col h-full -m-8 -mt-10 p-8 pt-10' : 'space-y-6'}`}>
+    <div className={`${viewMode === 'kanban' ? 'flex flex-col h-full -mx-4 -mt-2 px-4 pt-2 md:-mx-8 md:-mt-10 md:px-8 md:pt-10' : 'space-y-6'}`}>
       {/* Header */}
       <div className={viewMode === 'kanban' ? 'mb-6' : ''}>
         <PageHeader
@@ -706,9 +716,9 @@ export function ApplicationsPage() {
                   <LayoutGrid className="w-5 h-5" />
                 </button>
               </div>
-              <Button onClick={() => openModal()}>
-                <Plus className="w-4 h-4 sm:mr-2" />
-                <span className="hidden sm:inline">Nowa aplikacja</span>
+              <Button onClick={() => openModal()} className="hidden md:flex">
+                <Plus className="w-4 h-4 mr-2" />
+                Nowa aplikacja
               </Button>
             </>
           }
@@ -825,47 +835,55 @@ export function ApplicationsPage() {
       )}
 
       {/* Widok Kanban - rozciąga się na całą pozostałą wysokość */}
-      {viewMode === 'kanban' && (
-        <div className="flex-1 overflow-x-auto overflow-y-hidden kanban-scroll -mx-4 px-4 md:-mx-8 md:px-8 -mb-10">
-          <div className="flex gap-3 h-full pb-4" style={{ minWidth: 'max-content' }}>
-            {kanbanColumns.map((status) => (
-              <div
-                key={status}
-                className="w-72 md:w-80 flex-shrink-0 flex flex-col h-full"
-                onDragOver={(e) => handleDragOver(e, status)}
-                onDragLeave={handleDragLeave}
-                onDrop={(e) => handleDrop(e, status)}
-              >
-                <div className="bg-dark-800 p-3 mb-2 flex items-center justify-between flex-shrink-0">
-                  <div className="flex items-center gap-2">
-                    <Badge variant={getStatusBadgeVariant(status)} size="sm">
-                      {getStatusLabel(status)}
-                    </Badge>
-                    <span className="text-xs text-slate-500">({applicationsByStatus[status].length})</span>
+      {viewMode === 'kanban' && (() => {
+        // When filters active, hide empty columns
+        const hasFilters = statusFilters.length > 0 || searchQuery.length > 0;
+        const visibleColumns = hasFilters
+          ? kanbanColumns.filter(s => applicationsByStatus[s].length > 0)
+          : kanbanColumns;
+
+        return (
+          <div className="flex-1 overflow-x-auto overflow-y-hidden kanban-scroll -mx-4 px-4 md:-mx-8 md:px-8 -mb-10">
+            <div className="flex gap-3 h-full pb-4" style={{ minWidth: 'max-content' }}>
+              {visibleColumns.map((status) => (
+                <div
+                  key={status}
+                  className="w-[calc(100vw-2rem)] md:w-80 flex-shrink-0 flex flex-col h-full"
+                  onDragOver={(e) => handleDragOver(e, status)}
+                  onDragLeave={handleDragLeave}
+                  onDrop={(e) => handleDrop(e, status)}
+                >
+                  <div className="bg-dark-800 p-3 mb-2 flex items-center justify-between flex-shrink-0">
+                    <div className="flex items-center gap-2">
+                      <Badge variant={getStatusBadgeVariant(status)} size="sm">
+                        {getStatusLabel(status)}
+                      </Badge>
+                      <span className="text-xs text-slate-500">({applicationsByStatus[status].length})</span>
+                    </div>
+                  </div>
+                  <div
+                    className={`flex-1 overflow-y-auto kanban-scroll space-y-3 min-h-[200px] p-2 transition-colors ${
+                      dragOverStatus === status ? 'bg-primary-500/10 border-2 border-dashed border-primary-500/50' : 'border-2 border-transparent'
+                    }`}
+                  >
+                    {applicationsByStatus[status].length === 0 ? (
+                      <div className={`text-center py-8 text-slate-500 text-sm ${
+                        dragOverStatus !== status ? 'border-2 border-dashed border-dark-600' : ''
+                      }`}>
+                        {dragOverStatus === status ? 'Upuść tutaj' : 'Brak aplikacji'}
+                      </div>
+                    ) : (
+                      applicationsByStatus[status].map((app) => (
+                        <ApplicationCard key={app.id} app={app} compact draggable />
+                      ))
+                    )}
                   </div>
                 </div>
-                <div
-                  className={`flex-1 overflow-y-auto kanban-scroll space-y-3 min-h-[200px] p-2 transition-colors ${
-                    dragOverStatus === status ? 'bg-primary-500/10 border-2 border-dashed border-primary-500/50' : 'border-2 border-transparent'
-                  }`}
-                >
-                  {applicationsByStatus[status].length === 0 ? (
-                    <div className={`text-center py-8 text-slate-500 text-sm ${
-                      dragOverStatus !== status ? 'border-2 border-dashed border-dark-600' : ''
-                    }`}>
-                      {dragOverStatus === status ? 'Upuść tutaj' : 'Brak aplikacji'}
-                    </div>
-                  ) : (
-                    applicationsByStatus[status].map((app) => (
-                      <ApplicationCard key={app.id} app={app} compact draggable />
-                    ))
-                  )}
-                </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* Modal */}
       <Modal
