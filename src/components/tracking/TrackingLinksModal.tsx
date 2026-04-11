@@ -234,7 +234,8 @@ export function TrackingLinksModal({ isOpen, onClose, application, onFirstClick 
 
       console.log(`✅ Podmieniono ${replacedCount} placeholderów w PDF`);
 
-      const blob = new Blob([taggedPdf.buffer.slice(taggedPdf.byteOffset, taggedPdf.byteOffset + taggedPdf.byteLength)], { type: 'application/pdf' });
+      const pdfBuffer = (taggedPdf.buffer as ArrayBuffer).slice(taggedPdf.byteOffset, taggedPdf.byteOffset + taggedPdf.byteLength);
+      const blob = new Blob([pdfBuffer], { type: 'application/pdf' });
       const downloadUrl = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = downloadUrl;

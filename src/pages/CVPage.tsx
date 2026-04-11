@@ -20,7 +20,7 @@ import { format, parseISO } from 'date-fns';
 import { pl } from 'date-fns/locale';
 import { openDataFolder } from '../utils/storage';
 import { uploadCVFile, getCVFileUrl, deleteCVFileFromStorage } from '../lib/db';
-import { extractTextUrls, extractPdfLinks } from '../lib/pdfTagging';
+import { extractPdfLinks } from '../lib/pdfTagging';
 import { useCVLinkMappings, CvLinkMapping } from '../hooks/useCVLinkMappings';
 import { useUserLinks } from '../hooks/useUserLinks';
 import { CvLinkDetectionModal } from '../components/cv/CvLinkDetectionModal';
@@ -189,11 +189,8 @@ export function CVPage() {
         if (signedUrl) {
           const response = await fetch(signedUrl);
           const pdfBytes = await response.arrayBuffer();
-          const [textUrls, annotUrls] = await Promise.all([
-            extractTextUrls(pdfBytes),
-            extractPdfLinks(pdfBytes),
-          ]);
-          const combined = [...new Set([...textUrls, ...annotUrls])];
+          // Szybki skan adnotacji (bez wolnego text extraction)
+          const combined = await extractPdfLinks(pdfBytes);
 
           // Generuj tymczasowe ID dla nowego CV (zostanie nadpisane przez dispatch)
           const tempId = crypto.randomUUID();
