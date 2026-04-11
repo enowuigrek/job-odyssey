@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef, useEffect } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { Plus, FileText, Star, Trash2, Edit, Tag, Upload, Download, FolderOpen } from 'lucide-react';
 
 import { useApp } from '../contexts/AppContext';
@@ -20,14 +20,9 @@ import { format, parseISO } from 'date-fns';
 import { pl } from 'date-fns/locale';
 import { openDataFolder } from '../utils/storage';
 import { uploadCVFile, getCVFileUrl, deleteCVFileFromStorage } from '../lib/db';
-import { extractPdfLinks } from '../lib/pdfTagging';
-import { useCVLinkMappings, CvLinkMapping } from '../hooks/useCVLinkMappings';
-import { useUserLinks } from '../hooks/useUserLinks';
-import { CvLinkDetectionModal } from '../components/cv/CvLinkDetectionModal';
 export function CVPage() {
   const { state, dispatch, isElectronApp } = useApp();
   const { user } = useAuth();
-  const { links: userLinks } = useUserLinks();
   const [searchQuery, setSearchQuery] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCV, setEditingCV] = useState<CV | null>(null);
@@ -36,34 +31,6 @@ export function CVPage() {
   const [formError, setFormError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { confirm, ConfirmDialog } = useConfirm();
-
-  // Link detection flow
-  const [showLinkDetection, setShowLinkDetection] = useState(false);
-  const [detectedUrls, setDetectedUrls] = useState<string[]>([]);
-  const [pendingCvId, setPendingCvId] = useState<string | undefined>(undefined);
-  const [pendingCvData, setPendingCvData] = useState<{
-    cvData: Omit<CV, 'id' | 'createdAt' | 'updatedAt'>;
-    isEditing: boolean;
-    editingCVSnapshot: CV | null;
-  } | null>(null);
-
-  // Hook used for type-safe access — direct localStorage writes happen in finalize handler
-  useCVLinkMappings(pendingCvId);
-
-  // Ref to store pending mappings that need to be saved after CV is added to state
-  const pendingMappingSave = useRef<{ fileName: string; mappings: CvLinkMapping[] } | null>(null);
-
-  // Effect: save mappings once the CV appears in state (fixes stale closure in setTimeout)
-  useEffect(() => {
-    if (!pendingMappingSave.current) return;
-    const { fileName, mappings } = pendingMappingSave.current;
-    const addedCv = state.cvs.find(cv => cv.fileName === fileName);
-    if (addedCv) {
-      const key = `cv-link-mappings-${addedCv.id}`;
-      localStorage.setItem(key, JSON.stringify(mappings));
-      pendingMappingSave.current = null;
-    }
-  }, [state.cvs]);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -181,32 +148,8 @@ export function CVPage() {
       fileName,
     };
 
-    // Jeśli to nowe CV z plikiem PDF — uruchom wykrywanie linków
-    const isPdf = fileName?.toLowerCase().endsWith('.pdf');
-    if (!editingCV && fileName && isPdf && user) {
-      try {
-        const signedUrl = await getCVFileUrl(fileName);
-        if (signedUrl) {
-          const response = await fetch(signedUrl);
-          const pdfBytes = await response.arrayBuffer();
-          // Szybki skan adnotacji (bez wolnego text extraction)
-          const combined = await extractPdfLinks(pdfBytes);
-
-          // Generuj tymczasowe ID dla nowego CV (zostanie nadpisane przez dispatch)
-          const tempId = crypto.randomUUID();
-          newCvId = tempId;
-          setPendingCvId(tempId);
-          setPendingCvData({ cvData, isEditing: false, editingCVSnapshot: null });
-          setDetectedUrls(combined);
-          setShowLinkDetection(true);
-          setIsUploading(false);
-          closeModal();
-          return;
-        }
-      } catch (err) {
-        console.warn('Link detection failed, continuing without it:', err);
-      }
-    }
+    // Placeholder approach — nie potrzeba wykrywania linków przy uploadzie.
+    // Użytkownik wstawia placeholder URL-e ręcznie w CV.
 
     if (editingCV) {
       dispatch({ type: 'UPDATE_CV', payload: { ...editingCV, ...cvData } });
@@ -224,48 +167,6 @@ export function CVPage() {
 
     closeModal();
     setIsUploading(false);
-  };
-
-  const finalizeCvSave = (_mappings?: CvLinkMapping[]) => {
-    if (!pendingCvData) return;
-    const { cvData, isEditing, editingCVSnapshot } = pendingCvData;
-
-    if (isEditing && editingCVSnapshot) {
-      dispatch({ type: 'UPDATE_CV', payload: { ...editingCVSnapshot, ...cvData } });
-    } else {
-      dispatch({ type: 'ADD_CV', payload: cvData });
-    }
-
-    if (cvData.isDefault) {
-      state.cvs.forEach((cv) => {
-        if (cv.isDefault) {
-          dispatch({ type: 'UPDATE_CV', payload: { ...cv, isDefault: false } });
-        }
-      });
-    }
-
-    setPendingCvData(null);
-    setDetectedUrls([]);
-    setShowLinkDetection(false);
-  };
-
-  const handleLinkDetectionSave = (mappings: CvLinkMapping[]) => {
-    if (pendingCvData && pendingCvId) {
-      // Zaplanuj zapis mapowań — useEffect zapisze je gdy CV pojawi się w state
-      if (mappings.length > 0 && pendingCvData.cvData.fileName) {
-        pendingMappingSave.current = {
-          fileName: pendingCvData.cvData.fileName,
-          mappings,
-        };
-      }
-      finalizeCvSave(mappings);
-    } else {
-      finalizeCvSave(mappings);
-    }
-  };
-
-  const handleLinkDetectionClose = () => {
-    finalizeCvSave();
   };
 
   const handleDelete = async (id: string) => {
@@ -487,16 +388,6 @@ export function CVPage() {
         onChange={handleFileSelect}
         accept=".pdf,.doc,.docx"
         className="hidden"
-      />
-
-      {/* Link detection modal */}
-      <CvLinkDetectionModal
-        isOpen={showLinkDetection}
-        onClose={handleLinkDetectionClose}
-        onSave={handleLinkDetectionSave}
-        detectedUrls={detectedUrls}
-        userLinks={userLinks}
-        cvName={pendingCvData?.cvData.name ?? ''}
       />
 
       {/* Modal */}

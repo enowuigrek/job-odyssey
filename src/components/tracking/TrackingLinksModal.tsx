@@ -218,16 +218,22 @@ export function TrackingLinksModal({ isOpen, onClose, application, onFirstClick 
       const foundInPdf = await extractPdfLinks(pdfBytes.slice(0));
       console.log('Adnotacje znalezione w PDF:', foundInPdf);
 
-      // Podmień placeholdery w adnotacjach PDF
-      const { pdf: taggedPdf, replacedCount } = await replacePlaceholderLinks(pdfBytes, replacements);
+      // Podmień placeholdery w PDF (adnotacje + fallback na tekst) — max 15s
+      const timeout = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('TIMEOUT')), 15_000)
+      );
+      const { pdf: taggedPdf, replacedCount } = await Promise.race([
+        replacePlaceholderLinks(pdfBytes, replacements),
+        timeout,
+      ]);
 
       if (replacedCount === 0) {
         const placeholderList = replacements.map(r => r.placeholder).join(', ');
         setPdfError(
           `Nie znaleziono placeholderów w PDF.\n\n` +
           `Szukane: ${placeholderList}\n` +
-          `Znalezione adnotacje: ${foundInPdf.length > 0 ? foundInPdf.join(', ') : 'brak'}\n\n` +
-          `Wstaw placeholder URL-e z „Moje linki" jako hiperlinki w swoim CV (Canva, Word), potem prześlij PDF ponownie.`
+          `Znalezione w PDF: ${foundInPdf.length > 0 ? foundInPdf.join(', ') : 'brak'}\n\n` +
+          `Wklej placeholder URL z „Moje linki" do swojego CV jako tekst (np. LinkedIn: https://jo.placeholder/linkedin), potem prześlij PDF ponownie.`
         );
         return;
       }
@@ -246,7 +252,11 @@ export function TrackingLinksModal({ isOpen, onClose, application, onFirstClick 
       URL.revokeObjectURL(downloadUrl);
     } catch (err) {
       console.error('PDF generation error:', err);
-      setPdfError('Błąd przy generowaniu PDF. Sprawdź czy plik CV jest poprawnym PDF.');
+      if (err instanceof Error && err.message === 'TIMEOUT') {
+        setPdfError('Generowanie trwało zbyt długo (>15s). Spróbuj ponownie lub użyj mniejszego PDF.');
+      } else {
+        setPdfError('Błąd przy generowaniu PDF. Sprawdź czy plik CV jest poprawnym PDF.');
+      }
     } finally {
       setIsGeneratingPdf(false);
     }

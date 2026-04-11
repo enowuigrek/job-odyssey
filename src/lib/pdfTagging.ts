@@ -749,9 +749,11 @@ export interface PlaceholderReplacement {
 }
 
 /**
- * Podmienia placeholder URL-e w adnotacjach PDF.
- * Szuka DOKŁADNIE placeholderów (z/bez trailing slash) w adnotacjach /Link /URI.
- * Nie skanuje tekstu — działa natychmiastowo i niezawodnie.
+ * Podmienia placeholder URL-e w PDF.
+ *
+ * Krok 1: szuka placeholderów w adnotacjach /Link /URI (gdy user zrobił hyperlink).
+ * Krok 2 (fallback): szuka placeholderów w tekście PDF i dodaje klikalną adnotację
+ *         nakładkę — działa gdy user wkleił placeholder jako zwykły tekst.
  */
 export async function replacePlaceholderLinks(
   pdfBytes: ArrayBuffer | Uint8Array,
@@ -764,6 +766,7 @@ export async function replacePlaceholderLinks(
 
   const normalize = (u: string) => u.replace(/\/+$/, '').toLowerCase();
 
+  // ── Krok 1: podmień istniejące adnotacje URI ──────────────────────────────
   for (const page of pages) {
     const annots = page.node.lookup(PDFName.of('Annots'));
     if (!(annots instanceof PDFArray)) continue;
@@ -796,6 +799,30 @@ export async function replacePlaceholderLinks(
       if (match) {
         actionDict.set(PDFName.of('URI'), PDFString.of(match.trackedUrl));
         replacedCount++;
+      }
+    }
+  }
+
+  // ── Krok 2 (fallback): szukaj placeholderów w tekście strony ──────────────
+  if (replacedCount === 0) {
+    const placeholderUrls = replacements.map(r => r.placeholder);
+    console.log('[replacePlaceholderLinks] Brak adnotacji, szukam w tekście:', placeholderUrls);
+
+    for (const page of pages) {
+      try {
+        const positions = await findUrlPositionsOnPage(page, ctx, placeholderUrls);
+        if (positions.length > 0) {
+          console.log('[replacePlaceholderLinks] Znaleziono pozycje tekstu:', positions);
+          // Map positions to LinkMapping format for addOverlayAnnotations
+          const mappings: LinkMapping[] = replacements.map(r => ({
+            originalUrl: r.placeholder,
+            trackedUrl: r.trackedUrl,
+            label: '',
+          }));
+          replacedCount += addOverlayAnnotations(pdfDoc, page, positions, mappings);
+        }
+      } catch (err) {
+        console.warn('[replacePlaceholderLinks] Błąd przy szukaniu tekstu:', err);
       }
     }
   }
