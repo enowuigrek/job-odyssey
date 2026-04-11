@@ -6,7 +6,6 @@ import {
   ChevronDown,
   Building2,
   Briefcase,
-  MapPin,
   Calendar,
   ExternalLink,
   Trash2,
@@ -17,6 +16,8 @@ import {
   GripVertical,
   MessageSquare,
   MousePointerClick,
+  Linkedin,
+  Globe,
 } from 'lucide-react';
 import { useApp } from '../contexts/AppContext';
 import { TrackingLinksModal } from '../components/tracking/TrackingLinksModal';
@@ -66,6 +67,54 @@ const kanbanColumns: ApplicationStatus[] = [
   'withdrawn',
 ];
 
+/** Auto-detect source from job URL domain */
+function detectSourceFromUrl(url: string): string {
+  if (!url) return '';
+  try {
+    const hostname = new URL(url).hostname.replace('www.', '');
+    const sources: Record<string, string> = {
+      'linkedin.com': 'LinkedIn',
+      'pracuj.pl': 'Pracuj.pl',
+      'indeed.com': 'Indeed',
+      'nofluffjobs.com': 'No Fluff Jobs',
+      'justjoin.it': 'Just Join IT',
+      'bulldogjob.pl': 'Bulldogjob',
+      'theprotocol.it': 'The:Protocol',
+      'rocket-jobs.pl': 'Rocket Jobs',
+      'glassdoor.com': 'Glassdoor',
+      'olx.pl': 'OLX',
+    };
+    for (const [domain, name] of Object.entries(sources)) {
+      if (hostname.includes(domain)) return name;
+    }
+    return hostname;
+  } catch {
+    return '';
+  }
+}
+
+/** Source icon component */
+function SourceIcon({ url, className = 'w-4 h-4' }: { url?: string; className?: string }) {
+  if (!url) return null;
+  try {
+    const hostname = new URL(url).hostname.replace('www.', '');
+    if (hostname.includes('linkedin.com')) {
+      return <Linkedin className={`${className} text-[#0A66C2]`} />;
+    }
+    // For other sources, show a small favicon or globe
+    return (
+      <img
+        src={`https://www.google.com/s2/favicons?domain=${hostname}&sz=32`}
+        alt=""
+        className={className}
+        onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+      />
+    );
+  } catch {
+    return <Globe className={`${className} text-slate-500`} />;
+  }
+}
+
 export function ApplicationsPage() {
   const { state, dispatch } = useApp();
   const navigate = useNavigate();
@@ -111,6 +160,7 @@ export function ApplicationsPage() {
     source: '',
     cvId: '' as string | undefined,
   });
+  const [autoSource, setAutoSource] = useState('');
 
   const filteredApplications = useMemo(() => {
     return state.applications
@@ -183,6 +233,7 @@ export function ApplicationsPage() {
         source: '',
         cvId: defaultCv?.id || '',
       });
+      setAutoSource('');
     }
     setIsModalOpen(true);
   };
@@ -195,18 +246,24 @@ export function ApplicationsPage() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
+    // Auto-detect source from URL if not set manually
+    const finalData = {
+      ...formData,
+      source: formData.source || detectSourceFromUrl(formData.jobUrl),
+    };
+
     if (editingApplication) {
       dispatch({
         type: 'UPDATE_APPLICATION',
         payload: {
           ...editingApplication,
-          ...formData,
+          ...finalData,
         },
       });
     } else {
       dispatch({
         type: 'ADD_APPLICATION',
-        payload: formData,
+        payload: finalData,
       });
     }
 
@@ -306,11 +363,11 @@ export function ApplicationsPage() {
     };
 
     const cardContent = (
-      <Card className="hover:shadow-md transition-shadow">
+      <Card className="transition-shadow">
         <CardBody className="p-0">
           {/* Główna sekcja - klikalna aby rozwinąć */}
           <div
-            className={`${compact ? 'p-3' : 'p-4'} hover:bg-dark-700 transition-colors cursor-pointer`}
+            className={`${compact ? 'p-3' : 'p-4'} cursor-pointer`}
             onClick={handleExpandClick}
           >
             <div className="flex items-start justify-between">
@@ -321,8 +378,10 @@ export function ApplicationsPage() {
               )}
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1">
+                  {/* Source icon from job URL */}
+                  <SourceIcon url={app.jobUrl} className="w-4 h-4 flex-shrink-0" />
                   <h3 className={`font-semibold text-white ${compact ? 'text-sm' : 'text-lg'} truncate`}>
-                    {app.position}
+                    {app.companyName}
                   </h3>
                   {!compact && (
                     <Badge variant={getStatusBadgeVariant(app.status)}>
@@ -331,18 +390,11 @@ export function ApplicationsPage() {
                   )}
                 </div>
 
-                <div className={`flex items-center gap-2 ${compact ? 'text-xs text-slate-300' : 'text-sm text-slate-400'}`}>
-                  <span className="flex items-center gap-1 truncate">
-                    <Building2 className="w-3.5 h-3.5 flex-shrink-0" />
-                    {app.companyName}
-                  </span>
-                  {!compact && app.location && (
-                    <span className="flex items-center gap-1">
-                      <MapPin className="w-4 h-4" />
-                      {app.location}
-                    </span>
-                  )}
-                </div>
+                {app.position && (
+                  <div className={`${compact ? 'text-xs text-slate-400' : 'text-sm text-slate-400'} truncate`}>
+                    {app.position}
+                  </div>
+                )}
               </div>
 
               {/* Ikona rozwijania */}
@@ -354,6 +406,46 @@ export function ApplicationsPage() {
                 )}
               </div>
             </div>
+
+            {/* Compact: icon-only action bar */}
+            {compact && !isExpanded && (
+              <div className="flex items-center gap-1 mt-2 pt-2 border-t border-dark-600/50">
+                {app.jobUrl && (
+                  <a
+                    href={app.jobUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={(e) => e.stopPropagation()}
+                    className="p-1.5 text-slate-500 hover:text-primary-400 transition-colors cursor-pointer"
+                    title="Otwórz ofertę"
+                  >
+                    <ExternalLink className="w-3.5 h-3.5" />
+                  </a>
+                )}
+                <button
+                  onClick={(e) => { e.stopPropagation(); setTrackingApp(app); }}
+                  className="p-1.5 text-slate-500 hover:text-green-400 transition-colors cursor-pointer"
+                  title="Śledź CV"
+                >
+                  <MousePointerClick className="w-3.5 h-3.5" />
+                </button>
+                <div className="flex-1" />
+                <button
+                  onClick={(e) => { e.stopPropagation(); openModal(app); }}
+                  className="p-1.5 text-slate-500 hover:text-primary-400 transition-colors cursor-pointer"
+                  title="Edytuj"
+                >
+                  <Edit className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  onClick={(e) => { e.stopPropagation(); handleDelete(app.id); }}
+                  className="p-1.5 text-slate-500 hover:text-danger-400 transition-colors cursor-pointer"
+                  title="Usuń"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Rozwinięte szczegóły */}
@@ -379,14 +471,7 @@ export function ApplicationsPage() {
                 {app.appliedDate && (
                   <div className="flex items-center gap-2 text-slate-400">
                     <Calendar className="w-4 h-4" />
-                    Data aplikacji: {format(parseISO(app.appliedDate), 'd MMMM yyyy', { locale: pl })}
-                  </div>
-                )}
-
-                {app.location && (
-                  <div className="flex items-center gap-2 text-slate-400">
-                    <MapPin className="w-4 h-4" />
-                    {app.location}
+                    {format(parseISO(app.appliedDate), 'd MMMM yyyy', { locale: pl })}
                   </div>
                 )}
 
@@ -394,7 +479,7 @@ export function ApplicationsPage() {
                   <div className="flex gap-4 text-slate-400">
                     {app.salaryOffered && (
                       <span>
-                        <span className="text-slate-500">W ofercie:</span> {app.salaryOffered}
+                        <span className="text-slate-500">Oferta:</span> {app.salaryOffered}
                       </span>
                     )}
                     {app.salaryExpected && (
@@ -440,44 +525,39 @@ export function ApplicationsPage() {
                 )}
               </div>
 
-              {/* Akcje */}
-              <div className="flex items-center gap-2 mt-4 pt-4 border-t border-dark-600">
+              {/* Akcje — icon-only */}
+              <div className="flex items-center gap-1 mt-4 pt-4 border-t border-dark-600">
                 {app.jobUrl && (
                   <a
                     href={app.jobUrl}
                     target="_blank"
                     rel="noopener noreferrer"
                     onClick={(e) => e.stopPropagation()}
-                    className="flex items-center gap-1 px-3 py-1.5 text-xs text-slate-400 hover:text-primary-400 hover:bg-dark-700 transition-colors cursor-pointer"
+                    className="p-2 text-slate-500 hover:text-primary-400 transition-colors cursor-pointer"
+                    title="Otwórz ofertę"
                   >
                     <ExternalLink className="w-4 h-4" />
-                    Otwórz ofertę
                   </a>
                 )}
                 <button
                   onClick={(e) => { e.stopPropagation(); setTrackingApp(app); }}
-                  className="flex items-center gap-1 px-3 py-1.5 text-xs text-slate-400 hover:text-green-400 hover:bg-green-500/10 transition-colors cursor-pointer"
-                  title="Śledzone linki CV"
+                  className="p-2 text-slate-500 hover:text-green-400 transition-colors cursor-pointer"
+                  title="Śledź CV"
                 >
                   <MousePointerClick className="w-4 h-4" />
-                  Śledź CV
                 </button>
                 <div className="flex-1" />
                 <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    openModal(app);
-                  }}
-                  className="p-2 text-slate-500 hover:text-primary-400 hover:bg-primary-500/10 cursor-pointer"
+                  onClick={(e) => { e.stopPropagation(); openModal(app); }}
+                  className="p-2 text-slate-500 hover:text-primary-400 transition-colors cursor-pointer"
+                  title="Edytuj"
                 >
                   <Edit className="w-4 h-4" />
                 </button>
                 <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleDelete(app.id);
-                  }}
-                  className="p-2 text-slate-500 hover:text-danger-400 hover:bg-danger-500/10 cursor-pointer"
+                  onClick={(e) => { e.stopPropagation(); handleDelete(app.id); }}
+                  className="p-2 text-slate-500 hover:text-danger-400 transition-colors cursor-pointer"
+                  title="Usuń"
                 >
                   <Trash2 className="w-4 h-4" />
                 </button>
@@ -699,6 +779,7 @@ export function ApplicationsPage() {
         size="md"
       >
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Firma (wymagana) + Stanowisko (opcjonalne) */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Input
               label="Firma *"
@@ -707,47 +788,31 @@ export function ApplicationsPage() {
               required
             />
             <Input
-              label="Stanowisko *"
+              label="Stanowisko"
               value={formData.position}
               onChange={(e) => setFormData({ ...formData, position: e.target.value })}
-              required
+              placeholder="np. Frontend Developer"
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          {/* Link do oferty + auto-detected source */}
+          <div>
             <Input
-              label="Lokalizacja"
-              value={formData.location}
-              onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+              label="Link do oferty"
+              type="url"
+              value={formData.jobUrl}
+              onChange={(e) => {
+                const url = e.target.value;
+                setFormData({ ...formData, jobUrl: url });
+                setAutoSource(detectSourceFromUrl(url));
+              }}
+              placeholder="https://..."
             />
-            <Input
-              label="Źródło"
-              value={formData.source}
-              onChange={(e) => setFormData({ ...formData, source: e.target.value })}
-              placeholder="LinkedIn, Pracuj.pl..."
-            />
-          </div>
-
-          <Input
-            label="Link do oferty"
-            type="url"
-            value={formData.jobUrl}
-            onChange={(e) => setFormData({ ...formData, jobUrl: e.target.value })}
-          />
-
-          <div className="grid grid-cols-2 gap-4">
-            <Input
-              label="Wynagrodzenie w ofercie"
-              value={formData.salaryOffered}
-              onChange={(e) => setFormData({ ...formData, salaryOffered: e.target.value })}
-              placeholder="15 000 - 20 000 PLN"
-            />
-            <Input
-              label="Moje oczekiwania"
-              value={formData.salaryExpected}
-              onChange={(e) => setFormData({ ...formData, salaryExpected: e.target.value })}
-              placeholder="18 000 PLN"
-            />
+            {autoSource && !formData.source && (
+              <p className="mt-1 text-xs text-slate-500">
+                Źródło: <span className="text-primary-400">{autoSource}</span> (auto)
+              </p>
+            )}
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -767,26 +832,43 @@ export function ApplicationsPage() {
             />
           </div>
 
-          {/* Wybór CV */}
-          <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1">
+          <div className="grid grid-cols-2 gap-4">
+            <Input
+              label="Wynagrodzenie w ofercie"
+              value={formData.salaryOffered}
+              onChange={(e) => setFormData({ ...formData, salaryOffered: e.target.value })}
+              placeholder="15 000 - 20 000 PLN"
+            />
+            <Input
+              label="Moje oczekiwania"
+              value={formData.salaryExpected}
+              onChange={(e) => setFormData({ ...formData, salaryExpected: e.target.value })}
+              placeholder="18 000 PLN"
+            />
+          </div>
+
+          {/* CV + Generuj PDF */}
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-slate-300">
               CV do tej aplikacji
             </label>
-            <select
-              value={formData.cvId || ''}
-              onChange={(e) => setFormData({ ...formData, cvId: e.target.value || undefined })}
-              className="w-full px-3 py-2 bg-dark-700 text-slate-100 border border-dark-600 focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm"
-            >
-              <option value="">— Bez CV —</option>
-              {state.cvs.map(cv => (
-                <option key={cv.id} value={cv.id}>
-                  {cv.name}{cv.fileName ? ' 📎' : ''}{cv.isDefault ? ' ★' : ''}
-                </option>
-              ))}
-            </select>
+            <div className="flex gap-2">
+              <select
+                value={formData.cvId || ''}
+                onChange={(e) => setFormData({ ...formData, cvId: e.target.value || undefined })}
+                className="flex-1 px-3 py-2 bg-dark-700 text-slate-100 border border-dark-600 focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm"
+              >
+                <option value="">— Bez CV —</option>
+                {state.cvs.map(cv => (
+                  <option key={cv.id} value={cv.id}>
+                    {cv.name}{cv.fileName ? ' 📎' : ''}{cv.isDefault ? ' ★' : ''}
+                  </option>
+                ))}
+              </select>
+            </div>
             {formData.cvId && !state.cvs.find(cv => cv.id === formData.cvId)?.fileName && (
-              <p className="mt-1 text-xs text-amber-400">
-                To CV nie ma załączonego pliku PDF — nie będzie można wygenerować otagowanego PDF.
+              <p className="text-xs text-amber-400">
+                To CV nie ma pliku PDF — nie można wygenerować otagowanego PDF.
               </p>
             )}
           </div>

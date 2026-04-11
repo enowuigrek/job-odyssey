@@ -431,6 +431,28 @@ interface UrlPosition {
 }
 
 /**
+ * Yields control back to the browser to prevent main-thread freeze.
+ */
+function yieldToMain(): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, 0));
+}
+
+/**
+ * Quick check: does the raw stream text likely contain a placeholder URL?
+ * Checks both literal and hex-encoded ASCII forms.
+ */
+function streamMayContainPlaceholder(rawText: string, markers: string[]): boolean {
+  for (const marker of markers) {
+    // Literal check (most common — text in parentheses)
+    if (rawText.includes(marker)) return true;
+    // Hex-encoded ASCII check (for hex strings <...>)
+    const hexMarker = Array.from(marker).map(c => c.charCodeAt(0).toString(16).padStart(2, '0')).join('');
+    if (rawText.toLowerCase().includes(hexMarker)) return true;
+  }
+  return false;
+}
+
+/**
  * Finds text positions of URLs in a page's content streams.
  * Matches by normalizing both the text and the URL to find.
  */
@@ -442,11 +464,22 @@ async function findUrlPositionsOnPage(
   const results: UrlPosition[] = [];
   const streams = getPageStreams(page, ctx);
 
+  // Build short marker strings for quick pre-filter
+  const markers = ['jo.placeholder'];
+
   for (const stream of streams) {
     let text: string;
     try {
       text = await readStreamText(stream);
     } catch { continue; }
+
+    // ── Quick pre-filter: skip streams without placeholder markers ──
+    if (!streamMayContainPlaceholder(text, markers)) {
+      continue;
+    }
+
+    // Yield to main thread before heavy tokenization
+    await yieldToMain();
 
     const segments = extractTextSegments(text);
     if (segments.length === 0) continue;
@@ -629,15 +662,16 @@ export async function tagPdfLinks(
     const urlsToFind = mappings.map(m => m.originalUrl);
     console.log('[tagPdfLinks] Brak adnotacji — szukam URL w tekście:', urlsToFind);
 
-    for (const page of pages) {
+    for (let pi = 0; pi < pages.length; pi++) {
+      await yieldToMain();
       try {
-        const positions = await findUrlPositionsOnPage(page, ctx, urlsToFind);
+        const positions = await findUrlPositionsOnPage(pages[pi], ctx, urlsToFind);
         if (positions.length > 0) {
-          console.log('[tagPdfLinks] Znaleziono pozycje tekstu:', positions);
-          replacedCount += addOverlayAnnotations(pdfDoc, page, positions, mappings);
+          console.log(`[tagPdfLinks] Strona ${pi + 1}: znaleziono`, positions);
+          replacedCount += addOverlayAnnotations(pdfDoc, pages[pi], positions, mappings);
         }
       } catch (err) {
-        console.warn('[tagPdfLinks] Błąd przy szukaniu tekstu na stronie:', err);
+        console.warn(`[tagPdfLinks] Błąd na stronie ${pi + 1}:`, err);
       }
     }
   }
@@ -808,21 +842,24 @@ export async function replacePlaceholderLinks(
     const placeholderUrls = replacements.map(r => r.placeholder);
     console.log('[replacePlaceholderLinks] Brak adnotacji, szukam w tekście:', placeholderUrls);
 
-    for (const page of pages) {
+    // Pre-build mappings once
+    const mappings: LinkMapping[] = replacements.map(r => ({
+      originalUrl: r.placeholder,
+      trackedUrl: r.trackedUrl,
+      label: '',
+    }));
+
+    for (let pi = 0; pi < pages.length; pi++) {
+      // Yield between pages to prevent browser freeze
+      await yieldToMain();
       try {
-        const positions = await findUrlPositionsOnPage(page, ctx, placeholderUrls);
+        const positions = await findUrlPositionsOnPage(pages[pi], ctx, placeholderUrls);
         if (positions.length > 0) {
-          console.log('[replacePlaceholderLinks] Znaleziono pozycje tekstu:', positions);
-          // Map positions to LinkMapping format for addOverlayAnnotations
-          const mappings: LinkMapping[] = replacements.map(r => ({
-            originalUrl: r.placeholder,
-            trackedUrl: r.trackedUrl,
-            label: '',
-          }));
-          replacedCount += addOverlayAnnotations(pdfDoc, page, positions, mappings);
+          console.log(`[replacePlaceholderLinks] Strona ${pi + 1}: znaleziono`, positions);
+          replacedCount += addOverlayAnnotations(pdfDoc, pages[pi], positions, mappings);
         }
       } catch (err) {
-        console.warn('[replacePlaceholderLinks] Błąd przy szukaniu tekstu:', err);
+        console.warn(`[replacePlaceholderLinks] Błąd na stronie ${pi + 1}:`, err);
       }
     }
   }
