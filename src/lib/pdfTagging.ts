@@ -740,3 +740,65 @@ export async function extractTextUrls(pdfBytes: ArrayBuffer | Uint8Array): Promi
 export function buildTrackUrl(token: string): string {
   return `${TRACK_BASE}?t=${token}`;
 }
+
+// ── Placeholder-based replacement (nowa, niezawodna metoda) ─────────────────
+
+export interface PlaceholderReplacement {
+  placeholder: string;  // np. https://jo.placeholder/linkedin
+  trackedUrl: string;   // np. https://supabase.../track?t=TOKEN
+}
+
+/**
+ * Podmienia placeholder URL-e w adnotacjach PDF.
+ * Szuka DOKŁADNIE placeholderów (z/bez trailing slash) w adnotacjach /Link /URI.
+ * Nie skanuje tekstu — działa natychmiastowo i niezawodnie.
+ */
+export async function replacePlaceholderLinks(
+  pdfBytes: ArrayBuffer | Uint8Array,
+  replacements: PlaceholderReplacement[]
+): Promise<{ pdf: Uint8Array; replacedCount: number }> {
+  const pdfDoc = await PDFDocument.load(pdfBytes);
+  const pages = pdfDoc.getPages();
+  const ctx = pdfDoc.context;
+  let replacedCount = 0;
+
+  const normalize = (u: string) => u.replace(/\/+$/, '').toLowerCase();
+
+  for (const page of pages) {
+    const annots = page.node.lookup(PDFName.of('Annots'));
+    if (!(annots instanceof PDFArray)) continue;
+
+    for (let i = 0; i < annots.size(); i++) {
+      const annotRef = annots.get(i);
+      const annot = ctx.lookup(annotRef);
+      if (!(annot instanceof PDFDict)) continue;
+
+      const subtype = annot.get(PDFName.of('Subtype'));
+      if (!subtype || subtype.toString() !== '/Link') continue;
+
+      const action = annot.get(PDFName.of('A'));
+      if (!action) continue;
+      const actionDict = ctx.lookup(action);
+      if (!(actionDict instanceof PDFDict)) continue;
+
+      const actionType = actionDict.get(PDFName.of('S'));
+      if (!actionType || actionType.toString() !== '/URI') continue;
+
+      const uri = actionDict.get(PDFName.of('URI'));
+      if (!uri) continue;
+
+      let uriStr: string;
+      if (uri instanceof PDFString) uriStr = uri.decodeText();
+      else if (uri instanceof PDFHexString) uriStr = uri.decodeText();
+      else continue;
+
+      const match = replacements.find(r => normalize(r.placeholder) === normalize(uriStr));
+      if (match) {
+        actionDict.set(PDFName.of('URI'), PDFString.of(match.trackedUrl));
+        replacedCount++;
+      }
+    }
+  }
+
+  return { pdf: await pdfDoc.save(), replacedCount };
+}

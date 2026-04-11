@@ -1,21 +1,46 @@
 import { useState } from 'react';
-import { Link as LinkIcon, Plus, Edit2, Trash2 } from 'lucide-react';
+import { Link as LinkIcon, Plus, Edit2, Trash2, Copy, Check, Info } from 'lucide-react';
 import { useUserLinks, LinkType } from '../hooks/useUserLinks';
 import { Button, PageHeader } from '../components/ui';
+import { getPlaceholderUrl } from '../lib/placeholders';
 
 export function LinksPage() {
   const { links: userLinks, addLink, updateLink, removeLink } = useUserLinks();
   const [newLink, setNewLink] = useState<{ label: string; url: string; type: LinkType }>({ label: '', url: '', type: 'linkedin' });
   const [editingLinkId, setEditingLinkId] = useState<string | null>(null);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  const handleCopyPlaceholder = async (linkId: string, label: string) => {
+    const url = getPlaceholderUrl(label);
+    await navigator.clipboard.writeText(url);
+    setCopiedId(linkId);
+    setTimeout(() => setCopiedId(null), 2000);
+  };
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <PageHeader
         icon={LinkIcon}
-        title="Moje linki domyślne"
-        description="Dodaj linki które oznaczymy w twoim CV, aby śledzić ich kliknięcia przez rekruterów."
+        title="Moje linki"
+        description="Twoje linki profilowe do śledzenia kliknięć w CV."
       />
+
+      {/* Info box — jak używać placeholderów */}
+      <div className="bg-primary-500/10 border border-primary-500/20 p-4 space-y-2">
+        <div className="flex items-start gap-2">
+          <Info className="w-4 h-4 text-primary-400 mt-0.5 flex-shrink-0" />
+          <div>
+            <p className="text-sm text-slate-200 font-medium">Jak śledzić kliknięcia w CV?</p>
+            <ol className="text-xs text-slate-400 mt-1 space-y-1 list-decimal list-inside">
+              <li>Skopiuj <strong className="text-slate-300">Placeholder URL</strong> obok każdego linka</li>
+              <li>Wstaw go w swoim CV (Canva, Word) <strong className="text-slate-300">zamiast prawdziwego URL-a</strong></li>
+              <li>Prześlij PDF do bazy CV</li>
+              <li>Przy każdej aplikacji — kliknij „Generuj PDF" w śledzeniu linków</li>
+            </ol>
+          </div>
+        </div>
+      </div>
 
       {/* Lista linków */}
       <div className="space-y-2">
@@ -54,28 +79,46 @@ export function LinksPage() {
                 </div>
               </div>
             ) : (
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs px-1.5 py-0.5 bg-dark-600 text-slate-400 uppercase tracking-wide">
-                      {link.type}
-                    </span>
-                    <span className="text-sm font-medium text-slate-200">{link.label}</span>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs px-1.5 py-0.5 bg-dark-600 text-slate-400 uppercase tracking-wide">
+                        {link.type}
+                      </span>
+                      <span className="text-sm font-medium text-slate-200">{link.label}</span>
+                    </div>
+                    <p className="text-xs text-slate-500 mt-0.5 truncate max-w-sm">{link.url}</p>
                   </div>
-                  <p className="text-xs text-slate-500 mt-0.5 truncate max-w-sm">{link.url}</p>
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => setEditingLinkId(link.id)}
+                      className="p-1.5 text-slate-500 hover:text-primary-400 transition-colors cursor-pointer"
+                    >
+                      <Edit2 className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => removeLink(link.id)}
+                      className="p-1.5 text-slate-500 hover:text-danger-400 transition-colors cursor-pointer"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
-                <div className="flex items-center gap-1">
+                {/* Placeholder URL */}
+                <div className="flex items-center gap-2 bg-dark-800 px-2.5 py-1.5">
+                  <span className="text-[10px] text-slate-500 uppercase tracking-wide flex-shrink-0">Placeholder:</span>
+                  <code className="text-xs text-primary-400 truncate flex-1">{getPlaceholderUrl(link.label)}</code>
                   <button
-                    onClick={() => setEditingLinkId(link.id)}
-                    className="p-1.5 text-slate-500 hover:text-primary-400 transition-colors"
+                    onClick={() => handleCopyPlaceholder(link.id, link.label)}
+                    className="p-1 text-slate-500 hover:text-primary-400 transition-colors flex-shrink-0 cursor-pointer"
+                    title="Skopiuj placeholder URL"
                   >
-                    <Edit2 className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => removeLink(link.id)}
-                    className="p-1.5 text-slate-500 hover:text-danger-400 transition-colors"
-                  >
-                    <Trash2 className="w-4 h-4" />
+                    {copiedId === link.id ? (
+                      <Check className="w-3.5 h-3.5 text-green-400" />
+                    ) : (
+                      <Copy className="w-3.5 h-3.5" />
+                    )}
                   </button>
                 </div>
               </div>

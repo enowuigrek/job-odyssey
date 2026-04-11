@@ -12,8 +12,8 @@ import {
   TrackingLink,
   TrackingClick,
 } from '../../lib/db';
-import { tagPdfLinks, extractPdfLinks, buildTrackUrl, LinkMapping } from '../../lib/pdfTagging';
-import { getCVLinkMappings } from '../../hooks/useCVLinkMappings';
+import { replacePlaceholderLinks, PlaceholderReplacement, extractPdfLinks, buildTrackUrl } from '../../lib/pdfTagging';
+import { getPlaceholderUrl } from '../../lib/placeholders';
 import { JobApplication } from '../../types';
 import { format, parseISO } from 'date-fns';
 import { pl } from 'date-fns/locale';
@@ -188,16 +188,14 @@ export function TrackingLinksModal({ isOpen, onClose, application, onFirstClick 
       return;
     }
 
-    // Sprawdź czy to PDF
     const ext = cv.fileName.split('.').pop()?.toLowerCase();
     if (ext !== 'pdf') {
-      setPdfError('Generator obsługuje tylko pliki PDF. Prześlij CV w formacie PDF.');
+      setPdfError('Generator obsługuje tylko pliki PDF.');
       return;
     }
 
     setIsGeneratingPdf(true);
     try {
-      // Pobierz plik CV z Supabase Storage
       const url = await getCVFileUrl(cv.fileName);
       if (!url) {
         setPdfError('Nie udało się pobrać pliku CV.');
@@ -205,74 +203,38 @@ export function TrackingLinksModal({ isOpen, onClose, application, onFirstClick 
       }
 
       const response = await fetch(url);
-      const buffer = await response.arrayBuffer();
-      // Konwertuj do Uint8Array i twórz osobne kopie dla każdego wywołania pdf-lib
-      const pdfBytes = new Uint8Array(buffer);
+      const pdfBytes = new Uint8Array(await response.arrayBuffer());
+
+      // Buduj mapowania: placeholder URL → tracked URL
+      // Każdy tracking link ma label (np. "LinkedIn") → placeholder = jo.placeholder/linkedin
+      const replacements: PlaceholderReplacement[] = existingLinks.map(link => ({
+        placeholder: getPlaceholderUrl(link.label),
+        trackedUrl: trackUrl(link.token),
+      }));
+
+      console.log('Placeholder replacements:', replacements);
 
       // Diagnostyka — jakie linki są w PDF?
       const foundInPdf = await extractPdfLinks(pdfBytes.slice(0));
-      console.log('Linki znalezione w PDF:', foundInPdf);
-      console.log('Szukane linki (target_url):', existingLinks.map(l => l.targetUrl));
+      console.log('Adnotacje znalezione w PDF:', foundInPdf);
 
-      // Sprawdź czy mamy zapisane mapowania linków dla tego CV
-      const savedMappings = application.cvId ? getCVLinkMappings(application.cvId) : [];
-
-      let mappings: LinkMapping[];
-
-      if (savedMappings.length > 0) {
-        // Użyj zapisanych mapowań — dopasuj do existingLinks po label lub normalizeUrl
-        const normalizeUrl = (u: string) =>
-          u.replace(/^https?:\/\//, '').replace(/^www\./, '').replace(/\/+$/, '').toLowerCase().trim();
-
-        mappings = savedMappings.flatMap(sm => {
-          // Znajdź pasujący tracking link po label lub po URL
-          const match = existingLinks.find(l =>
-            l.label.toLowerCase() === sm.label.toLowerCase() ||
-            normalizeUrl(l.targetUrl) === normalizeUrl(sm.originalUrl)
-          );
-          if (!match) return [];
-          return [{
-            originalUrl: sm.originalUrl,
-            trackedUrl: trackUrl(match.token),
-            label: sm.label,
-          }];
-        });
-
-        // Jeśli mapowania nie pokrywają wszystkich linków → uzupełnij fallbackiem
-        if (mappings.length === 0) {
-          mappings = existingLinks.map(link => ({
-            originalUrl: link.targetUrl,
-            trackedUrl: trackUrl(link.token),
-            label: link.label,
-          }));
-        }
-      } else {
-        // Fallback: użyj targetUrl z existingLinks jako originalUrl
-        mappings = existingLinks.map(link => ({
-          originalUrl: link.targetUrl,
-          trackedUrl: trackUrl(link.token),
-          label: link.label,
-        }));
-      }
-
-      // Podmień linki w PDF (adnotacje + overlay na tekście) — max 30s
-      const timeoutPromise = new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error('TIMEOUT')), 30_000)
-      );
-      const { pdf: taggedPdf, replacedCount } = await Promise.race([
-        tagPdfLinks(pdfBytes.slice(0), mappings),
-        timeoutPromise,
-      ]);
+      // Podmień placeholdery w adnotacjach PDF
+      const { pdf: taggedPdf, replacedCount } = await replacePlaceholderLinks(pdfBytes, replacements);
 
       if (replacedCount === 0) {
-        setPdfError(`Nie znaleziono pasujących URL-i w PDF. Znalezione adnotacje: ${foundInPdf.length > 0 ? foundInPdf.join(', ') : 'brak'}. Sprawdź czy URL w "Moje linki" zgadza się z tym w CV (F12 → Console).`);
+        const placeholderList = replacements.map(r => r.placeholder).join(', ');
+        setPdfError(
+          `Nie znaleziono placeholderów w PDF.\n\n` +
+          `Szukane: ${placeholderList}\n` +
+          `Znalezione adnotacje: ${foundInPdf.length > 0 ? foundInPdf.join(', ') : 'brak'}\n\n` +
+          `Wstaw placeholder URL-e z „Moje linki" jako hiperlinki w swoim CV (Canva, Word), potem prześlij PDF ponownie.`
+        );
         return;
       }
 
-      console.log(`✅ Podmieniono ${replacedCount} linków w PDF`);
+      console.log(`✅ Podmieniono ${replacedCount} placeholderów w PDF`);
 
-      // Pobierz plik
-      const blob = new Blob([taggedPdf.buffer as ArrayBuffer], { type: 'application/pdf' });
+      const blob = new Blob([taggedPdf.buffer.slice(taggedPdf.byteOffset, taggedPdf.byteOffset + taggedPdf.byteLength)], { type: 'application/pdf' });
       const downloadUrl = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = downloadUrl;
@@ -283,11 +245,7 @@ export function TrackingLinksModal({ isOpen, onClose, application, onFirstClick 
       URL.revokeObjectURL(downloadUrl);
     } catch (err) {
       console.error('PDF generation error:', err);
-      if (err instanceof Error && err.message === 'TIMEOUT') {
-        setPdfError('Generowanie trwało zbyt długo. PDF może być zbyt duży lub uszkodzony.');
-      } else {
-        setPdfError('Błąd przy generowaniu PDF. Sprawdź czy plik CV jest poprawnym PDF.');
-      }
+      setPdfError('Błąd przy generowaniu PDF. Sprawdź czy plik CV jest poprawnym PDF.');
     } finally {
       setIsGeneratingPdf(false);
     }
