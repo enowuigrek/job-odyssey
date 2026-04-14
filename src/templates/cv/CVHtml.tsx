@@ -13,7 +13,7 @@ function InlineLinks({ links }: { links: CVLink[] }) {
       {links.map((link, i) => (
         <span key={link.label}>
           {i > 0 && <span className="cv-links-sep">|</span>}
-          <a href={link.url} target="_blank" rel="noreferrer">
+          <a href={link.trackedUrl ?? link.url} target="_blank" rel="noreferrer">
             {link.url.replace(/^https?:\/\//, '')}
           </a>
         </span>
@@ -28,7 +28,7 @@ function ProjectLinks({ links }: { links: CVLink[] }) {
       {links.map((link, i) => (
         <span key={link.label}>
           {i > 0 && <span className="cv-links-sep">|</span>}
-          <a href={link.url} target="_blank" rel="noreferrer">
+          <a href={link.trackedUrl ?? link.url} target="_blank" rel="noreferrer">
             {link.label.endsWith('GitHub') || link.label === 'GitHub' ? 'GitHub' : link.url.replace(/^https?:\/\//, '')}
           </a>
         </span>
@@ -99,7 +99,7 @@ export function CVHtml({ data, preview = false }: Props) {
           <div className="cv-exp-company-row">
             <span className="cv-exp-company">{exp.company}</span>
             {exp.companyLink && (
-              <a href={exp.companyLink.url} className="cv-exp-company-link" target="_blank" rel="noreferrer">
+              <a href={exp.companyLink.trackedUrl ?? exp.companyLink.url} className="cv-exp-company-link" target="_blank" rel="noreferrer">
                 {exp.companyLink.url.replace(/^https?:\/\//, '')}
               </a>
             )}

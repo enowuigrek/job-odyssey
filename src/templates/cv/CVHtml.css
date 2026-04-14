@@ -312,23 +312,24 @@
     margin: 0;
   }
 
-  html, body {
-    margin: 0;
-    padding: 0;
-    background: white;
+  /* Hide the entire page, then reveal only CV content */
+  body * {
+    visibility: hidden;
   }
 
-  .cv-screen-wrapper {
-    display: block;
-    padding: 0;
-    background: none;
+  .cv-page,
+  .cv-page * {
+    visibility: visible;
   }
 
   .cv-page {
-    width: 100%;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 210mm;
     min-height: auto;
     box-shadow: none;
-    page-break-after: always;
+    padding: 16mm 18mm 20mm;
   }
 
   .cv-project {

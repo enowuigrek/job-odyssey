@@ -1,6 +1,8 @@
 export interface CVLink {
   label: string;
   url: string;
+  /** If set, used as href (tracked URL). url is always the human-readable display URL. */
+  trackedUrl?: string;
 }
 
 export interface CVContactInfo {

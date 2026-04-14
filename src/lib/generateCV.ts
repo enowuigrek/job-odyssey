@@ -41,10 +41,10 @@ function buildTrackedUrlMap(
 }
 
 function injectTrackedUrls(data: CVData, urlMap: Map<string, string>): CVData {
-  const replaceLink = (link: CVLink): CVLink => ({
-    ...link,
-    url: urlMap.get(link.url) ?? link.url,
-  });
+  const replaceLink = (link: CVLink): CVLink => {
+    const tracked = urlMap.get(link.url);
+    return tracked ? { ...link, trackedUrl: tracked } : link;
+  };
 
   return {
     ...data,
