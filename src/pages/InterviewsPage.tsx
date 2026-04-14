@@ -652,14 +652,18 @@ export function InterviewsPage() {
                     }`}
                   >
                     {interviewsByStatus[status].length === 0 && dragOverStatus !== status ? (
-                      <button
-                        onClick={() => state.applications.length > 0 ? openModal() : undefined}
-                        disabled={state.applications.length === 0}
-                        className="w-full py-8 border-2 border-dashed border-dark-600 hover:border-primary-500/50 hover:bg-primary-500/5 text-slate-600 hover:text-primary-400 disabled:hover:border-dark-600 disabled:hover:bg-transparent disabled:cursor-not-allowed transition-colors cursor-pointer flex flex-col items-center gap-2"
-                      >
-                        <Plus className="w-5 h-5" />
-                        <span className="text-xs">Dodaj</span>
-                      </button>
+                      <div className={`flex flex-col gap-1 ${state.applications.length === 0 ? 'opacity-40' : ''}`}>
+                        <div className="w-full py-6 border-2 border-dashed border-dark-600 flex items-center justify-center">
+                          <span className="text-xs text-slate-500">Brak rozmów</span>
+                        </div>
+                        <button
+                          onClick={() => state.applications.length > 0 ? openModal() : undefined}
+                          disabled={state.applications.length === 0}
+                          className="w-full py-2 flex items-center justify-center bg-primary-500 text-slate-900 hover:bg-primary-400 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                        >
+                          <Plus className="w-4 h-4" />
+                        </button>
+                      </div>
                     ) : interviewsByStatus[status].length === 0 ? (
                       <div className="text-center py-8 text-slate-500 text-sm border-2 border-dashed border-primary-500/50">
                         Upuść tutaj
@@ -672,10 +676,9 @@ export function InterviewsPage() {
                         <button
                           onClick={() => state.applications.length > 0 ? openModal() : undefined}
                           disabled={state.applications.length === 0}
-                          className="w-full py-2 border border-dashed border-dark-600 hover:border-primary-500/50 hover:bg-primary-500/5 text-slate-600 hover:text-primary-400 disabled:cursor-not-allowed transition-colors cursor-pointer flex items-center justify-center gap-1.5"
+                          className="w-full mt-1 py-2 flex items-center justify-center bg-primary-500 text-slate-900 hover:bg-primary-400 disabled:cursor-not-allowed transition-colors cursor-pointer"
                         >
-                          <Plus className="w-3.5 h-3.5" />
-                          <span className="text-xs">Dodaj</span>
+                          <Plus className="w-4 h-4" />
                         </button>
                       </>
                     )}

@@ -47,11 +47,11 @@ const s = StyleSheet.create({
     paddingTop: 32,
     paddingBottom: 46,
     paddingHorizontal: PAGE_H_PADDING,
-    lineHeight: 1.45,
+    lineHeight: 1.5,
   },
   // ── Header ──────────────────────────────────────────────────────────────
   name: {
-    fontSize: 26,
+    fontSize: 28,
     fontWeight: 'bold',
     marginBottom: 8,
     letterSpacing: 0.3,
@@ -62,13 +62,14 @@ const s = StyleSheet.create({
     color: '#4a9a9a',
     fontStyle: 'italic',
     fontWeight: 300,
-    marginBottom: 14,
+    marginBottom: 16,
+    lineHeight: 1,
   },
   contactBlock: {
     borderLeftWidth: 2.5,
     borderLeftColor: TEAL,
-    paddingLeft: 9,
-    marginBottom: 18,
+    paddingLeft: 10,
+    marginBottom: 20,
   },
   contactLine: {
     fontStyle: 'italic',
@@ -97,23 +98,23 @@ const s = StyleSheet.create({
   },
   // ── Section headers ───────────────────────────────────────────────────
   sectionHeader: {
-    marginTop: 16,
-    marginBottom: 7,
+    marginTop: 18,
+    marginBottom: 8,
     borderBottomWidth: 1.25,
     borderBottomColor: TEAL,
-    paddingBottom: 2,
+    paddingBottom: 3,
   },
   sectionTitle: {
     color: TEAL,
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: 300,
-    letterSpacing: 1.2,
+    letterSpacing: 2,
   },
   // ── Body text ────────────────────────────────────────────────────────
   body: {
     fontWeight: 300,
     fontSize: 9,
-    marginBottom: 4,
+    marginBottom: 5,
   },
   // ── Technologies ──────────────────────────────────────────────────────
   techRow: {
