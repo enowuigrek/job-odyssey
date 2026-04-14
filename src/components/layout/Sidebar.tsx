@@ -15,6 +15,7 @@ import {
   X,
   Trash2,
   Link as LinkIcon,
+  FileOutput,
 } from 'lucide-react';
 import { CountBadge } from '../ui/CountBadge';
 import { useClickNotifications } from '../../hooks/useClickNotifications';
@@ -27,6 +28,7 @@ const navItems = [
   { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
   { to: '/applications', icon: Briefcase, label: 'Aplikacje' },
   { to: '/interviews', icon: MessageSquare, label: 'Rozmowy' },
+  { to: '/cv-generator', icon: FileOutput, label: 'Generator CV' },
   { to: '/cv', icon: FileText, label: 'Baza CV' },
   { to: '/links', icon: LinkIcon, label: 'Moje linki' },
 ];

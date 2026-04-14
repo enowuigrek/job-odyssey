@@ -7,3 +7,4 @@ export { StoriesPage } from './StoriesPage';
 export { SettingsPage } from './SettingsPage';
 export { LoginPage } from './LoginPage';
 export { LinksPage } from './LinksPage';
+export { CVGeneratorPage } from './CVGeneratorPage';

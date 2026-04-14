@@ -1,7 +1,8 @@
 import { CVData, CVLink } from '../templates/cv/types';
 import { defaultCVData } from '../templates/cv/defaultCVData';
-import { openCVPrint } from '../pages/CVPrintPage';
 import type { TrackingLink } from './db';
+
+export const CV_PRINT_STORAGE_KEY = 'jo-cv-print-data';
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
 const TRACK_BASE = `${SUPABASE_URL}/functions/v1/track`;
@@ -63,14 +64,23 @@ function injectTrackedUrls(data: CVData, urlMap: Map<string, string>): CVData {
 }
 
 /**
- * Inject tracked URLs and open the CV print page in a new tab.
- * The tab auto-triggers window.print() after fonts load.
+ * Inject tracked URLs and store in localStorage for CVGeneratorPage to pick up.
+ * Returns the tracked CVData — caller should navigate to /cv-generator.
  */
+export function prepareTrackedCV(
+  trackingLinks: TrackingLink[],
+  cvData: CVData = defaultCVData
+): CVData {
+  const urlMap = buildTrackedUrlMap(trackingLinks, cvData);
+  const trackedData = injectTrackedUrls(cvData, urlMap);
+  localStorage.setItem(CV_PRINT_STORAGE_KEY, JSON.stringify(trackedData));
+  return trackedData;
+}
+
+/** Convenience alias kept for backwards compat */
 export function generateCV(
   trackingLinks: TrackingLink[],
   cvData: CVData = defaultCVData
 ): void {
-  const urlMap = buildTrackedUrlMap(trackingLinks, cvData);
-  const trackedData = injectTrackedUrls(cvData, urlMap);
-  openCVPrint(trackedData);
+  prepareTrackedCV(trackingLinks, cvData);
 }

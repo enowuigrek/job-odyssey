@@ -213,9 +213,9 @@ export function ApplicationsPage() {
         return;
       }
 
-      // 2. Otwórz stronę podglądu — auto-print po załadowaniu
+      // 2. Zapisz dane i przejdź do generatora
       generateCV(trackingLinks);
-      setPdfSuccess(true);
+      navigate('/cv-generator');
     } catch (err) {
       console.error('PDF generation error:', err);
       setPdfError('Błąd przy generowaniu PDF.');
@@ -970,9 +970,7 @@ export function ApplicationsPage() {
               {pdfError && (
                 <p className="text-xs text-danger-400 bg-danger-500/10 px-3 py-2 whitespace-pre-wrap">{pdfError}</p>
               )}
-              {pdfSuccess && (
-                <p className="text-xs text-green-400 bg-green-500/10 px-3 py-2">PDF pobrany pomyślnie!</p>
-              )}
+
               <p className="text-[11px] text-slate-500">
                 Generuje CV z linkami śledzącymi dla tej aplikacji.
               </p>
