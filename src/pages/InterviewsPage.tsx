@@ -651,16 +651,33 @@ export function InterviewsPage() {
                       dragOverStatus === status ? 'bg-primary-500/10 border-2 border-dashed border-primary-500/50' : 'border-2 border-transparent'
                     }`}
                   >
-                    {interviewsByStatus[status].length === 0 ? (
-                      <div className={`text-center py-8 text-slate-500 text-sm ${
-                        dragOverStatus !== status ? 'border-2 border-dashed border-dark-600' : ''
-                      }`}>
-                        {dragOverStatus === status ? 'Upuść tutaj' : 'Brak rozmów'}
+                    {interviewsByStatus[status].length === 0 && dragOverStatus !== status ? (
+                      <button
+                        onClick={() => state.applications.length > 0 ? openModal() : undefined}
+                        disabled={state.applications.length === 0}
+                        className="w-full py-8 border-2 border-dashed border-dark-600 hover:border-primary-500/50 hover:bg-primary-500/5 text-slate-600 hover:text-primary-400 disabled:hover:border-dark-600 disabled:hover:bg-transparent disabled:cursor-not-allowed transition-colors cursor-pointer flex flex-col items-center gap-2"
+                      >
+                        <Plus className="w-5 h-5" />
+                        <span className="text-xs">Dodaj</span>
+                      </button>
+                    ) : interviewsByStatus[status].length === 0 ? (
+                      <div className="text-center py-8 text-slate-500 text-sm border-2 border-dashed border-primary-500/50">
+                        Upuść tutaj
                       </div>
                     ) : (
-                      interviewsByStatus[status].map((interview) => (
-                        <InterviewCard key={interview.id} interview={interview} compact draggable />
-                      ))
+                      <>
+                        {interviewsByStatus[status].map((interview) => (
+                          <InterviewCard key={interview.id} interview={interview} compact draggable />
+                        ))}
+                        <button
+                          onClick={() => state.applications.length > 0 ? openModal() : undefined}
+                          disabled={state.applications.length === 0}
+                          className="w-full py-2 border border-dashed border-dark-600 hover:border-primary-500/50 hover:bg-primary-500/5 text-slate-600 hover:text-primary-400 disabled:cursor-not-allowed transition-colors cursor-pointer flex items-center justify-center gap-1.5"
+                        >
+                          <Plus className="w-3.5 h-3.5" />
+                          <span className="text-xs">Dodaj</span>
+                        </button>
+                      </>
                     )}
                   </div>
                 </div>

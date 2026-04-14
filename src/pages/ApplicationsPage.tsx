@@ -262,7 +262,7 @@ export function ApplicationsPage() {
     return grouped;
   }, [filteredApplications]);
 
-  const openModal = (application?: JobApplication) => {
+  const openModal = (application?: JobApplication, defaultStatus?: ApplicationStatus) => {
     if (application) {
       setEditingApplication(application);
       setFormData({
@@ -280,7 +280,6 @@ export function ApplicationsPage() {
       });
     } else {
       setEditingApplication(null);
-      // Domyślnie wybierz domyślne CV
       const defaultCv = state.cvs.find(cv => cv.isDefault);
       setFormData({
         companyName: '',
@@ -289,7 +288,7 @@ export function ApplicationsPage() {
         location: '',
         salaryOffered: '',
         salaryExpected: '',
-        status: 'saved',
+        status: defaultStatus || 'saved',
         appliedDate: new Date().toISOString().split('T')[0],
         notes: '',
         source: '',
@@ -811,16 +810,31 @@ export function ApplicationsPage() {
                       dragOverStatus === status ? 'bg-primary-500/10 border-2 border-dashed border-primary-500/50' : 'border-2 border-transparent'
                     }`}
                   >
-                    {applicationsByStatus[status].length === 0 ? (
-                      <div className={`text-center py-8 text-slate-500 text-sm ${
-                        dragOverStatus !== status ? 'border-2 border-dashed border-dark-600' : ''
-                      }`}>
-                        {dragOverStatus === status ? 'Upuść tutaj' : 'Brak aplikacji'}
+                    {applicationsByStatus[status].length === 0 && dragOverStatus !== status ? (
+                      <button
+                        onClick={() => openModal(undefined, status)}
+                        className="w-full py-8 border-2 border-dashed border-dark-600 hover:border-primary-500/50 hover:bg-primary-500/5 text-slate-600 hover:text-primary-400 transition-colors cursor-pointer flex flex-col items-center gap-2"
+                      >
+                        <Plus className="w-5 h-5" />
+                        <span className="text-xs">Dodaj</span>
+                      </button>
+                    ) : applicationsByStatus[status].length === 0 ? (
+                      <div className="text-center py-8 text-slate-500 text-sm border-2 border-dashed border-primary-500/50">
+                        Upuść tutaj
                       </div>
                     ) : (
-                      applicationsByStatus[status].map((app) => (
-                        <ApplicationCard key={app.id} app={app} compact draggable />
-                      ))
+                      <>
+                        {applicationsByStatus[status].map((app) => (
+                          <ApplicationCard key={app.id} app={app} compact draggable />
+                        ))}
+                        <button
+                          onClick={() => openModal(undefined, status)}
+                          className="w-full py-2 border border-dashed border-dark-600 hover:border-primary-500/50 hover:bg-primary-500/5 text-slate-600 hover:text-primary-400 transition-colors cursor-pointer flex items-center justify-center gap-1.5"
+                        >
+                          <Plus className="w-3.5 h-3.5" />
+                          <span className="text-xs">Dodaj</span>
+                        </button>
+                      </>
                     )}
                   </div>
                 </div>

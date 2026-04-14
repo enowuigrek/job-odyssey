@@ -46,12 +46,12 @@ export function CVGeneratorPage() {
   };
 
   return (
-    <div className="relative">
-      <div className="fixed top-4 right-4 z-50">
+    <div>
+      <div className="sticky top-0 z-50 bg-dark-900 border-b border-dark-700 px-4 py-3 flex justify-center">
         <button
           onClick={handleDownload}
           disabled={isGenerating}
-          className="flex items-center gap-2 px-4 py-2 bg-primary-500 hover:bg-primary-400 disabled:opacity-60 text-white text-sm font-medium transition-colors shadow-lg cursor-pointer"
+          className="flex items-center justify-center gap-2 w-full max-w-sm px-6 py-2.5 bg-primary-500 hover:bg-primary-400 disabled:opacity-60 text-white text-sm font-medium transition-colors cursor-pointer"
         >
           {isGenerating
             ? <Loader2 className="w-4 h-4 animate-spin" />

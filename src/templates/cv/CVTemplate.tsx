@@ -53,8 +53,9 @@ const s = StyleSheet.create({
   name: {
     fontSize: 26,
     fontWeight: 'bold',
-    marginBottom: 6,
+    marginBottom: 8,
     letterSpacing: 0.3,
+    lineHeight: 1,
   },
   subtitle: {
     fontSize: 10.5,
@@ -275,7 +276,7 @@ function InlineLinks({ links }: { links: CVLink[] }) {
       {links.map((link, i) => (
         <React.Fragment key={link.label}>
           {i > 0 && <Text style={s.separatorText}>|</Text>}
-          <Link src={link.url} style={s.linkInline}>
+          <Link src={link.trackedUrl ?? link.url} style={s.linkInline}>
             {link.url.replace(/^https?:\/\//, '')}
           </Link>
         </React.Fragment>
@@ -347,7 +348,7 @@ export function CVTemplate({ data }: CVTemplateProps) {
               {project.links.map((link, i) => (
                 <React.Fragment key={link.label}>
                   {i > 0 && <Text style={s.separatorText}>|</Text>}
-                  <Link src={link.url} style={s.linkInline}>
+                  <Link src={link.trackedUrl ?? link.url} style={s.linkInline}>
                     {link.label === 'GitHub' || link.label.endsWith('GitHub')
                       ? 'GitHub'
                       : link.url.replace(/^https?:\/\//, '')}
@@ -365,7 +366,7 @@ export function CVTemplate({ data }: CVTemplateProps) {
             <View style={s.expCompanyRow}>
               <Text style={s.expCompany}>{exp.company}</Text>
               {exp.companyLink && (
-                <Link src={exp.companyLink.url} style={s.expCompanyLink}>
+                <Link src={exp.companyLink.trackedUrl ?? exp.companyLink.url} style={s.expCompanyLink}>
                   {exp.companyLink.url.replace(/^https?:\/\//, '')}
                 </Link>
               )}
