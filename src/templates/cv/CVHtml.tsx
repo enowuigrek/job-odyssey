@@ -154,6 +154,16 @@ export function CVHtml({ data, preview = false }: Props) {
         </div>
       ))}
 
+      {/* ── SEKCJE WŁASNE ───────────────────────────────────────── */}
+      {data.customSections && data.customSections.map(sec => (
+        <div key={sec.id}>
+          <div className="cv-section-header">
+            <h2 className="cv-section-title">{sec.title.toUpperCase()}</h2>
+          </div>
+          <p className="cv-body">{sec.content}</p>
+        </div>
+      ))}
+
       {/* ── ZAINTERESOWANIA ─────────────────────────────────────── */}
       <div className="cv-section-header">
         <h2 className="cv-section-title">ZAINTERESOWANIA</h2>

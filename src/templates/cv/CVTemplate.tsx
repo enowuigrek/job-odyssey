@@ -392,6 +392,14 @@ export function CVTemplate({ data }: CVTemplateProps) {
           </View>
         ))}
 
+        {/* ── SEKCJE WŁASNE ───────────────────────────────────────── */}
+        {data.customSections && data.customSections.map(sec => (
+          <View key={sec.id}>
+            <SectionHeader title={sec.title.toUpperCase()} />
+            <Text style={s.body}>{sec.content}</Text>
+          </View>
+        ))}
+
         {/* ── ZAINTERESOWANIA ─────────────────────────────────────── */}
         <SectionHeader title="ZAINTERESOWANIA" />
         <Text style={s.interests}>{data.interests}</Text>

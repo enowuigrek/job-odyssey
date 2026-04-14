@@ -46,6 +46,12 @@ export interface CVEducation {
   years: string;
 }
 
+export interface CVCustomSection {
+  id: string;
+  title: string;
+  content: string;
+}
+
 export interface CVData {
   name: string;
   subtitle: string;
@@ -58,4 +64,5 @@ export interface CVData {
   education: CVEducation[];
   interests: string;
   rodo: string;
+  customSections?: CVCustomSection[];
 }

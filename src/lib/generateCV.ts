@@ -3,6 +3,19 @@ import { defaultCVData } from '../templates/cv/defaultCVData';
 import type { TrackingLink } from './db';
 
 export const CV_PRINT_STORAGE_KEY = 'jo-cv-print-data';
+export const CV_EDITOR_STORAGE_KEY = 'jo-cv-editor-data';
+
+export function getCVEditorData(): CVData {
+  const raw = localStorage.getItem(CV_EDITOR_STORAGE_KEY);
+  if (raw) {
+    try { return JSON.parse(raw) as CVData; } catch { /* ignore */ }
+  }
+  return defaultCVData;
+}
+
+export function saveCVEditorData(data: CVData): void {
+  localStorage.setItem(CV_EDITOR_STORAGE_KEY, JSON.stringify(data));
+}
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
 const TRACK_BASE = `${SUPABASE_URL}/functions/v1/track`;
@@ -69,7 +82,7 @@ function injectTrackedUrls(data: CVData, urlMap: Map<string, string>): CVData {
  */
 export function prepareTrackedCV(
   trackingLinks: TrackingLink[],
-  cvData: CVData = defaultCVData
+  cvData: CVData = getCVEditorData()
 ): CVData {
   const urlMap = buildTrackedUrlMap(trackingLinks, cvData);
   const trackedData = injectTrackedUrls(cvData, urlMap);

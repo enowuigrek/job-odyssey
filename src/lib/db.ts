@@ -440,3 +440,21 @@ export async function getRecentClicksForUser(userId: string, limit = 20): Promis
     };
   });
 }
+
+export async function getDistinctTrackingLinksForUser(
+  userId: string
+): Promise<{ label: string; targetUrl: string }[]> {
+  const { data } = await supabase
+    .from('cv_tracking_links')
+    .select('label, target_url')
+    .eq('user_id', userId);
+
+  const seen = new Set<string>();
+  return (data ?? [])
+    .map(r => ({ label: r.label as string, targetUrl: r.target_url as string }))
+    .filter(r => {
+      if (seen.has(r.targetUrl)) return false;
+      seen.add(r.targetUrl);
+      return true;
+    });
+}

@@ -15,6 +15,7 @@ import {
   SettingsPage,
   LinksPage,
   CVGeneratorPage,
+  CVEditorPage,
 } from './pages';
 
 function AppRoutes() {
@@ -43,6 +44,7 @@ function AppRoutes() {
             <Route path="applications" element={<ApplicationsPage />} />
             <Route path="interviews" element={<InterviewsPage />} />
             <Route path="cv-generator" element={<CVGeneratorPage />} />
+            <Route path="cv-editor" element={<CVEditorPage />} />
             <Route path="cv" element={<CVPage />} />
             <Route path="links" element={<LinksPage />} />
             <Route path="questions" element={<QuestionsPage />} />
