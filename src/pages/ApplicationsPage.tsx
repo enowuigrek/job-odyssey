@@ -674,10 +674,12 @@ export function ApplicationsPage() {
                   <LayoutGrid className="w-5 h-5" />
                 </button>
               </div>
-              <Button onClick={() => openModal()} className="hidden md:flex">
-                <Plus className="w-4 h-4 mr-2" />
-                Nowa aplikacja
-              </Button>
+              <div className="hidden md:block">
+                <Button onClick={() => openModal()}>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Nowa aplikacja
+                </Button>
+              </div>
             </>
           }
         />

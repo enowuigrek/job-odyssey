@@ -18,13 +18,13 @@ export function MobileNav() {
           to={item.to}
           end={item.to === '/'}
           className={({ isActive }) =>
-            `flex-1 flex flex-col items-center justify-center py-2 gap-0.5 transition-colors ${
+            `flex-1 flex flex-col items-center justify-center py-3 gap-1 transition-colors ${
               isActive ? 'text-primary-400' : 'text-slate-400'
             }`
           }
         >
           <item.icon className="w-5 h-5" />
-          <span className="text-[10px] tracking-wide">{item.label}</span>
+          <span className="text-xs">{item.label}</span>
         </NavLink>
       ))}
     </nav>

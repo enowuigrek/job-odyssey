@@ -261,10 +261,12 @@ export function CVPage() {
                 Otwórz folder
               </Button>
             )}
-            <Button onClick={() => openModal()} className="hidden md:flex">
-              <Plus className="w-4 h-4 mr-2" />
-              Nowe CV
-            </Button>
+            <div className="hidden md:block">
+              <Button onClick={() => openModal()}>
+                <Plus className="w-4 h-4 mr-2" />
+                Nowe CV
+              </Button>
+            </div>
           </>
         }
       />

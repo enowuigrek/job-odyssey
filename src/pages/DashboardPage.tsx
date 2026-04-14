@@ -163,20 +163,23 @@ export function DashboardPage() {
   return (
     <div className="space-y-8">
       {/* Header z datą i zegarem */}
-      <div className="flex items-start justify-between">
-        <div>
+      <div className="flex items-start justify-between gap-4">
+        <div className="min-w-0">
           <div className="flex items-center gap-2 mb-1">
             <LayoutDashboard className="w-7 h-7 text-primary-400 flex-shrink-0" />
-            <h1 className="text-3xl font-bold text-slate-100 uppercase tracking-wide">Dashboard</h1>
+            <h1 className="text-2xl md:text-3xl font-bold text-slate-100 uppercase tracking-wide">Dashboard</h1>
           </div>
-          <p className="text-slate-400 mt-2">Przegląd Twojej podróży rekrutacyjnej</p>
+          <p className="text-slate-400 mt-1 hidden sm:block">Przegląd Twojej podróży rekrutacyjnej</p>
         </div>
-        <div className="text-right">
-          <p className="text-2xl font-bold text-slate-100 font-mono">
+        <div className="text-right flex-shrink-0">
+          <p className="text-xl md:text-2xl font-bold text-slate-100 font-mono">
             {format(currentTime, 'HH:mm:ss')}
           </p>
-          <p className="text-sm text-slate-400 mt-1">
-            {format(currentTime, 'EEEE, d MMMM yyyy', { locale: pl })}
+          <p className="text-xs md:text-sm text-slate-400 mt-1">
+            {format(currentTime, 'EEE, d MMM', { locale: pl })}
+          </p>
+          <p className="text-xs text-slate-500 hidden md:block">
+            {format(currentTime, 'yyyy')}
           </p>
         </div>
       </div>
@@ -185,9 +188,9 @@ export function DashboardPage() {
       {todaysInterviews.length > 0 ? (
         // Rozmowy dzisiaj
         <Card className="bg-warning-500/10 border border-warning-500/30">
-          <CardBody className="flex items-center justify-between">
+          <CardBody className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-warning-500/20 flex items-center justify-center">
+              <div className="w-12 h-12 bg-warning-500/20 flex items-center justify-center flex-shrink-0">
                 <MessageSquare className="w-6 h-6 text-warning-400" />
               </div>
               <div>
@@ -224,9 +227,9 @@ export function DashboardPage() {
       ) : nextInterview ? (
         // Najbliższa rozmowa w przyszłości
         <Card className="bg-primary-500/10 border border-primary-500/30">
-          <CardBody className="flex items-center justify-between">
+          <CardBody className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-primary-500/20 flex items-center justify-center">
+              <div className="w-12 h-12 bg-primary-500/20 flex items-center justify-center flex-shrink-0">
                 <Calendar className="w-6 h-6 text-primary-400" />
               </div>
               <div>
@@ -258,9 +261,9 @@ export function DashboardPage() {
       ) : (
         // Brak zaplanowanych rozmów
         <Card className="bg-dark-800 border border-dark-700">
-          <CardBody className="flex items-center justify-between">
+          <CardBody className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-dark-700 flex items-center justify-center">
+              <div className="w-12 h-12 bg-dark-700 flex items-center justify-center flex-shrink-0">
                 <Calendar className="w-6 h-6 text-slate-500" />
               </div>
               <div>
@@ -284,7 +287,7 @@ export function DashboardPage() {
       )}
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <Card>
           <CardBody className="flex items-center gap-4">
             <div className="w-14 h-14 bg-primary-500/20 flex items-center justify-center">
@@ -338,11 +341,11 @@ export function DashboardPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Recent Applications */}
         <Card>
-          <div className="px-6 py-4 border-b border-dark-700 flex items-center justify-between">
-            <h2 className="font-semibold text-slate-100 uppercase tracking-wide">Ostatnie aplikacje</h2>
+          <div className="px-4 md:px-6 py-4 border-b border-dark-700 flex items-center justify-between gap-2">
+            <h2 className="font-semibold text-slate-100 uppercase tracking-wide text-sm truncate">Ostatnie aplikacje</h2>
             <Link
               to="/applications"
-              className="text-sm text-primary-400 hover:text-primary-300 flex items-center gap-1 transition-colors"
+              className="text-sm text-primary-400 hover:text-primary-300 flex items-center gap-1 transition-colors flex-shrink-0"
             >
               Zobacz wszystkie <ArrowRight className="w-4 h-4" />
             </Link>
@@ -374,11 +377,11 @@ export function DashboardPage() {
 
         {/* Upcoming Interviews */}
         <Card>
-          <div className="px-6 py-4 border-b border-dark-700 flex items-center justify-between">
-            <h2 className="font-semibold text-slate-100 uppercase tracking-wide">Nadchodzące rozmowy</h2>
+          <div className="px-4 md:px-6 py-4 border-b border-dark-700 flex items-center justify-between gap-2">
+            <h2 className="font-semibold text-slate-100 uppercase tracking-wide text-sm truncate">Nadchodzące rozmowy</h2>
             <Link
               to="/interviews"
-              className="text-sm text-primary-400 hover:text-primary-300 flex items-center gap-1 transition-colors"
+              className="text-sm text-primary-400 hover:text-primary-300 flex items-center gap-1 transition-colors flex-shrink-0"
             >
               Zobacz wszystkie <ArrowRight className="w-4 h-4" />
             </Link>
@@ -447,9 +450,9 @@ export function DashboardPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Applications Chart */}
         <Card>
-          <div className="px-6 py-4 border-b border-dark-700 flex items-center gap-2">
-            <BarChart3 className="w-5 h-5 text-primary-400" />
-            <h2 className="font-semibold text-slate-100 uppercase tracking-wide">Aplikacje według statusu</h2>
+          <div className="px-4 md:px-6 py-4 border-b border-dark-700 flex items-center gap-2">
+            <BarChart3 className="w-5 h-5 text-primary-400 flex-shrink-0" />
+            <h2 className="font-semibold text-slate-100 uppercase tracking-wide text-sm truncate">Aplikacje według statusu</h2>
           </div>
           <CardBody>
             {state.applications.length === 0 ? (
@@ -483,9 +486,9 @@ export function DashboardPage() {
 
         {/* Interviews Chart */}
         <Card>
-          <div className="px-6 py-4 border-b border-dark-700 flex items-center gap-2">
-            <PieChart className="w-5 h-5 text-primary-400" />
-            <h2 className="font-semibold text-slate-100 uppercase tracking-wide">Rozmowy według statusu</h2>
+          <div className="px-4 md:px-6 py-4 border-b border-dark-700 flex items-center gap-2">
+            <PieChart className="w-5 h-5 text-primary-400 flex-shrink-0" />
+            <h2 className="font-semibold text-slate-100 uppercase tracking-wide text-sm truncate">Rozmowy według statusu</h2>
           </div>
           <CardBody>
             {state.interviews.length === 0 ? (
