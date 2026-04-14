@@ -27,10 +27,8 @@ import { useUserLinks } from '../hooks/useUserLinks';
 import {
   createTrackingLinks,
   getTrackingLinksForApplication,
-  getCVFileUrl,
 } from '../lib/db';
-import { replacePlaceholderLinks, PlaceholderReplacement } from '../lib/pdfTagging';
-import { getPlaceholderUrl } from '../lib/placeholders';
+import { generateCV } from '../lib/generateCV';
 import {
   Button,
   Input,
@@ -125,9 +123,6 @@ function SourceIcon({ url, className = 'w-4 h-4' }: { url?: string; className?: 
   }
 }
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
-const TRACK_BASE = `${SUPABASE_URL}/functions/v1/track`;
-
 export function ApplicationsPage() {
   const { state, dispatch } = useApp();
   const { user } = useAuth();
@@ -190,17 +185,9 @@ export function ApplicationsPage() {
   const [pdfError, setPdfError] = useState<string | null>(null);
   const [pdfSuccess, setPdfSuccess] = useState(false);
 
-  /** Generuj otagowany PDF z poziomu formularza edycji */
+  /** Generuj CV PDF z śledzeniem linków */
   const handleGeneratePdf = async () => {
     if (!editingApplication || !user) return;
-    const cvId = formData.cvId || editingApplication.cvId;
-    const cv = cvId ? state.cvs.find(c => c.id === cvId) : undefined;
-    if (!cv?.fileName) {
-      setPdfError('Przypisz CV z plikiem PDF.');
-      return;
-    }
-    const ext = cv.fileName.split('.').pop()?.toLowerCase();
-    if (ext !== 'pdf') { setPdfError('Obsługiwane tylko pliki PDF.'); return; }
 
     setPdfError(null);
     setPdfSuccess(false);
@@ -226,37 +213,11 @@ export function ApplicationsPage() {
         return;
       }
 
-      // 2. Pobierz PDF
-      const fileUrl = await getCVFileUrl(cv.fileName);
-      if (!fileUrl) { setPdfError('Nie udało się pobrać pliku CV.'); return; }
-      const response = await fetch(fileUrl);
-      const pdfBytes = new Uint8Array(await response.arrayBuffer());
-
-      // 3. Podmień placeholdery
-      const replacements: PlaceholderReplacement[] = trackingLinks.map(link => ({
-        placeholder: getPlaceholderUrl(link.label),
-        trackedUrl: `${TRACK_BASE}?t=${link.token}`,
-      }));
-
-      const { pdf: taggedPdf, replacedCount } = await replacePlaceholderLinks(pdfBytes, replacements);
-
-      if (replacedCount === 0) {
-        const placeholderList = replacements.map(r => r.placeholder).join(', ');
-        setPdfError(`Nie znaleziono placeholderów w PDF.\nSzukane: ${placeholderList}\nWklej placeholder URL z „Moje linki" do CV i prześlij PDF ponownie.`);
-        return;
-      }
-
-      // 4. Pobierz
-      const pdfBuffer = (taggedPdf.buffer as ArrayBuffer).slice(taggedPdf.byteOffset, taggedPdf.byteOffset + taggedPdf.byteLength);
-      const blob = new Blob([pdfBuffer], { type: 'application/pdf' });
-      const downloadUrl = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = downloadUrl;
-      a.download = `CV_${editingApplication.companyName.replace(/[^a-zA-Z0-9]/g, '_')}_tracked.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(downloadUrl);
+      // 2. Generuj PDF z React template
+      await generateCV(
+        trackingLinks,
+        `CV_${editingApplication.companyName.replace(/[^a-zA-Z0-9]/g, '_')}_tracked.pdf`
+      );
       setPdfSuccess(true);
     } catch (err) {
       console.error('PDF generation error:', err);
@@ -995,7 +956,7 @@ export function ApplicationsPage() {
           />
 
           {/* Generuj otagowane CV — tylko w trybie edycji */}
-          {editingApplication && formData.cvId && state.cvs.find(cv => cv.id === formData.cvId)?.fileName && (
+          {editingApplication && (
             <div className="space-y-2 pt-3 border-t border-dark-600">
               <div className="flex items-center justify-between">
                 <label className="text-sm font-medium text-slate-300">Otagowane CV</label>
@@ -1016,7 +977,7 @@ export function ApplicationsPage() {
                 <p className="text-xs text-green-400 bg-green-500/10 px-3 py-2">PDF pobrany pomyślnie!</p>
               )}
               <p className="text-[11px] text-slate-500">
-                Podmienia placeholdery (jo.placeholder/...) na śledzone URL-e i pobiera PDF.
+                Generuje CV z linkami śledzącymi dla tej aplikacji.
               </p>
             </div>
           )}
