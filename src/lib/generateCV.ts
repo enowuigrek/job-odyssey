@@ -1,5 +1,5 @@
-import { pdf } from '@react-pdf/renderer';
-import React from 'react';
+import { pdf, DocumentProps } from '@react-pdf/renderer';
+import React, { ReactElement } from 'react';
 import { CVTemplate } from '../templates/cv/CVTemplate';
 import { CVData, CVLink } from '../templates/cv/types';
 import { defaultCVData } from '../templates/cv/defaultCVData';
@@ -92,9 +92,9 @@ export async function generateCV(
   const urlMap = buildTrackedUrlMap(trackingLinks, cvData);
   const trackedData = injectTrackedUrls(cvData, urlMap);
 
-  const blob = await pdf(
-    React.createElement(CVTemplate, { data: trackedData })
-  ).toBlob();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const element = React.createElement(CVTemplate, { data: trackedData }) as unknown as ReactElement<DocumentProps, any>;
+  const blob = await pdf(element).toBlob();
 
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
