@@ -7,7 +7,7 @@ interface PageHeaderProps {
   actions?: ReactNode;
 }
 
-export function PageHeader({ icon: Icon, title, description, actions }: PageHeaderProps) {
+export function PageHeader({ icon: Icon, title, actions }: PageHeaderProps) {
   return (
     <div className="flex items-start justify-between gap-3">
       <div className="min-w-0">
