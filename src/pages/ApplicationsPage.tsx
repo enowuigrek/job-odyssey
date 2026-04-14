@@ -539,21 +539,6 @@ export function ApplicationsPage() {
                   </div>
                 )}
 
-                {(app.salaryOffered || app.salaryExpected) && (
-                  <div className="flex gap-4 text-slate-400">
-                    {app.salaryOffered && (
-                      <span>
-                        <span className="text-slate-500">Oferta:</span> {app.salaryOffered}
-                      </span>
-                    )}
-                    {app.salaryExpected && (
-                      <span>
-                        <span className="text-slate-500">Oczekiwane:</span> {app.salaryExpected}
-                      </span>
-                    )}
-                  </div>
-                )}
-
                 {app.source && (
                   <div className="text-slate-400">
                     <span className="text-slate-500">Źródło:</span> {app.source}
@@ -903,21 +888,6 @@ export function ApplicationsPage() {
               type="date"
               value={formData.appliedDate}
               onChange={(e) => setFormData({ ...formData, appliedDate: e.target.value })}
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <Input
-              label="Wynagrodzenie w ofercie"
-              value={formData.salaryOffered}
-              onChange={(e) => setFormData({ ...formData, salaryOffered: e.target.value })}
-              placeholder="15 000 - 20 000 PLN"
-            />
-            <Input
-              label="Moje oczekiwania"
-              value={formData.salaryExpected}
-              onChange={(e) => setFormData({ ...formData, salaryExpected: e.target.value })}
-              placeholder="18 000 PLN"
             />
           </div>
 

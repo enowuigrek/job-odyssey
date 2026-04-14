@@ -53,15 +53,15 @@ const s = StyleSheet.create({
   name: {
     fontSize: 26,
     fontWeight: 'bold',
-    marginBottom: 3,
+    marginBottom: 6,
     letterSpacing: 0.3,
   },
   subtitle: {
     fontSize: 10.5,
-    color: TEAL,
+    color: '#4a9a9a',
     fontStyle: 'italic',
     fontWeight: 300,
-    marginBottom: 10,
+    marginBottom: 14,
   },
   contactBlock: {
     borderLeftWidth: 2.5,
@@ -96,9 +96,9 @@ const s = StyleSheet.create({
   },
   // ── Section headers ───────────────────────────────────────────────────
   sectionHeader: {
-    marginTop: 14,
-    marginBottom: 6,
-    borderBottomWidth: 0.75,
+    marginTop: 16,
+    marginBottom: 7,
+    borderBottomWidth: 1.25,
     borderBottomColor: TEAL,
     paddingBottom: 2,
   },
@@ -117,7 +117,7 @@ const s = StyleSheet.create({
   // ── Technologies ──────────────────────────────────────────────────────
   techRow: {
     flexDirection: 'row',
-    marginBottom: 3.5,
+    marginBottom: 5.5,
   },
   techLabel: {
     fontWeight: 300,

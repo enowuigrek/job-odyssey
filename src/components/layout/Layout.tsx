@@ -28,7 +28,7 @@ export function Layout() {
         {/* Mobile header z hamburger + bell */}
         <MobileHeader />
         {/* pb-20 na mobile zostawia miejsce dla bottom nav */}
-        <div className="flex-1 overflow-auto p-4 pt-2 md:p-8 md:pt-0 md:pb-8 pb-24">
+        <div className="flex-1 overflow-auto p-4 pt-2 md:p-8 md:pt-0 md:pb-8 pb-32">
           <Outlet />
         </div>
       </main>
@@ -39,7 +39,7 @@ export function Layout() {
             // Dispatch custom event that pages listen for
             window.dispatchEvent(new CustomEvent('fab-click', { detail: location.pathname }));
           }}
-          className="md:hidden fixed bottom-16 right-4 z-50 bg-primary-500 text-slate-900 px-4 py-2.5 shadow-lg shadow-primary-500/30 text-sm font-medium active:scale-95 transition-transform cursor-pointer"
+          className="md:hidden fixed bottom-[72px] right-4 z-50 bg-primary-500 text-slate-900 px-4 py-2.5 shadow-lg shadow-primary-500/30 text-sm font-medium active:scale-95 transition-transform cursor-pointer"
         >
           {currentFab.label}
         </button>

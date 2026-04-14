@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect } from 'react';
+import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Briefcase,
@@ -20,15 +20,6 @@ import { ApplicationStatus, InterviewStatus } from '../types';
 
 export function DashboardPage() {
   const { state } = useApp();
-  const [currentTime, setCurrentTime] = useState(new Date());
-
-  // Aktualizacja zegara co sekundę
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentTime(new Date());
-    }, 1000);
-    return () => clearInterval(timer);
-  }, []);
 
   // Rozmowy zaplanowane na dziś
   const todaysInterviews = useMemo(() => {
@@ -162,26 +153,10 @@ export function DashboardPage() {
 
   return (
     <div className="space-y-8">
-      {/* Header z datą i zegarem */}
-      <div className="flex items-start justify-between gap-4">
-        <div className="min-w-0">
-          <div className="flex items-center gap-2 mb-1">
-            <LayoutDashboard className="w-7 h-7 text-primary-400 flex-shrink-0" />
-            <h1 className="text-2xl md:text-3xl font-bold text-slate-100 uppercase tracking-wide">Dashboard</h1>
-          </div>
-          <p className="text-slate-400 mt-1 hidden sm:block">Przegląd Twojej podróży rekrutacyjnej</p>
-        </div>
-        <div className="text-right flex-shrink-0">
-          <p className="text-xl md:text-2xl font-bold text-slate-100 font-mono">
-            {format(currentTime, 'HH:mm:ss')}
-          </p>
-          <p className="text-xs md:text-sm text-slate-400 mt-1">
-            {format(currentTime, 'EEE, d MMM', { locale: pl })}
-          </p>
-          <p className="text-xs text-slate-500 hidden md:block">
-            {format(currentTime, 'yyyy')}
-          </p>
-        </div>
+      {/* Header */}
+      <div className="flex items-center gap-2">
+        <LayoutDashboard className="w-7 h-7 text-primary-400 flex-shrink-0" />
+        <h1 className="text-2xl md:text-3xl font-bold text-slate-100 uppercase tracking-wide">Dashboard</h1>
       </div>
 
       {/* Informacja o rozmowach */}
@@ -289,48 +264,48 @@ export function DashboardPage() {
       {/* Stats Grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <Card>
-          <CardBody className="flex items-center gap-4">
-            <div className="w-14 h-14 bg-primary-500/20 flex items-center justify-center">
-              <Briefcase className="w-7 h-7 text-primary-400" />
+          <CardBody className="flex flex-col sm:flex-row items-center sm:items-start gap-3 px-4 py-4 text-center sm:text-left">
+            <div className="w-11 h-11 bg-primary-500/20 flex items-center justify-center flex-shrink-0">
+              <Briefcase className="w-5 h-5 text-primary-400" />
             </div>
             <div>
-              <p className="text-sm text-slate-400 uppercase tracking-wide">Wszystkie</p>
+              <p className="text-xs text-slate-400 uppercase tracking-wide">Wszystkie</p>
               <p className="text-3xl font-bold text-slate-100 font-mono">{stats.totalApplications}</p>
             </div>
           </CardBody>
         </Card>
 
         <Card>
-          <CardBody className="flex items-center gap-4">
-            <div className="w-14 h-14 bg-warning-500/20 flex items-center justify-center">
-              <Clock className="w-7 h-7 text-warning-400" />
+          <CardBody className="flex flex-col sm:flex-row items-center sm:items-start gap-3 px-4 py-4 text-center sm:text-left">
+            <div className="w-11 h-11 bg-warning-500/20 flex items-center justify-center flex-shrink-0">
+              <Clock className="w-5 h-5 text-warning-400" />
             </div>
             <div>
-              <p className="text-sm text-slate-400 uppercase tracking-wide">Aktywne</p>
+              <p className="text-xs text-slate-400 uppercase tracking-wide">Aktywne</p>
               <p className="text-3xl font-bold text-slate-100 font-mono">{stats.activeApplications}</p>
             </div>
           </CardBody>
         </Card>
 
         <Card>
-          <CardBody className="flex items-center gap-4">
-            <div className="w-14 h-14 bg-success-500/20 flex items-center justify-center">
-              <CheckCircle className="w-7 h-7 text-success-400" />
+          <CardBody className="flex flex-col sm:flex-row items-center sm:items-start gap-3 px-4 py-4 text-center sm:text-left">
+            <div className="w-11 h-11 bg-success-500/20 flex items-center justify-center flex-shrink-0">
+              <CheckCircle className="w-5 h-5 text-success-400" />
             </div>
             <div>
-              <p className="text-sm text-slate-400 uppercase tracking-wide">Sukcesy</p>
+              <p className="text-xs text-slate-400 uppercase tracking-wide">Sukcesy</p>
               <p className="text-3xl font-bold text-slate-100 font-mono">{stats.successes}</p>
             </div>
           </CardBody>
         </Card>
 
         <Card>
-          <CardBody className="flex items-center gap-4">
-            <div className="w-14 h-14 bg-accent-500/20 flex items-center justify-center">
-              <TrendingUp className="w-7 h-7 text-accent-400" />
+          <CardBody className="flex flex-col sm:flex-row items-center sm:items-start gap-3 px-4 py-4 text-center sm:text-left">
+            <div className="w-11 h-11 bg-accent-500/20 flex items-center justify-center flex-shrink-0">
+              <TrendingUp className="w-5 h-5 text-accent-400" />
             </div>
             <div>
-              <p className="text-sm text-slate-400 uppercase tracking-wide">Response</p>
+              <p className="text-xs text-slate-400 uppercase tracking-wide">Odzew</p>
               <p className="text-3xl font-bold text-slate-100 font-mono">{stats.responseRate}%</p>
             </div>
           </CardBody>
