@@ -58,7 +58,7 @@
   min-height: 297mm;
   padding: 17mm 20mm 22mm;
   font-family: 'Inter', sans-serif;
-  font-weight: 300;
+  font-weight: 400;
   font-size: 9pt;
   color: var(--black);
   line-height: 1.55;
@@ -160,7 +160,6 @@
 
 /* ── Body text ──────────────────────────────────────────────────── */
 .cv-body {
-  font-weight: 300;
   font-size: 9pt;
   margin: 0 0 6pt;
 }
@@ -182,7 +181,6 @@
 }
 
 .cv-tech-value {
-  font-weight: 300;
   flex: 1;
 }
 
@@ -207,7 +205,6 @@
 }
 
 .cv-project-desc {
-  font-weight: 300;
   font-size: 9pt;
   margin: 0 0 6pt;
 }
@@ -285,7 +282,6 @@
   align-items: baseline;
   margin-bottom: 3pt;
   font-size: 9pt;
-  font-weight: 300;
 }
 
 .cv-bullet-dot {
@@ -317,7 +313,6 @@
 
 /* ── Interests / RODO ───────────────────────────────────────────── */
 .cv-interests {
-  font-weight: 300;
   font-size: 9pt;
   margin: 0;
 }
