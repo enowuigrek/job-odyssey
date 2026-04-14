@@ -213,11 +213,8 @@ export function ApplicationsPage() {
         return;
       }
 
-      // 2. Generuj PDF z React template
-      await generateCV(
-        trackingLinks,
-        `CV_${editingApplication.companyName.replace(/[^a-zA-Z0-9]/g, '_')}_tracked.pdf`
-      );
+      // 2. Otwórz stronę podglądu — auto-print po załadowaniu
+      generateCV(trackingLinks);
       setPdfSuccess(true);
     } catch (err) {
       console.error('PDF generation error:', err);

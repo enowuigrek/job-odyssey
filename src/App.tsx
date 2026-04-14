@@ -4,6 +4,7 @@ import { AppProvider } from './contexts/AppContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { Layout } from './components/layout/Layout';
 import { LoginPage } from './pages/LoginPage';
+import { CVPrintPage } from './pages/CVPrintPage';
 import {
   DashboardPage,
   ApplicationsPage,
@@ -34,6 +35,8 @@ function AppRoutes() {
     <AppProvider>
       <HashRouter>
         <Routes>
+          {/* Bare print page — no layout, no nav */}
+          <Route path="cv-print" element={<CVPrintPage />} />
           <Route path="/" element={<Layout />}>
             <Route index element={<DashboardPage />} />
             <Route path="applications" element={<ApplicationsPage />} />
