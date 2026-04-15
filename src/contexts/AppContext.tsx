@@ -46,7 +46,7 @@ type Action =
   | { type: 'ADD_INTERVIEW'; payload: Omit<Interview, 'id' | 'createdAt' | 'updatedAt'> }
   | { type: 'UPDATE_INTERVIEW'; payload: Interview }
   | { type: 'DELETE_INTERVIEW'; payload: string }
-  | { type: 'ADD_CV'; payload: Omit<CV, 'id' | 'createdAt' | 'updatedAt'> }
+  | { type: 'ADD_CV'; payload: Omit<CV, 'id' | 'createdAt' | 'updatedAt'> & { id?: string } }
   | { type: 'UPDATE_CV'; payload: CV }
   | { type: 'DELETE_CV'; payload: string }
   | { type: 'ADD_QUESTION'; payload: Omit<RecruitmentQuestion, 'id' | 'createdAt' | 'updatedAt'> }
@@ -123,14 +123,16 @@ function reducer(state: AppState, action: Action): AppState {
         interviews: state.interviews.filter(int => int.id !== action.payload),
       };
 
-    case 'ADD_CV':
+    case 'ADD_CV': {
+      const cvId = action.payload.id ?? uuidv4();
       return {
         ...state,
         cvs: [
           ...state.cvs,
-          { ...action.payload, id: uuidv4(), createdAt: now, updatedAt: now },
+          { ...action.payload, id: cvId, createdAt: now, updatedAt: now },
         ],
       };
+    }
     case 'UPDATE_CV':
       return {
         ...state,

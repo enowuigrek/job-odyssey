@@ -320,12 +320,16 @@ export function CVTemplate({ data }: CVTemplateProps) {
         </View>
 
         {/* ── PROFIL ──────────────────────────────────────────────── */}
-        <SectionHeader title="PROFIL" />
+        <SectionHeader title={(data.profileTitle || 'PROFIL').toUpperCase()} />
         <Text style={s.body}>{data.profile}</Text>
 
-        {/* ── PODEJŚCIE DO PRACY ──────────────────────────────────── */}
-        <SectionHeader title="PODEJŚCIE DO PRACY" />
-        <Text style={s.body}>{data.approach}</Text>
+        {/* ── PODEJŚCIE DO PRACY (opcjonalne) ─────────────────────── */}
+        {data.showApproach !== false && data.approach ? (
+          <>
+            <SectionHeader title={(data.approachTitle || 'PODEJŚCIE DO PRACY').toUpperCase()} />
+            <Text style={s.body}>{data.approach}</Text>
+          </>
+        ) : null}
 
         {/* ── TECHNOLOGIE I NARZĘDZIA ─────────────────────────────── */}
         <SectionHeader title="TECHNOLOGIE I NARZĘDZIA" />

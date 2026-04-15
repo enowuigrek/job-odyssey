@@ -28,7 +28,7 @@ import {
   createTrackingLinks,
   getTrackingLinksForApplication,
 } from '../lib/db';
-import { generateCV } from '../lib/generateCV';
+import { generateCV, getCVDataById, CV_PRINT_STORAGE_KEY } from '../lib/generateCV';
 import {
   Button,
   Input,
@@ -931,6 +931,22 @@ export function ApplicationsPage() {
               <p className="text-xs text-amber-400">
                 To CV nie ma pliku PDF — nie można wygenerować otagowanego PDF.
               </p>
+            )}
+            {formData.cvId && getCVDataById(formData.cvId) && (
+              <button
+                type="button"
+                onClick={() => {
+                  const cvData = getCVDataById(formData.cvId!);
+                  if (cvData) {
+                    localStorage.setItem(CV_PRINT_STORAGE_KEY, JSON.stringify(cvData));
+                    navigate('/cv-generator');
+                  }
+                }}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-primary-500 hover:bg-primary-400 text-slate-900 transition-colors cursor-pointer"
+              >
+                <FileDown className="w-3.5 h-3.5" />
+                Podgląd / pobierz CV
+              </button>
             )}
           </div>
 

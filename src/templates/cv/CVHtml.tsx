@@ -79,15 +79,19 @@ export function CVHtml({ data, preview = false }: Props) {
 
       {/* ── PROFIL ──────────────────────────────────────────────── */}
       <div className="cv-section-header">
-        <h2 className="cv-section-title">PROFIL</h2>
+        <h2 className="cv-section-title">{(data.profileTitle || 'PROFIL').toUpperCase()}</h2>
       </div>
       <p className="cv-body">{data.profile}</p>
 
-      {/* ── PODEJŚCIE DO PRACY ──────────────────────────────────── */}
-      <div className="cv-section-header">
-        <h2 className="cv-section-title">PODEJŚCIE DO PRACY</h2>
-      </div>
-      <p className="cv-body">{data.approach}</p>
+      {/* ── PODEJŚCIE DO PRACY (opcjonalne) ─────────────────────── */}
+      {data.showApproach !== false && data.approach ? (
+        <>
+          <div className="cv-section-header">
+            <h2 className="cv-section-title">{(data.approachTitle || 'PODEJŚCIE DO PRACY').toUpperCase()}</h2>
+          </div>
+          <p className="cv-body">{data.approach}</p>
+        </>
+      ) : null}
 
       {/* ── TECHNOLOGIE I NARZĘDZIA ─────────────────────────────── */}
       <div className="cv-section-header">

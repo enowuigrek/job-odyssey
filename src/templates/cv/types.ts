@@ -56,7 +56,12 @@ export interface CVData {
   name: string;
   subtitle: string;
   contact: CVContactInfo;
+  /** Editable header for "PROFIL" section */
+  profileTitle?: string;
   profile: string;
+  /** Editable header for approach section; if false section is hidden */
+  approachTitle?: string;
+  showApproach?: boolean;
   approach: string;
   technologies: CVTechCategory[];
   projects: CVProject[];

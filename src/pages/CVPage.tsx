@@ -1,8 +1,10 @@
 import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
-import { Plus, FileText, Star, Trash2, Edit, Tag, Upload, Download, FolderOpen } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Plus, FileText, Star, Trash2, Edit, Tag, Upload, Download, FolderOpen, PenLine } from 'lucide-react';
 
 import { useApp } from '../contexts/AppContext';
 import { useAuth } from '../contexts/AuthContext';
+import { getCVDataById } from '../lib/generateCV';
 import {
   Button,
   Input,
@@ -23,6 +25,7 @@ import { uploadCVFile, getCVFileUrl, deleteCVFileFromStorage } from '../lib/db';
 export function CVPage() {
   const { state, dispatch, isElectronApp } = useApp();
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCV, setEditingCV] = useState<CV | null>(null);
@@ -363,6 +366,15 @@ export function CVPage() {
                       Domyślne
                     </button>
                   )}
+                  {getCVDataById(cv.id) && (
+                    <button
+                      onClick={() => navigate(`/cv-editor?edit=${cv.id}`)}
+                      className="p-1.5 text-slate-500 hover:text-primary-400 hover:bg-primary-500/10 transition-colors cursor-pointer"
+                      title="Edytuj treść"
+                    >
+                      <PenLine className="w-4 h-4" />
+                    </button>
+                  )}
                   {cv.fileName && (
                     <button
                       onClick={() => handleDownloadCV(cv)}
@@ -375,7 +387,7 @@ export function CVPage() {
                   <button
                     onClick={() => openModal(cv)}
                     className="p-1.5 text-slate-500 hover:text-primary-400 hover:bg-primary-500/10 transition-colors cursor-pointer"
-                    title="Edytuj"
+                    title="Edytuj metadane"
                   >
                     <Edit className="w-4 h-4" />
                   </button>

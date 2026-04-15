@@ -17,6 +17,22 @@ export function saveCVEditorData(data: CVData): void {
   localStorage.setItem(CV_EDITOR_STORAGE_KEY, JSON.stringify(data));
 }
 
+export function getCVDataById(cvId: string): CVData | null {
+  const raw = localStorage.getItem(`jo-cv-data-${cvId}`);
+  if (raw) {
+    try { return JSON.parse(raw) as CVData; } catch { /* ignore */ }
+  }
+  return null;
+}
+
+export function saveCVDataById(cvId: string, data: CVData): void {
+  localStorage.setItem(`jo-cv-data-${cvId}`, JSON.stringify(data));
+}
+
+export function deleteCVDataById(cvId: string): void {
+  localStorage.removeItem(`jo-cv-data-${cvId}`);
+}
+
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
 const TRACK_BASE = `${SUPABASE_URL}/functions/v1/track`;
 
@@ -82,8 +98,13 @@ function injectTrackedUrls(data: CVData, urlMap: Map<string, string>): CVData {
  */
 export function prepareTrackedCV(
   trackingLinks: TrackingLink[],
-  cvData: CVData = getCVEditorData()
+  cvData: CVData = getCVEditorData(),
+  cvId?: string
 ): CVData {
+  if (cvId) {
+    const stored = getCVDataById(cvId);
+    if (stored) cvData = stored;
+  }
   const urlMap = buildTrackedUrlMap(trackingLinks, cvData);
   const trackedData = injectTrackedUrls(cvData, urlMap);
   localStorage.setItem(CV_PRINT_STORAGE_KEY, JSON.stringify(trackedData));
