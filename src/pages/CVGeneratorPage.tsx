@@ -5,6 +5,7 @@ import React, { ReactElement } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CVHtml } from '../templates/cv/CVHtml';
 import { CVTemplate } from '../templates/cv/CVTemplate';
+import { buildCVDocx } from '../templates/cv/CVDocx';
 import { CV_PRINT_STORAGE_KEY, getCVEditorData } from '../lib/generateCV';
 import type { CVData } from '../templates/cv/types';
 
@@ -20,10 +21,21 @@ async function downloadPDF(data: CVData) {
   URL.revokeObjectURL(url);
 }
 
+async function downloadDOCX(data: CVData) {
+  const blob = await buildCVDocx(data);
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${data.name}.docx`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 export function CVGeneratorPage() {
   const navigate = useNavigate();
   const [data, setData] = useState<CVData>(getCVEditorData);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isGeneratingDocx, setIsGeneratingDocx] = useState(false);
 
   useEffect(() => {
     const raw = localStorage.getItem(CV_PRINT_STORAGE_KEY);
@@ -46,6 +58,15 @@ export function CVGeneratorPage() {
     }
   };
 
+  const handleDownloadDocx = async () => {
+    setIsGeneratingDocx(true);
+    try {
+      await downloadDOCX(data);
+    } finally {
+      setIsGeneratingDocx(false);
+    }
+  };
+
   return (
     <div>
       <div className="sticky top-0 z-50 bg-dark-900 border-b border-dark-700 px-4 py-3 flex items-center gap-3">
@@ -65,6 +86,17 @@ export function CVGeneratorPage() {
             ? <Loader2 className="w-4 h-4 animate-spin" />
             : <FileDown className="w-4 h-4" />}
           {isGenerating ? 'Generuję...' : 'Pobierz PDF'}
+        </button>
+        <button
+          onClick={handleDownloadDocx}
+          disabled={isGeneratingDocx}
+          className="flex items-center justify-center gap-2 px-4 py-2.5 bg-dark-700 hover:bg-dark-600 disabled:opacity-60 text-slate-300 text-sm transition-colors cursor-pointer flex-shrink-0"
+          title="Pobierz DOCX (edytowalny)"
+        >
+          {isGeneratingDocx
+            ? <Loader2 className="w-4 h-4 animate-spin" />
+            : <FileDown className="w-4 h-4" />}
+          <span className="hidden sm:inline">DOCX</span>
         </button>
       </div>
 
