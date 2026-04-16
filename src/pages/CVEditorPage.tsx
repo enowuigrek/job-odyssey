@@ -1,12 +1,16 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, createElement } from 'react';
+import type { ReactElement } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Plus, Trash2, Save, Eye, ArrowLeft, FileEdit, Pencil, Check } from 'lucide-react';
+import { Plus, Trash2, Save, Eye, EyeOff, ArrowLeft, FileEdit, Pencil, Check, FileDown, Loader2 } from 'lucide-react';
+import { pdf } from '@react-pdf/renderer';
+import type { DocumentProps } from '@react-pdf/renderer';
 import { Button, PageHeader } from '../components/ui';
 import type { CVData, CVLink, CVCustomSection } from '../templates/cv/types';
 import { defaultCVData } from '../templates/cv/defaultCVData';
+import { CVTemplate } from '../templates/cv/CVTemplate';
+import { CVHtml } from '../templates/cv/CVHtml';
 import {
   CV_EDITOR_STORAGE_KEY,
-  CV_PRINT_STORAGE_KEY,
   getCVDataById,
   saveCVDataById,
 } from '../lib/generateCV';
@@ -270,6 +274,8 @@ export function CVEditorPage() {
   const [nameError, setNameError] = useState(false);
   const [dbLinks, setDbLinks] = useState<DbLink[]>([]);
   const [saved, setSaved] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -307,13 +313,28 @@ export function CVEditorPage() {
     }
   };
 
-  const handlePreview = () => {
-    localStorage.setItem(CV_PRINT_STORAGE_KEY, JSON.stringify(data));
-    navigate('/cv-generator');
+  const handlePreview = () => setShowPreview(v => !v);
+
+  const handleDownloadPdf = async () => {
+    setIsGeneratingPdf(true);
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const el = createElement(CVTemplate, { data }) as unknown as ReactElement<DocumentProps, any>;
+      const blob = await pdf(el).toBlob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${data.name || 'CV'}.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } finally {
+      setIsGeneratingPdf(false);
+    }
   };
 
   return (
-    <div className="space-y-2 pb-28">
+    <div className={showPreview ? 'pb-20' : 'space-y-2 pb-28'}>
+      {!showPreview && (
       <PageHeader
         icon={FileEdit}
         title={editCvId ? 'Edytuj CV' : 'Nowe CV'}
@@ -324,13 +345,6 @@ export function CVEditorPage() {
               className="p-2 text-slate-400 hover:text-slate-100 transition-colors cursor-pointer"
             >
               <ArrowLeft className="w-4 h-4" />
-            </button>
-            <button
-              onClick={handlePreview}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-dark-700 hover:bg-dark-600 text-slate-300 text-sm transition-colors cursor-pointer"
-            >
-              <Eye className="w-4 h-4" />
-              <span className="hidden sm:inline">Podgląd</span>
             </button>
             <button
               onClick={handleSave}
@@ -344,7 +358,9 @@ export function CVEditorPage() {
           </div>
         }
       />
+      )}
 
+      {!showPreview && (<>
       {/* CV name — required */}
       <div className="bg-dark-800 border border-dark-600 p-4">
         <FieldLabel>Nazwa CV (widoczna w Bazie CV) *</FieldLabel>
@@ -618,7 +634,12 @@ export function CVEditorPage() {
       <SectionHeading title="Klauzula RODO" />
       <TextArea value={data.rodo} onChange={v => set({ rodo: v })} rows={2} placeholder="Wyrażam zgodę na przetwarzanie…" />
 
-      {/* ── Bottom save bar ────────────────────────────────────────────── */}
+      </>)}
+
+      {/* ── Preview ───────────────────────────────────────────────────── */}
+      {showPreview && <CVHtml data={data} preview />}
+
+      {/* ── Bottom bar (always visible) ────────────────────────────────── */}
       <div className="fixed bottom-0 left-0 right-0 md:left-64 bg-dark-900 border-t border-dark-700 px-4 py-3 flex items-center gap-2 z-40">
         <span className="text-sm text-slate-400 flex-1 truncate hidden sm:block">
           {cvName || <span className="text-slate-600">Brak nazwy CV</span>}
@@ -627,8 +648,16 @@ export function CVEditorPage() {
           onClick={handlePreview}
           className="flex items-center gap-1.5 px-4 py-2 bg-dark-700 hover:bg-dark-600 text-slate-300 text-sm transition-colors cursor-pointer"
         >
-          <Eye className="w-4 h-4" />
-          Podgląd
+          {showPreview ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+          {showPreview ? 'Zamknij' : 'Podgląd'}
+        </button>
+        <button
+          onClick={handleDownloadPdf}
+          disabled={isGeneratingPdf}
+          title="Pobierz PDF"
+          className="flex items-center justify-center px-2.5 py-2 bg-dark-700 hover:bg-dark-600 text-slate-400 hover:text-slate-200 transition-colors cursor-pointer disabled:opacity-50"
+        >
+          {isGeneratingPdf ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileDown className="w-4 h-4" />}
         </button>
         <button
           onClick={handleSave}
