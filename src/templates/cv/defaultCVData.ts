@@ -1,21 +1,21 @@
 import { CVData } from './types';
 
 export const defaultCVData: CVData = {
-  name: 'JAN KOWALSKI',
+  name: 'ZYGFRYD MAŁOPOLSKI',
   subtitle: 'Frontend Developer | React | TypeScript',
   contact: {
     location: 'Warszawa',
     phone: '600 000 000',
-    email: 'jan.kowalski@email.com',
+    email: 'zygfryd.malopolski@email.com',
     links: [
-      { label: 'LinkedIn', url: 'https://linkedin.com/in/jankowalski' },
-      { label: 'GitHub', url: 'https://github.com/jankowalski' },
-      { label: 'Portfolio', url: 'https://jankowalski.dev' },
+      { label: 'LinkedIn', url: 'https://linkedin.com/in/zygfrydmalopolski' },
+      { label: 'GitHub', url: 'https://github.com/zygfrydmalopolski' },
+      { label: 'Portfolio', url: 'https://zygfryd.dev' },
     ],
   },
   profile: 'Tutaj wpisz swój profil zawodowy — kilka zdań o tym, kim jesteś, co robisz i co wyróżnia Cię spośród innych kandydatów. Skup się na wartości, którą wnosisz, a nie tylko na latach doświadczenia.',
-  approach: 'Tutaj opisz swoje podejście do pracy — jak pracujesz, jakie masz wartości zawodowe, co jest dla Ciebie ważne w zespole i projekcie.',
-  showApproach: true,
+  approach: '',
+  showApproach: false,
   technologies: [
     {
       category: 'Frontend:',
