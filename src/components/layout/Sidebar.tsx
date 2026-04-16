@@ -214,12 +214,6 @@ export function Sidebar() {
                 )}
               </div>
 
-              {/* Footer hint */}
-              {notifications.length > 0 && (
-                <div className="px-4 py-2 border-t border-dark-700">
-                  <p className="text-xs text-slate-500">Kliknij powiadomienie, żeby zobaczyć szczegóły</p>
-                </div>
-              )}
             </div>
           )}
         </div>

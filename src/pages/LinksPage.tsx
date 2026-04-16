@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link as LinkIcon, Plus, Edit2, Trash2, Copy, Check, Info } from 'lucide-react';
+import { Link as LinkIcon, Plus, Edit2, Trash2, Copy, Check } from 'lucide-react';
 import { useUserLinks, LinkType } from '../hooks/useUserLinks';
 import { Button, PageHeader } from '../components/ui';
 import { getPlaceholderUrl } from '../lib/placeholders';
@@ -25,22 +25,6 @@ export function LinksPage() {
         title="Moje linki"
         description="Twoje linki profilowe do śledzenia kliknięć w CV."
       />
-
-      {/* Info box — jak używać placeholderów */}
-      <div className="bg-primary-500/10 border border-primary-500/20 p-4 space-y-2">
-        <div className="flex items-start gap-2">
-          <Info className="w-4 h-4 text-primary-400 mt-0.5 flex-shrink-0" />
-          <div>
-            <p className="text-sm text-slate-200 font-medium">Jak śledzić kliknięcia w CV?</p>
-            <ol className="text-xs text-slate-400 mt-1 space-y-1 list-decimal list-inside">
-              <li>Skopiuj <strong className="text-slate-300">Placeholder URL</strong> obok każdego linka</li>
-              <li>Wstaw go w swoim CV (Canva, Word) <strong className="text-slate-300">zamiast prawdziwego URL-a</strong></li>
-              <li>Prześlij PDF do bazy CV</li>
-              <li>Przy każdej aplikacji — kliknij „Generuj PDF" w śledzeniu linków</li>
-            </ol>
-          </div>
-        </div>
-      </div>
 
       {/* Lista linków */}
       <div className="space-y-2">
@@ -104,22 +88,6 @@ export function LinksPage() {
                       <Trash2 className="w-4 h-4" />
                     </button>
                   </div>
-                </div>
-                {/* Placeholder URL */}
-                <div className="flex items-center gap-2 bg-dark-800 px-2.5 py-1.5">
-                  <span className="text-[10px] text-slate-500 uppercase tracking-wide flex-shrink-0">Placeholder:</span>
-                  <code className="text-xs text-primary-400 truncate flex-1">{getPlaceholderUrl(link.label)}</code>
-                  <button
-                    onClick={() => handleCopyPlaceholder(link.id, link.label)}
-                    className="p-1 text-slate-500 hover:text-primary-400 transition-colors flex-shrink-0 cursor-pointer"
-                    title="Skopiuj placeholder URL"
-                  >
-                    {copiedId === link.id ? (
-                      <Check className="w-3.5 h-3.5 text-green-400" />
-                    ) : (
-                      <Copy className="w-3.5 h-3.5" />
-                    )}
-                  </button>
                 </div>
               </div>
             )}

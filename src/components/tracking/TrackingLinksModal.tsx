@@ -278,78 +278,79 @@ export function TrackingLinksModal({ isOpen, onClose, application, onFirstClick 
                 </div>
               )}
 
-              {/* Separator jeśli są już linki */}
-              {hasExistingLinks && (
-                <p className="text-xs text-slate-500 border-t border-dark-600 pt-3">
-                  Dodaj kolejne linki:
-                </p>
-              )}
-
-              {/* Form dodawania nowych linków */}
+              {/* Form dodawania nowych linków — tylko gdy brak istniejących */}
               {!hasExistingLinks && (
-                <p className="text-sm text-slate-400">
-                  Dodaj linki z Twojego CV — system zastąpi je trackowanymi URL-ami.
-                  Wklej trackowany URL zamiast oryginalnego w swoim CV.
-                </p>
+                <>
+                  <p className="text-sm text-slate-400">
+                    Dodaj linki z Twojego CV — system zastąpi je trackowanymi URL-ami.
+                    Wklej trackowany URL zamiast oryginalnego w swoim CV.
+                  </p>
+
+                  <div className="space-y-3">
+                    {linkInputs.map((input, index) => (
+                      <div key={index} className="bg-dark-700/50 p-3 space-y-2">
+                        <div className="flex items-center gap-2">
+                          <select
+                            value={input.preset}
+                            onChange={e => updateLinkInput(index, 'preset', e.target.value)}
+                            className="px-2 py-1.5 bg-dark-600 text-slate-200 text-sm border border-dark-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                          >
+                            {PRESETS.map(p => (
+                              <option key={p.key} value={p.key}>{p.label}</option>
+                            ))}
+                          </select>
+                          {input.preset === 'custom' && (
+                            <input
+                              type="text"
+                              value={input.label}
+                              onChange={e => updateLinkInput(index, 'label', e.target.value)}
+                              placeholder="Nazwa linku (np. Portfolio)"
+                              className="flex-1 px-2 py-1.5 bg-dark-600 text-slate-200 text-sm border border-dark-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                            />
+                          )}
+                          <button
+                            onClick={() => removeLinkInput(index)}
+                            className="p-1 text-slate-500 hover:text-danger-400 transition-colors"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                        <input
+                          type="url"
+                          value={input.targetUrl}
+                          onChange={e => updateLinkInput(index, 'targetUrl', e.target.value)}
+                          placeholder={PRESETS.find(p => p.key === input.preset)?.placeholder}
+                          className="w-full px-2 py-1.5 bg-dark-600 text-slate-200 text-sm border border-dark-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                        />
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={addLinkInput}
+                      className="flex items-center gap-1 text-sm text-slate-400 hover:text-primary-400 transition-colors"
+                    >
+                      <Plus className="w-4 h-4" />
+                      Dodaj link
+                    </button>
+                    <div className="flex-1" />
+                    <Button variant="secondary" onClick={onClose}>Zamknij</Button>
+                    <Button
+                      onClick={handleGenerate}
+                      disabled={isSaving || linkInputs.every(l => !l.targetUrl.trim())}
+                    >
+                      {isSaving ? 'Generuję...' : 'Generuj śledzone URL-e'}
+                    </Button>
+                  </div>
+                </>
               )}
 
-              <div className="space-y-3">
-                {linkInputs.map((input, index) => (
-                  <div key={index} className="bg-dark-700/50 p-3 space-y-2">
-                    <div className="flex items-center gap-2">
-                      <select
-                        value={input.preset}
-                        onChange={e => updateLinkInput(index, 'preset', e.target.value)}
-                        className="px-2 py-1.5 bg-dark-600 text-slate-200 text-sm border border-dark-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
-                      >
-                        {PRESETS.map(p => (
-                          <option key={p.key} value={p.key}>{p.label}</option>
-                        ))}
-                      </select>
-                      {input.preset === 'custom' && (
-                        <input
-                          type="text"
-                          value={input.label}
-                          onChange={e => updateLinkInput(index, 'label', e.target.value)}
-                          placeholder="Nazwa linku (np. Portfolio)"
-                          className="flex-1 px-2 py-1.5 bg-dark-600 text-slate-200 text-sm border border-dark-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
-                        />
-                      )}
-                      <button
-                        onClick={() => removeLinkInput(index)}
-                        className="p-1 text-slate-500 hover:text-danger-400 transition-colors"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                    <input
-                      type="url"
-                      value={input.targetUrl}
-                      onChange={e => updateLinkInput(index, 'targetUrl', e.target.value)}
-                      placeholder={PRESETS.find(p => p.key === input.preset)?.placeholder}
-                      className="w-full px-2 py-1.5 bg-dark-600 text-slate-200 text-sm border border-dark-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
-                    />
-                  </div>
-                ))}
-              </div>
-
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={addLinkInput}
-                  className="flex items-center gap-1 text-sm text-slate-400 hover:text-primary-400 transition-colors"
-                >
-                  <Plus className="w-4 h-4" />
-                  Dodaj link
-                </button>
-                <div className="flex-1" />
-                <Button variant="secondary" onClick={onClose}>Zamknij</Button>
-                <Button
-                  onClick={handleGenerate}
-                  disabled={isSaving || linkInputs.every(l => !l.targetUrl.trim())}
-                >
-                  {isSaving ? 'Generuję...' : 'Generuj śledzone URL-e'}
-                </Button>
-              </div>
+              {hasExistingLinks && (
+                <div className="flex justify-end pt-2 border-t border-dark-600">
+                  <Button variant="secondary" onClick={onClose}>Zamknij</Button>
+                </div>
+              )}
             </div>
           )}
 
@@ -421,11 +422,6 @@ export function TrackingLinksModal({ isOpen, onClose, application, onFirstClick 
                               </div>
                             )}
                           </div>
-                          {lastClick?.userAgent && (
-                            <p className="mt-1 text-xs text-slate-600 truncate pl-6">
-                              {lastClick.userAgent.slice(0, 60)}...
-                            </p>
-                          )}
                         </div>
                       );
                     })}
@@ -453,14 +449,7 @@ export function TrackingLinksModal({ isOpen, onClose, application, onFirstClick 
                   </div>
                 </>
               )}
-              <div className="flex justify-between items-center pt-2 border-t border-dark-600">
-                <button
-                  onClick={() => setTab('links')}
-                  className="text-xs text-slate-400 hover:text-primary-400 flex items-center gap-1"
-                >
-                  <Link className="w-3 h-3" />
-                  Wróć do linków
-                </button>
+              <div className="flex justify-end pt-2 border-t border-dark-600">
                 <Button variant="secondary" onClick={onClose}>Zamknij</Button>
               </div>
             </div>
