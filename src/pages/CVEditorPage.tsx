@@ -311,6 +311,23 @@ export function CVEditorPage() {
   // Build dbLinks from user's link database (Moje linki)
   const dbLinks: DbLink[] = userLinks.map(l => ({ label: l.label, targetUrl: l.url }));
 
+  // Auto-fill contact links from Moje linki for brand-new CVs (no draft, no edit)
+  const autoFilledLinks = useRef(false);
+  useEffect(() => {
+    if (editCvId) return;                     // editing existing → skip
+    if (localStorage.getItem(DRAFT_KEY)) return; // draft loaded → skip
+    if (autoFilledLinks.current) return;      // already done
+    if (userLinks.length === 0) return;       // not loaded yet
+    autoFilledLinks.current = true;
+    setData(d => ({
+      ...d,
+      contact: {
+        ...d.contact,
+        links: userLinks.map(l => ({ label: l.label, url: l.url })),
+      },
+    }));
+  }, [userLinks, editCvId]);
+
   const set = (patch: Partial<CVData>) => setData(d => ({ ...d, ...patch }));
 
   /** Save draft to localStorage — no PDF, no Supabase */
