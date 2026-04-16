@@ -97,7 +97,6 @@ export function Sidebar() {
         <div className="flex items-start justify-between">
           <div className={`overflow-hidden transition-all duration-200 ease-in-out ${labelsVisible && !isCollapsed ? 'opacity-100' : 'opacity-0 w-0'}`}>
             <h1 className="text-xl font-bold text-white tracking-wide whitespace-nowrap uppercase">Job Odyssey</h1>
-            <p className="text-xs text-primary-400 uppercase tracking-widest mt-0.5">Career Tracker</p>
           </div>
           <button
             onClick={() => setIsCollapsed(!isCollapsed)}

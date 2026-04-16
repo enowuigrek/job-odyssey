@@ -407,14 +407,7 @@ export function DashboardPage() {
           <p className="text-4xl font-bold text-primary-400 font-mono">{state.cvs.length}</p>
           <p className="text-sm text-slate-400 uppercase tracking-wide mt-1">Wersji CV</p>
         </div>
-        <div className="bg-dark-800 p-6 text-center">
-          <p className="text-4xl font-bold text-warning-400 font-mono">{state.questions.length}</p>
-          <p className="text-sm text-slate-400 uppercase tracking-wide mt-1">Pytań w bazie</p>
-        </div>
-        <div className="bg-dark-800 p-6 text-center">
-          <p className="text-4xl font-bold text-accent-400 font-mono">{state.stories.length}</p>
-          <p className="text-sm text-slate-400 uppercase tracking-wide mt-1">Historii STAR</p>
-        </div>
+
         <div className="bg-dark-800 p-6 text-center">
           <p className="text-4xl font-bold text-success-400 font-mono">{stats.completedInterviews}</p>
           <p className="text-sm text-slate-400 uppercase tracking-wide mt-1">Odbytych rozmów</p>

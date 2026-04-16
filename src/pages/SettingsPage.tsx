@@ -309,7 +309,7 @@ export function SettingsPage() {
               rel="noopener noreferrer"
               className="text-primary-400 hover:text-primary-300 transition-colors"
             >
-              Łukasz Nowak
+              lukasznowak.dev
             </a>
           </p>
         </CardBody>
