@@ -316,7 +316,6 @@ export function ApplicationsPage() {
       setAutoSource('');
     }
     setPdfError(null);
-    setPdfSuccess(false);
     setIsModalOpen(true);
   };
 
