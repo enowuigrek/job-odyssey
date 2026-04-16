@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, FileText, Star, Trash2, Edit, Tag, Download, PenLine } from 'lucide-react';
+import { Plus, FileText, Star, Trash2, Edit, Tag, Download, PenLine, FolderOpen } from 'lucide-react';
 
 import { useApp } from '../contexts/AppContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -227,7 +227,7 @@ export function CVPage() {
           }
           action={
             !searchQuery ? (
-              <Button onClick={() => openModal()}>
+              <Button onClick={() => navigate('/cv-editor')}>
                 <Plus className="w-4 h-4 mr-2" />
                 Dodaj CV
               </Button>
