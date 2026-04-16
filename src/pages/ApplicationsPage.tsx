@@ -1,4 +1,5 @@
-import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
+import { useState, useMemo, useEffect, useRef, useCallback, createElement } from 'react';
+import type { ReactElement } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Plus,
@@ -19,7 +20,10 @@ import {
   FileDown,
   Linkedin,
   Globe,
+  Eye,
 } from 'lucide-react';
+import { pdf } from '@react-pdf/renderer';
+import type { DocumentProps } from '@react-pdf/renderer';
 import { useApp } from '../contexts/AppContext';
 import { useAuth } from '../contexts/AuthContext';
 import { TrackingLinksModal } from '../components/tracking/TrackingLinksModal';
@@ -28,7 +32,10 @@ import {
   createTrackingLinks,
   getTrackingLinksForApplication,
 } from '../lib/db';
-import { generateCV, getCVDataById, CV_PRINT_STORAGE_KEY } from '../lib/generateCV';
+import { getCVDataById, prepareTrackedCV } from '../lib/generateCV';
+import { CVTemplate } from '../templates/cv/CVTemplate';
+import { CVHtml } from '../templates/cv/CVHtml';
+import type { CVData } from '../templates/cv/types';
 import {
   Button,
   Input,
@@ -182,46 +189,58 @@ export function ApplicationsPage() {
   });
   const [autoSource, setAutoSource] = useState('');
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
+  const [generatingTaggedFor, setGeneratingTaggedFor] = useState<string | null>(null);
   const [pdfError, setPdfError] = useState<string | null>(null);
-  const [pdfSuccess, setPdfSuccess] = useState(false);
+  const [previewCvData, setPreviewCvData] = useState<CVData | null>(null);
 
-  /** Generuj CV PDF z śledzeniem linków */
-  const handleGeneratePdf = async () => {
-    if (!editingApplication || !user) return;
+  /** Generate tagged PDF, download it directly (no navigate) */
+  const downloadTaggedPdf = async (app: JobApplication) => {
+    if (!user) return;
+    const cvId = app.cvId;
+    const cvData = cvId ? getCVDataById(cvId) : null;
+    if (!cvData) { setPdfError('Brak danych CV w edytorze — otwórz CV w Generatorze i zapisz szkic.'); return; }
 
+    setGeneratingTaggedFor(app.id);
     setPdfError(null);
-    setPdfSuccess(false);
-    setIsGeneratingPdf(true);
-
     try {
-      // 1. Pobierz/utwórz tracking linki
-      let trackingLinks = await getTrackingLinksForApplication(editingApplication.id);
+      let trackingLinks = await getTrackingLinksForApplication(app.id);
       if (trackingLinks.length === 0 && userLinks.length > 0) {
-        const validLinks = userLinks.filter(l => l.url.trim());
-        if (validLinks.length > 0) {
-          trackingLinks = await createTrackingLinks(validLinks.map(l => ({
-            userId: user.id,
-            applicationId: editingApplication.id,
-            token: `${editingApplication.id.slice(0, 6)}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`,
-            label: l.label,
-            targetUrl: l.url.trim(),
-          })));
-        }
+        trackingLinks = await createTrackingLinks(userLinks.filter(l => l.url.trim()).map(l => ({
+          userId: user.id,
+          applicationId: app.id,
+          token: `${app.id.slice(0, 6)}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`,
+          label: l.label,
+          targetUrl: l.url.trim(),
+        })));
       }
       if (trackingLinks.length === 0) {
         setPdfError('Brak linków do śledzenia. Dodaj linki w „Moje linki".');
         return;
       }
-
-      // 2. Zapisz dane i przejdź do generatora
-      generateCV(trackingLinks);
-      navigate('/cv-generator');
+      const trackedData = prepareTrackedCV(trackingLinks, cvData, cvId!);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const el = createElement(CVTemplate, { data: trackedData }) as unknown as ReactElement<DocumentProps, any>;
+      const blob = await pdf(el).toBlob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `CV_${app.companyName.replace(/\s+/g, '_')}_tracked.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
     } catch (err) {
-      console.error('PDF generation error:', err);
+      console.error('Tagged PDF error:', err);
       setPdfError('Błąd przy generowaniu PDF.');
     } finally {
-      setIsGeneratingPdf(false);
+      setGeneratingTaggedFor(null);
     }
+  };
+
+  /** Generuj CV PDF z śledzeniem linków — wywołanie z modalu edycji */
+  const handleGeneratePdf = async () => {
+    if (!editingApplication) return;
+    setIsGeneratingPdf(true);
+    await downloadTaggedPdf(editingApplication);
+    setIsGeneratingPdf(false);
   };
 
   const filteredApplications = useMemo(() => {
@@ -492,6 +511,16 @@ export function ApplicationsPage() {
                 >
                   <MousePointerClick className="w-3.5 h-3.5" />
                 </button>
+                {app.cvId && getCVDataById(app.cvId) && (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); downloadTaggedPdf(app); }}
+                    disabled={generatingTaggedFor === app.id}
+                    className="p-1.5 text-slate-500 hover:text-green-400 transition-colors cursor-pointer disabled:opacity-50"
+                    title="Pobierz otagowane CV"
+                  >
+                    <FileDown className="w-3.5 h-3.5" />
+                  </button>
+                )}
                 <div className="flex-1" />
                 <button
                   onClick={(e) => { e.stopPropagation(); openModal(app); }}
@@ -594,6 +623,16 @@ export function ApplicationsPage() {
                 >
                   <MousePointerClick className="w-4 h-4" />
                 </button>
+                {app.cvId && getCVDataById(app.cvId) && (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); downloadTaggedPdf(app); }}
+                    disabled={generatingTaggedFor === app.id}
+                    className="p-2 text-slate-500 hover:text-green-400 transition-colors cursor-pointer disabled:opacity-50"
+                    title="Pobierz otagowane CV"
+                  >
+                    <FileDown className="w-4 h-4" />
+                  </button>
+                )}
                 <div className="flex-1" />
                 <button
                   onClick={(e) => { e.stopPropagation(); openModal(app); }}
@@ -935,17 +974,11 @@ export function ApplicationsPage() {
             {formData.cvId && getCVDataById(formData.cvId) && (
               <button
                 type="button"
-                onClick={() => {
-                  const cvData = getCVDataById(formData.cvId!);
-                  if (cvData) {
-                    localStorage.setItem(CV_PRINT_STORAGE_KEY, JSON.stringify(cvData));
-                    navigate('/cv-generator');
-                  }
-                }}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-primary-500 hover:bg-primary-400 text-slate-900 transition-colors cursor-pointer"
+                onClick={() => setPreviewCvData(getCVDataById(formData.cvId!))}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-dark-600 hover:bg-dark-500 text-slate-300 transition-colors cursor-pointer"
               >
-                <FileDown className="w-3.5 h-3.5" />
-                Podgląd / pobierz CV
+                <Eye className="w-3.5 h-3.5" />
+                Podgląd CV
               </button>
             )}
           </div>
@@ -1033,6 +1066,21 @@ export function ApplicationsPage() {
           onClose={() => setTrackingApp(null)}
           application={trackingApp}
         />
+      )}
+
+      {/* CV Preview overlay */}
+      {previewCvData && (
+        <div className="fixed inset-0 z-50 bg-black/80 overflow-auto">
+          <div className="sticky top-0 z-10 bg-dark-900 border-b border-dark-700 px-4 py-2 flex justify-end">
+            <button
+              onClick={() => setPreviewCvData(null)}
+              className="px-3 py-1.5 text-sm bg-dark-700 hover:bg-dark-600 text-slate-300 transition-colors cursor-pointer"
+            >
+              Zamknij
+            </button>
+          </div>
+          <CVHtml data={previewCvData} preview />
+        </div>
       )}
 
       <ConfirmDialog />

@@ -378,17 +378,16 @@ export function CVEditorPage() {
       dispatch({ type: 'UPDATE_CV', payload: { ...editingCv, name: cvName, ...(fileName ? { fileName } : {}) } });
       setSaved(true);
       setIsSaving(false);
-      setTimeout(() => { setSaved(false); navigate('/cv'); }, 800);
+      setTimeout(() => setSaved(false), 2000); // stay in editor
     } else {
       const newId = uid();
       saveCVDataById(newId, data);
       dispatch({ type: 'ADD_CV', payload: { id: newId, name: cvName, isDefault: state.cvs.length === 0, fileName } });
       localStorage.removeItem(DRAFT_KEY);
-      setData(emptyData());
-      setCvName('');
       setSaved(true);
       setIsSaving(false);
-      setTimeout(() => { setSaved(false); navigate('/cv'); }, 800);
+      // Navigate to edit mode so user can continue editing the newly created CV
+      setTimeout(() => { setSaved(false); navigate(`/cv-editor?edit=${newId}`); }, 800);
     }
   };
 
