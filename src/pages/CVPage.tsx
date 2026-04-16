@@ -1,6 +1,6 @@
-import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, FileText, Star, Trash2, Edit, Tag, Upload, Download, FolderOpen, PenLine } from 'lucide-react';
+import { Plus, FileText, Star, Trash2, Edit, Tag, Download, PenLine } from 'lucide-react';
 
 import { useApp } from '../contexts/AppContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -21,7 +21,7 @@ import { CV } from '../types';
 import { format, parseISO } from 'date-fns';
 import { pl } from 'date-fns/locale';
 import { openDataFolder } from '../utils/storage';
-import { uploadCVFile, getCVFileUrl, deleteCVFileFromStorage } from '../lib/db';
+import { getCVFileUrl, deleteCVFileFromStorage } from '../lib/db';
 export function CVPage() {
   const { state, dispatch, isElectronApp } = useApp();
   const { user } = useAuth();
@@ -29,21 +29,18 @@ export function CVPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCV, setEditingCV] = useState<CV | null>(null);
-  const [uploadingFile, setUploadingFile] = useState<File | null>(null);
-  const [isUploading, setIsUploading] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const { confirm, ConfirmDialog } = useConfirm();
 
-  // Listen for FAB click from Layout
-  const openModalFab = useCallback(() => openModal(), []);
+  // Listen for FAB click from Layout → navigate to editor
+  const goToEditor = useCallback(() => navigate('/cv-editor'), [navigate]);
   useEffect(() => {
     const handler = (e: Event) => {
-      if ((e as CustomEvent).detail === '/cv') openModalFab();
+      if ((e as CustomEvent).detail === '/cv') goToEditor();
     };
     window.addEventListener('fab-click', handler);
     return () => window.removeEventListener('fab-click', handler);
-  }, [openModalFab]);
+  }, [goToEditor]);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -69,86 +66,27 @@ export function CVPage() {
       });
   }, [state.cvs, searchQuery]);
 
-  const openModal = (cv?: CV) => {
-    if (cv) {
-      setEditingCV(cv);
-      setFormData({
-        name: cv.name,
-        targetPosition: cv.targetPosition || '',
-        keywords: cv.keywords?.join(', ') || '',
-        notes: cv.notes || '',
-        isDefault: cv.isDefault,
-      });
-      setUploadingFile(null);
-    } else {
-      setEditingCV(null);
-      setFormData({
-        name: '',
-        targetPosition: '',
-        keywords: '',
-        notes: '',
-        isDefault: state.cvs.length === 0,
-      });
-      setUploadingFile(null);
-    }
+  const openModal = (cv: CV) => {
+    setEditingCV(cv);
+    setFormData({
+      name: cv.name,
+      targetPosition: cv.targetPosition || '',
+      keywords: cv.keywords?.join(', ') || '',
+      notes: cv.notes || '',
+      isDefault: cv.isDefault,
+    });
     setIsModalOpen(true);
   };
 
   const closeModal = () => {
     setIsModalOpen(false);
     setEditingCV(null);
-    setUploadingFile(null);
   };
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setUploadingFile(file);
-      if (!formData.name) {
-        setFormData({ ...formData, name: file.name.replace(/\.[^.]+$/, '') });
-      }
-    }
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-
     setFormError(null);
-
-    // Plik wymagany przy nowym CV
-    if (!editingCV && !uploadingFile) {
-      setFormError('Dodaj plik CV (PDF, DOC, DOCX) — bez pliku nie ma co śledzić.');
-      return;
-    }
-
-    setIsUploading(true);
-
-    let fileName: string | undefined = editingCV?.fileName;
-
-    let newCvId: string | undefined;
-
-    if (uploadingFile && user) {
-      // Użyj timestamp jako unikalnej nazwy — sanityzuj (brak spacji i polskich znaków)
-      const safeName = uploadingFile.name
-        .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // usuń polskie znaki
-        .replace(/\s+/g, '_')                              // spacje → podkreślniki
-        .replace(/[^a-zA-Z0-9._-]/g, '');                 // tylko bezpieczne znaki
-      const uniqueFileName = `${Date.now()}_${safeName}`;
-
-      // Usuń stary plik jeśli zastępujemy
-      if (editingCV?.fileName) {
-        await deleteCVFileFromStorage(editingCV.fileName);
-      }
-
-      const arrayBuffer = await uploadingFile.arrayBuffer();
-      const result = await uploadCVFile(user.id, 'files', uniqueFileName, new Blob([arrayBuffer], { type: uploadingFile.type }));
-      if (!result || result.error) {
-        setFormError(`Błąd przy upload pliku: ${result?.error ?? 'nieznany błąd'}. Sprawdź konsolę (F12).`);
-        setIsUploading(false);
-        return;
-      }
-      fileName = result.path;
-    }
+    if (!editingCV) return;
 
     const cvData = {
       name: formData.name,
@@ -158,28 +96,20 @@ export function CVPage() {
         : undefined,
       notes: formData.notes || undefined,
       isDefault: formData.isDefault,
-      fileName,
+      fileName: editingCV.fileName,
     };
 
-    // Placeholder approach — nie potrzeba wykrywania linków przy uploadzie.
-    // Użytkownik wstawia placeholder URL-e ręcznie w CV.
-
-    if (editingCV) {
-      dispatch({ type: 'UPDATE_CV', payload: { ...editingCV, ...cvData } });
-    } else {
-      dispatch({ type: 'ADD_CV', payload: cvData });
-    }
+    dispatch({ type: 'UPDATE_CV', payload: { ...editingCV, ...cvData } });
 
     if (formData.isDefault) {
       state.cvs.forEach((cv) => {
-        if (cv.isDefault && cv.id !== editingCV?.id) {
+        if (cv.isDefault && cv.id !== editingCV.id) {
           dispatch({ type: 'UPDATE_CV', payload: { ...cv, isDefault: false } });
         }
       });
     }
 
     closeModal();
-    setIsUploading(false);
   };
 
   const handleDelete = async (id: string) => {
@@ -265,7 +195,7 @@ export function CVPage() {
               </Button>
             )}
             <div className="hidden md:block">
-              <Button onClick={() => openModal()}>
+              <Button onClick={() => navigate('/cv-editor')}>
                 <Plus className="w-4 h-4 mr-2" />
                 Nowe CV
               </Button>
@@ -422,45 +352,10 @@ export function CVPage() {
         size="md"
       >
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* File upload */}
-          {hasFileSupport && (
-            <div className="bg-dark-700/50 p-4 text-center">
-              {uploadingFile ? (
-                <div className="flex items-center justify-center gap-2 text-success-400">
-                  <FileText className="w-5 h-5" />
-                  <span>{uploadingFile.name}</span>
-                  <button
-                    type="button"
-                    onClick={() => setUploadingFile(null)}
-                    className="text-slate-400 hover:text-danger-400"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-              ) : editingCV?.fileName ? (
-                <div className="flex items-center justify-center gap-2 text-slate-400">
-                  <FileText className="w-5 h-5" />
-                  <span>Aktualny plik: {editingCV.fileName.split('/').pop()}</span>
-                </div>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  className="flex items-center justify-center gap-2 text-slate-400 hover:text-primary-400 transition-colors w-full"
-                >
-                  <Upload className="w-5 h-5" />
-                  <span>Kliknij aby wybrać plik CV (PDF, DOC, DOCX)</span>
-                </button>
-              )}
-              {!uploadingFile && editingCV?.fileName && (
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  className="mt-2 text-sm text-primary-400 hover:text-primary-300"
-                >
-                  Zmień plik
-                </button>
-              )}
+          {editingCV?.fileName && (
+            <div className="flex items-center gap-2 text-sm text-slate-400 bg-dark-700/50 px-4 py-3">
+              <FileText className="w-4 h-4 flex-shrink-0" />
+              <span className="truncate">{editingCV.fileName.split('/').pop()}</span>
             </div>
           )}
 
@@ -518,8 +413,8 @@ export function CVPage() {
             <Button type="button" variant="secondary" onClick={closeModal}>
               Anuluj
             </Button>
-            <Button type="submit" disabled={isUploading}>
-              {isUploading ? 'Wysyłanie pliku...' : editingCV ? 'Zapisz zmiany' : 'Dodaj CV'}
+            <Button type="submit">
+              Zapisz zmiany
             </Button>
           </div>
         </form>

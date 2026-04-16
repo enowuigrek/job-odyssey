@@ -506,9 +506,9 @@ export function InterviewsPage() {
       </div>
 
       {state.applications.length === 0 && (
-        <div className="bg-warning-500/10 border border-warning-500/30 p-4 text-warning-300">
+        <p className="text-sm text-slate-500 px-1 py-3">
           Najpierw dodaj aplikację, żeby móc dodać rozmowę kwalifikacyjną.
-        </div>
+        </p>
       )}
 
       {/* Filters */}

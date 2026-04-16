@@ -10,11 +10,10 @@ import { defaultCVData } from '../templates/cv/defaultCVData';
 import { CVTemplate } from '../templates/cv/CVTemplate';
 import { CVHtml } from '../templates/cv/CVHtml';
 import {
-  CV_EDITOR_STORAGE_KEY,
   getCVDataById,
   saveCVDataById,
 } from '../lib/generateCV';
-import { getDistinctTrackingLinksForUser } from '../lib/db';
+import { getDistinctTrackingLinksForUser, uploadCVFile } from '../lib/db';
 import { useAuth } from '../contexts/AuthContext';
 import { useApp } from '../contexts/AppContext';
 
@@ -263,10 +262,6 @@ export function CVEditorPage() {
       const stored = getCVDataById(editCvId);
       if (stored) return stored;
     }
-    const draft = localStorage.getItem(CV_EDITOR_STORAGE_KEY);
-    if (draft && !editCvId) {
-      try { return JSON.parse(draft) as CVData; } catch { /* */ }
-    }
     return emptyData();
   });
 
@@ -274,6 +269,7 @@ export function CVEditorPage() {
   const [nameError, setNameError] = useState(false);
   const [dbLinks, setDbLinks] = useState<DbLink[]>([]);
   const [saved, setSaved] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
 
@@ -282,33 +278,48 @@ export function CVEditorPage() {
     getDistinctTrackingLinksForUser(user.id).then(setDbLinks).catch(() => {});
   }, [user]);
 
-  // Persist draft (new CV only) to localStorage while editing
-  useEffect(() => {
-    if (!editCvId) {
-      localStorage.setItem(CV_EDITOR_STORAGE_KEY, JSON.stringify(data));
-    }
-  }, [data, editCvId]);
-
   const set = (patch: Partial<CVData>) => setData(d => ({ ...d, ...patch }));
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!cvName.trim()) { setNameError(true); return; }
     setNameError(false);
+    setIsSaving(true);
+
+    // Auto-generate PDF and upload to storage
+    let fileName: string | undefined;
+    if (user) {
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const el = createElement(CVTemplate, { data }) as unknown as ReactElement<DocumentProps, any>;
+        const blob = await pdf(el).toBlob();
+        const cvId = editCvId ?? uid();
+        const safeName = cvName
+          .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+          .replace(/\s+/g, '_')
+          .replace(/[^a-zA-Z0-9._-]/g, '');
+        const uniqueFileName = `${Date.now()}_${safeName}.pdf`;
+        const pdfFile = new File([blob], uniqueFileName, { type: 'application/pdf' });
+        const result = await uploadCVFile(user.id, cvId, uniqueFileName, pdfFile);
+        if (result && !result.error) fileName = result.path;
+      } catch (e) {
+        console.error('PDF auto-generate error:', e);
+      }
+    }
 
     if (editCvId && editingCv) {
       saveCVDataById(editCvId, data);
-      dispatch({ type: 'UPDATE_CV', payload: { ...editingCv, name: cvName } });
+      dispatch({ type: 'UPDATE_CV', payload: { ...editingCv, name: cvName, ...(fileName ? { fileName } : {}) } });
       setSaved(true);
+      setIsSaving(false);
       setTimeout(() => { setSaved(false); navigate('/cv'); }, 800);
     } else {
       const newId = uid();
       saveCVDataById(newId, data);
-      dispatch({ type: 'ADD_CV', payload: { id: newId, name: cvName, isDefault: state.cvs.length === 0 } });
-      // Clear draft
-      localStorage.removeItem(CV_EDITOR_STORAGE_KEY);
+      dispatch({ type: 'ADD_CV', payload: { id: newId, name: cvName, isDefault: state.cvs.length === 0, fileName } });
       setData(emptyData());
       setCvName('');
       setSaved(true);
+      setIsSaving(false);
       setTimeout(() => { setSaved(false); navigate('/cv'); }, 800);
     }
   };
@@ -348,12 +359,13 @@ export function CVEditorPage() {
             </button>
             <button
               onClick={handleSave}
-              className={`flex items-center gap-1.5 px-4 py-1.5 text-sm font-medium transition-colors cursor-pointer ${
+              disabled={isSaving}
+              className={`flex items-center gap-1.5 px-4 py-1.5 text-sm font-medium transition-colors cursor-pointer disabled:opacity-60 ${
                 saved ? 'bg-success-500/20 text-success-400' : 'bg-primary-500 hover:bg-primary-400 text-slate-900'
               }`}
             >
-              <Save className="w-4 h-4" />
-              {saved ? 'Zapisano!' : 'Zapisz'}
+              {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+              {isSaving ? 'Generuję…' : saved ? 'Zapisano!' : 'Zapisz'}
             </button>
           </div>
         }
@@ -661,12 +673,13 @@ export function CVEditorPage() {
         </button>
         <button
           onClick={handleSave}
-          className={`flex items-center gap-1.5 px-6 py-2 text-sm font-medium transition-colors cursor-pointer ${
+          disabled={isSaving}
+          className={`flex items-center gap-1.5 px-6 py-2 text-sm font-medium transition-colors cursor-pointer disabled:opacity-60 ${
             saved ? 'bg-success-500/20 text-success-400' : 'bg-primary-500 hover:bg-primary-400 text-slate-900'
           }`}
         >
-          <Save className="w-4 h-4" />
-          {saved ? 'Zapisano!' : editCvId ? 'Zapisz zmiany' : 'Zapisz do Bazy CV'}
+          {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+          {isSaving ? 'Generuję PDF…' : saved ? 'Zapisano!' : editCvId ? 'Zapisz zmiany' : 'Zapisz do Bazy CV'}
         </button>
       </div>
     </div>

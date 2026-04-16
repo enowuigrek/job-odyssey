@@ -28,7 +28,7 @@ const navItems = [
   { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
   { to: '/applications', icon: Briefcase, label: 'Aplikacje' },
   { to: '/interviews', icon: MessageSquare, label: 'Rozmowy' },
-  { to: '/cv-generator', icon: FileOutput, label: 'Generator CV' },
+  { to: '/cv-editor', icon: FileOutput, label: 'Generator CV' },
   { to: '/cv', icon: FileText, label: 'Baza CV' },
   { to: '/links', icon: LinkIcon, label: 'Moje linki' },
 ];

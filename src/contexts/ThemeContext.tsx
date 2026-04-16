@@ -14,8 +14,8 @@ const THEME_STORAGE_KEY = 'job-odyssey-theme';
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setThemeState] = useState<Theme>(() => {
-    const saved = localStorage.getItem(THEME_STORAGE_KEY);
-    return (saved as Theme) || 'dark';
+    // Light mode disabled — always dark
+    return 'dark';
   });
 
   useEffect(() => {

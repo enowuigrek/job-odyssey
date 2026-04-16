@@ -250,45 +250,6 @@ export function SettingsPage() {
         </CardBody>
       </Card>
 
-      {/* Theme */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center gap-2">
-            <Palette className="w-5 h-5 text-slate-400" />
-            <h2 className="font-semibold text-slate-100">Wygląd</h2>
-          </div>
-        </CardHeader>
-        <CardBody>
-          <p className="text-sm text-slate-400 mb-4">
-            Wybierz motyw kolorystyczny aplikacji
-          </p>
-          <div className="flex gap-4">
-            <button
-              onClick={() => setTheme('dark')}
-              className={`flex-1 flex items-center justify-center gap-3 p-4 transition-all cursor-pointer ${
-                theme === 'dark'
-                  ? 'bg-primary-500/20 ring-2 ring-primary-500'
-                  : 'bg-dark-700 hover:bg-dark-600'
-              }`}
-            >
-              <Moon className="w-5 h-5" />
-              <span className="font-medium">Ciemny</span>
-            </button>
-            <button
-              onClick={() => setTheme('light')}
-              className={`flex-1 flex items-center justify-center gap-3 p-4 transition-all cursor-pointer ${
-                theme === 'light'
-                  ? 'bg-primary-500/20 ring-2 ring-primary-500'
-                  : 'bg-dark-700 hover:bg-dark-600'
-              }`}
-            >
-              <Sun className="w-5 h-5" />
-              <span className="font-medium">Jasny</span>
-            </button>
-          </div>
-        </CardBody>
-      </Card>
-
       {/* About */}
       <Card>
         <CardBody className="text-center">
