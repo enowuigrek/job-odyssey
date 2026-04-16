@@ -311,22 +311,23 @@ export function CVEditorPage() {
   // Build dbLinks from user's link database (Moje linki)
   const dbLinks: DbLink[] = userLinks.map(l => ({ label: l.label, targetUrl: l.url }));
 
-  // Auto-fill contact links from Moje linki for brand-new CVs (no draft, no edit)
+  // Auto-fill contact links + email for brand-new CVs (no draft, no edit)
   const autoFilledLinks = useRef(false);
   useEffect(() => {
-    if (editCvId) return;                     // editing existing → skip
-    if (localStorage.getItem(DRAFT_KEY)) return; // draft loaded → skip
-    if (autoFilledLinks.current) return;      // already done
-    if (userLinks.length === 0) return;       // not loaded yet
+    if (editCvId) return;
+    if (localStorage.getItem(DRAFT_KEY)) return;
+    if (autoFilledLinks.current) return;
+    if (userLinks.length === 0 && !user?.email) return;
     autoFilledLinks.current = true;
     setData(d => ({
       ...d,
       contact: {
         ...d.contact,
-        links: userLinks.map(l => ({ label: l.label, url: l.url })),
+        ...(user?.email ? { email: user.email } : {}),
+        ...(userLinks.length > 0 ? { links: userLinks.map(l => ({ label: l.label, url: l.url })) } : {}),
       },
     }));
-  }, [userLinks, editCvId]);
+  }, [userLinks, user, editCvId]);
 
   const set = (patch: Partial<CVData>) => setData(d => ({ ...d, ...patch }));
 
