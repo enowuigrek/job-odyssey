@@ -13,9 +13,12 @@ import {
   getCVDataById,
   saveCVDataById,
 } from '../lib/generateCV';
-import { getDistinctTrackingLinksForUser, uploadCVFile } from '../lib/db';
+import { uploadCVFile } from '../lib/db';
+import { useUserLinks } from '../hooks/useUserLinks';
 import { useAuth } from '../contexts/AuthContext';
 import { useApp } from '../contexts/AppContext';
+
+const DRAFT_KEY = 'jo-cv-editor-draft';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -268,6 +271,7 @@ export function CVEditorPage() {
   const [searchParams] = useSearchParams();
   const { user } = useAuth();
   const { state, dispatch } = useApp();
+  const { links: userLinks } = useUserLinks();
 
   const editCvId = searchParams.get('edit');
   const editingCv = editCvId ? state.cvs.find(cv => cv.id === editCvId) : null;
@@ -277,13 +281,25 @@ export function CVEditorPage() {
       const stored = getCVDataById(editCvId);
       if (stored) return stored;
     }
+    // Load draft for new CV
+    try {
+      const raw = localStorage.getItem(DRAFT_KEY);
+      if (raw) { const parsed = JSON.parse(raw); return parsed.data ?? emptyData(); }
+    } catch { /* ignore */ }
     return emptyData();
   });
 
-  const [cvName, setCvName] = useState(editingCv?.name ?? '');
+  const [cvName, setCvName] = useState(() => {
+    if (editingCv) return editingCv.name;
+    try {
+      const raw = localStorage.getItem(DRAFT_KEY);
+      if (raw) { const parsed = JSON.parse(raw); return parsed.name ?? ''; }
+    } catch { /* ignore */ }
+    return '';
+  });
   const [nameError, setNameError] = useState(false);
-  const [dbLinks, setDbLinks] = useState<DbLink[]>([]);
   const [saved, setSaved] = useState(false);
+  const [draftSaved, setDraftSaved] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
@@ -292,12 +308,22 @@ export function CVEditorPage() {
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
   const toggle = (id: string) => setCollapsed(c => ({ ...c, [id]: !c[id] }));
 
-  useEffect(() => {
-    if (!user) return;
-    getDistinctTrackingLinksForUser(user.id).then(setDbLinks).catch(() => {});
-  }, [user]);
+  // Build dbLinks from user's link database (Moje linki)
+  const dbLinks: DbLink[] = userLinks.map(l => ({ label: l.label, targetUrl: l.url }));
 
   const set = (patch: Partial<CVData>) => setData(d => ({ ...d, ...patch }));
+
+  /** Save draft to localStorage — no PDF, no Supabase */
+  const handleDraftSave = () => {
+    if (editCvId) {
+      // For existing CV: just persist editor data locally
+      saveCVDataById(editCvId, data);
+    } else {
+      localStorage.setItem(DRAFT_KEY, JSON.stringify({ name: cvName, data }));
+    }
+    setDraftSaved(true);
+    setTimeout(() => setDraftSaved(false), 2000);
+  };
 
   const handleSave = async () => {
     if (!cvName.trim()) {
@@ -339,6 +365,7 @@ export function CVEditorPage() {
       const newId = uid();
       saveCVDataById(newId, data);
       dispatch({ type: 'ADD_CV', payload: { id: newId, name: cvName, isDefault: state.cvs.length === 0, fileName } });
+      localStorage.removeItem(DRAFT_KEY);
       setData(emptyData());
       setCvName('');
       setSaved(true);
@@ -381,14 +408,14 @@ export function CVEditorPage() {
               <ArrowLeft className="w-4 h-4" />
             </button>
             <button
-              onClick={handleSave}
-              disabled={isSaving}
-              className={`flex items-center gap-1.5 px-4 py-1.5 text-sm font-medium transition-colors cursor-pointer disabled:opacity-60 ${
-                saved ? 'bg-success-500/20 text-success-400' : 'bg-primary-500 hover:bg-primary-400 text-slate-900'
+              onClick={handleDraftSave}
+              className={`flex items-center gap-1.5 px-4 py-1.5 text-sm font-medium transition-colors cursor-pointer ${
+                draftSaved ? 'bg-success-500/20 text-success-400' : 'bg-dark-700 hover:bg-dark-600 text-slate-300'
               }`}
+              title="Zapisz szkic (bez eksportu do bazy CV)"
             >
-              {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-              {isSaving ? 'Generuję…' : saved ? 'Zapisano!' : 'Zapisz'}
+              <Save className="w-4 h-4" />
+              {draftSaved ? 'Zapisano szkic' : 'Zapisz szkic'}
             </button>
           </div>
         }
