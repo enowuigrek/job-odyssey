@@ -335,15 +335,6 @@ export function CVPage() {
         </div>
       )}
 
-      {/* Hidden file input */}
-      <input
-        type="file"
-        ref={fileInputRef}
-        onChange={handleFileSelect}
-        accept=".pdf,.doc,.docx"
-        className="hidden"
-      />
-
       {/* Modal */}
       <Modal
         isOpen={isModalOpen}
