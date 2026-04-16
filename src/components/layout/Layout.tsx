@@ -2,6 +2,7 @@ import { Outlet, useLocation } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import { MobileNav } from './MobileNav';
 import { MobileHeader } from './MobileHeader';
+import { WelcomeModal } from '../ui/WelcomeModal';
 
 const dragStyle = { WebkitAppRegion: 'drag' } as React.CSSProperties;
 
@@ -46,6 +47,7 @@ export function Layout() {
       )}
       {/* Mobile bottom nav - ukryta na md+ */}
       <MobileNav />
+      <WelcomeModal />
     </div>
   );
 }
