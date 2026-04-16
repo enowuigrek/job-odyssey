@@ -94,30 +94,38 @@ export function CVHtml({ data, preview = false }: Props) {
       ) : null}
 
       {/* ── TECHNOLOGIE I NARZĘDZIA ─────────────────────────────── */}
-      <div className="cv-section-header">
-        <h2 className="cv-section-title">TECHNOLOGIE I NARZĘDZIA</h2>
-      </div>
-      {data.technologies.map(tech => (
-        <div key={tech.category} className="cv-tech-row">
-          <span className="cv-tech-label">{tech.category}</span>
-          <span className="cv-tech-value">{tech.items}</span>
-        </div>
-      ))}
+      {data.showTechnologies !== false && (
+        <>
+          <div className="cv-section-header">
+            <h2 className="cv-section-title">TECHNOLOGIE I NARZĘDZIA</h2>
+          </div>
+          {data.technologies.map(tech => (
+            <div key={tech.category} className="cv-tech-row">
+              <span className="cv-tech-label">{tech.category}</span>
+              <span className="cv-tech-value">{tech.items}</span>
+            </div>
+          ))}
+        </>
+      )}
 
       {/* ── WYBRANE PROJEKTY ────────────────────────────────────── */}
-      <div className="cv-section-header">
-        <h2 className="cv-section-title">WYBRANE PROJEKTY</h2>
-      </div>
-      {data.projects.map(project => (
-        <div key={project.name} className="cv-project">
-          <div className="cv-project-name">{project.name}</div>
-          <div className="cv-project-tagline">{project.tagline}</div>
-          <p className="cv-project-desc">{project.description}</p>
-          <p className="cv-project-stack">{project.stack}</p>
-          {project.note && <p className="cv-project-note">{project.note}</p>}
-          <ProjectLinks links={project.links} />
-        </div>
-      ))}
+      {data.showProjects !== false && (
+        <>
+          <div className="cv-section-header">
+            <h2 className="cv-section-title">WYBRANE PROJEKTY</h2>
+          </div>
+          {data.projects.map(project => (
+            <div key={project.name} className="cv-project">
+              <div className="cv-project-name">{project.name}</div>
+              <div className="cv-project-tagline">{project.tagline}</div>
+              <p className="cv-project-desc">{project.description}</p>
+              <p className="cv-project-stack">{project.stack}</p>
+              {project.note && <p className="cv-project-note">{project.note}</p>}
+              <ProjectLinks links={project.links} />
+            </div>
+          ))}
+        </>
+      )}
 
       {/* ── DOŚWIADCZENIE ZAWODOWE ──────────────────────────────── */}
       <div className="cv-section-header">

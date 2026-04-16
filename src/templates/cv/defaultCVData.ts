@@ -16,6 +16,8 @@ export const defaultCVData: CVData = {
   profile: 'Tutaj wpisz swój profil zawodowy — kilka zdań o tym, kim jesteś, co robisz i co wyróżnia Cię spośród innych kandydatów. Skup się na wartości, którą wnosisz, a nie tylko na latach doświadczenia.',
   approach: '',
   showApproach: false,
+  showTechnologies: false,
+  showProjects: false,
   technologies: [
     {
       category: 'Frontend:',

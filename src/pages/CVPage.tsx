@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, FileText, Star, Trash2, Edit, Tag, Download, PenLine, FolderOpen } from 'lucide-react';
+import { Plus, FileText, Star, Trash2, Edit, Tag, Download, PenLine, FolderOpen, Eye } from 'lucide-react';
 
 import { useApp } from '../contexts/AppContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -22,6 +22,7 @@ import { format, parseISO } from 'date-fns';
 import { pl } from 'date-fns/locale';
 import { openDataFolder } from '../utils/storage';
 import { getCVFileUrl, deleteCVFileFromStorage } from '../lib/db';
+import { CVHtml } from '../templates/cv/CVHtml';
 export function CVPage() {
   const { state, dispatch, isElectronApp } = useApp();
   const { user } = useAuth();
@@ -31,6 +32,7 @@ export function CVPage() {
   const [editingCV, setEditingCV] = useState<CV | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
   const { confirm, ConfirmDialog } = useConfirm();
+  const [previewCvId, setPreviewCvId] = useState<string | null>(null);
 
   // Listen for FAB click from Layout → navigate to editor
   const goToEditor = useCallback(() => navigate('/cv-editor'), [navigate]);
@@ -298,6 +300,15 @@ export function CVPage() {
                   )}
                   {getCVDataById(cv.id) && (
                     <button
+                      onClick={() => setPreviewCvId(cv.id)}
+                      className="p-1.5 text-slate-500 hover:text-primary-400 hover:bg-primary-500/10 transition-colors cursor-pointer"
+                      title="Podgląd CV"
+                    >
+                      <Eye className="w-4 h-4" />
+                    </button>
+                  )}
+                  {getCVDataById(cv.id) && (
+                    <button
                       onClick={() => navigate(`/cv-editor?edit=${cv.id}`)}
                       className="p-1.5 text-slate-500 hover:text-primary-400 hover:bg-primary-500/10 transition-colors cursor-pointer"
                       title="Edytuj treść"
@@ -411,6 +422,23 @@ export function CVPage() {
         </form>
       </Modal>
 
+      {previewCvId && (() => {
+        const previewData = getCVDataById(previewCvId);
+        if (!previewData) return null;
+        return (
+          <div className="fixed inset-0 z-50 bg-black/80 overflow-auto">
+            <div className="sticky top-0 z-10 bg-dark-900 border-b border-dark-700 px-4 py-2 flex justify-end">
+              <button
+                onClick={() => setPreviewCvId(null)}
+                className="px-3 py-1.5 text-sm bg-dark-700 hover:bg-dark-600 text-slate-300 transition-colors cursor-pointer"
+              >
+                Zamknij
+              </button>
+            </div>
+            <CVHtml data={previewData} preview />
+          </div>
+        );
+      })()}
       <ConfirmDialog />
     </div>
   );

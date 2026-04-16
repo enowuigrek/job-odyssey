@@ -332,37 +332,45 @@ export function CVTemplate({ data }: CVTemplateProps) {
         ) : null}
 
         {/* ── TECHNOLOGIE I NARZĘDZIA ─────────────────────────────── */}
-        <SectionHeader title="TECHNOLOGIE I NARZĘDZIA" />
-        {data.technologies.map(tech => (
-          <View key={tech.category} style={s.techRow}>
-            <Text style={s.techLabel}>{tech.category}</Text>
-            <Text style={s.techValue}>{tech.items}</Text>
-          </View>
-        ))}
+        {data.showTechnologies !== false && (
+          <>
+            <SectionHeader title="TECHNOLOGIE I NARZĘDZIA" />
+            {data.technologies.map(tech => (
+              <View key={tech.category} style={s.techRow}>
+                <Text style={s.techLabel}>{tech.category}</Text>
+                <Text style={s.techValue}>{tech.items}</Text>
+              </View>
+            ))}
+          </>
+        )}
 
         {/* ── WYBRANE PROJEKTY ────────────────────────────────────── */}
-        <SectionHeader title="WYBRANE PROJEKTY" />
-        {data.projects.map(project => (
-          <View key={project.name} wrap={false}>
-            <Text style={s.projectName}>{project.name}</Text>
-            <Text style={s.projectTagline}>{project.tagline}</Text>
-            <Text style={s.projectDesc}>{project.description}</Text>
-            <Text style={s.projectStack}>{project.stack}</Text>
-            {project.note && <Text style={s.projectNote}>{project.note}</Text>}
-            <View style={s.projectLinksRow}>
-              {project.links.map((link, i) => (
-                <React.Fragment key={link.label}>
-                  {i > 0 && <Text style={s.separatorText}>|</Text>}
-                  <Link src={link.trackedUrl ?? link.url} style={s.linkInline}>
-                    {link.label === 'GitHub' || link.label.endsWith('GitHub')
-                      ? 'GitHub'
-                      : link.url.replace(/^https?:\/\//, '')}
-                  </Link>
-                </React.Fragment>
-              ))}
-            </View>
-          </View>
-        ))}
+        {data.showProjects !== false && (
+          <>
+            <SectionHeader title="WYBRANE PROJEKTY" />
+            {data.projects.map(project => (
+              <View key={project.name} wrap={false}>
+                <Text style={s.projectName}>{project.name}</Text>
+                <Text style={s.projectTagline}>{project.tagline}</Text>
+                <Text style={s.projectDesc}>{project.description}</Text>
+                <Text style={s.projectStack}>{project.stack}</Text>
+                {project.note && <Text style={s.projectNote}>{project.note}</Text>}
+                <View style={s.projectLinksRow}>
+                  {project.links.map((link, i) => (
+                    <React.Fragment key={link.label}>
+                      {i > 0 && <Text style={s.separatorText}>|</Text>}
+                      <Link src={link.trackedUrl ?? link.url} style={s.linkInline}>
+                        {link.label === 'GitHub' || link.label.endsWith('GitHub')
+                          ? 'GitHub'
+                          : link.url.replace(/^https?:\/\//, '')}
+                      </Link>
+                    </React.Fragment>
+                  ))}
+                </View>
+              </View>
+            ))}
+          </>
+        )}
 
         {/* ── DOŚWIADCZENIE ZAWODOWE ──────────────────────────────── */}
         <SectionHeader title="DOŚWIADCZENIE ZAWODOWE" />

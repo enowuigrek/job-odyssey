@@ -63,6 +63,8 @@ export interface CVData {
   approachTitle?: string;
   showApproach?: boolean;
   approach: string;
+  showTechnologies?: boolean;
+  showProjects?: boolean;
   technologies: CVTechCategory[];
   projects: CVProject[];
   experience: CVExperience[];

@@ -1,7 +1,7 @@
-import { useState, useEffect, createElement } from 'react';
+import { useState, useEffect, createElement, useRef } from 'react';
 import type { ReactElement } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Plus, Trash2, Save, Eye, EyeOff, ArrowLeft, FileEdit, Pencil, Check, FileDown, Loader2 } from 'lucide-react';
+import { Plus, Trash2, Save, Eye, EyeOff, ArrowLeft, FileEdit, Pencil, Check, FileDown, Loader2, ChevronDown, ChevronRight } from 'lucide-react';
 import { pdf } from '@react-pdf/renderer';
 import type { DocumentProps } from '@react-pdf/renderer';
 import { Button, PageHeader } from '../components/ui';
@@ -38,17 +38,21 @@ function removeAt<T>(arr: T[], i: number): T[] {
 
 interface DbLink { label: string; targetUrl: string; }
 
-/** Editable section heading — click pencil to rename, with optional toggle */
+/** Editable section heading — pencil always visible, with collapse toggle and optional enable/disable checkbox */
 function SectionHeading({
   title,
   onRename,
-  visible,
-  onToggle,
+  enabled,
+  onToggleEnabled,
+  collapsed,
+  onToggleCollapse,
 }: {
   title: string;
   onRename?: (v: string) => void;
-  visible?: boolean;
-  onToggle?: () => void;
+  enabled?: boolean;
+  onToggleEnabled?: () => void;
+  collapsed?: boolean;
+  onToggleCollapse?: () => void;
 }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(title);
@@ -59,7 +63,7 @@ function SectionHeading({
   };
 
   return (
-    <div className="border-b border-primary-500/40 pb-1.5 mb-4 mt-8 flex items-center gap-2 group">
+    <div className="border-b border-primary-500/40 pb-1.5 mb-4 mt-8 flex items-center gap-2">
       {editing ? (
         <>
           <input
@@ -76,28 +80,39 @@ function SectionHeading({
         </>
       ) : (
         <>
-          <h2 className="text-xs font-medium text-primary-400 uppercase tracking-widest flex-1">
+          <h2 className="text-xs font-medium text-primary-400 uppercase tracking-widest">
             {title}
           </h2>
           {onRename && (
             <button
               type="button"
               onClick={() => { setDraft(title); setEditing(true); }}
-              className="p-1 text-slate-600 hover:text-primary-400 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
-              title="Zmień nazwę sekcji"
+              className="p-0.5 text-slate-500 hover:text-primary-400 transition-colors cursor-pointer flex-shrink-0"
+              title="Zmień nazwę"
             >
               <Pencil className="w-3 h-3" />
             </button>
           )}
         </>
       )}
-      {onToggle && (
+      <div className="flex-1" />
+      {onToggleEnabled !== undefined && enabled !== undefined && (
+        <label className="flex items-center gap-1 cursor-pointer flex-shrink-0 mr-1" title={enabled ? 'Wyłącz sekcję' : 'Włącz sekcję'}>
+          <input
+            type="checkbox"
+            checked={enabled}
+            onChange={onToggleEnabled}
+            className="w-3.5 h-3.5"
+          />
+        </label>
+      )}
+      {onToggleCollapse && (
         <button
           type="button"
-          onClick={onToggle}
-          className="text-xs text-slate-500 hover:text-slate-300 transition-colors cursor-pointer flex-shrink-0 ml-1"
+          onClick={onToggleCollapse}
+          className="p-1 text-slate-500 hover:text-slate-300 transition-colors cursor-pointer flex-shrink-0"
         >
-          {visible !== false ? 'Ukryj' : 'Pokaż'}
+          {collapsed ? <ChevronRight className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
         </button>
       )}
     </div>
@@ -273,6 +288,10 @@ export function CVEditorPage() {
   const [showPreview, setShowPreview] = useState(false);
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
 
+  const nameRef = useRef<HTMLDivElement>(null);
+  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
+  const toggle = (id: string) => setCollapsed(c => ({ ...c, [id]: !c[id] }));
+
   useEffect(() => {
     if (!user) return;
     getDistinctTrackingLinksForUser(user.id).then(setDbLinks).catch(() => {});
@@ -281,7 +300,11 @@ export function CVEditorPage() {
   const set = (patch: Partial<CVData>) => setData(d => ({ ...d, ...patch }));
 
   const handleSave = async () => {
-    if (!cvName.trim()) { setNameError(true); return; }
+    if (!cvName.trim()) {
+      setNameError(true);
+      nameRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
     setNameError(false);
     setIsSaving(true);
 
@@ -374,7 +397,7 @@ export function CVEditorPage() {
 
       {!showPreview && (<>
       {/* CV name — required */}
-      <div className="bg-dark-800 border border-dark-600 p-4">
+      <div ref={nameRef} className="bg-dark-800 border border-dark-600 p-4">
         <FieldLabel>Nazwa CV (widoczna w Bazie CV) *</FieldLabel>
         <TextInput
           value={cvName}
@@ -391,260 +414,336 @@ export function CVEditorPage() {
       </div>
 
       {/* ── Nagłówek ─────────────────────────────────────────────────── */}
-      <SectionHeading title="Nagłówek" />
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        <div>
-          <FieldLabel>Imię i nazwisko</FieldLabel>
-          <TextInput value={data.name} onChange={v => set({ name: v })} placeholder="IMIĘ NAZWISKO" />
+      <SectionHeading
+        title="Nagłówek"
+        collapsed={collapsed['header']}
+        onToggleCollapse={() => toggle('header')}
+      />
+      {!collapsed['header'] && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div>
+            <FieldLabel>Imię i nazwisko</FieldLabel>
+            <TextInput value={data.name} onChange={v => set({ name: v })} placeholder="IMIĘ NAZWISKO" />
+          </div>
+          <div>
+            <FieldLabel>Podtytuł / stanowisko</FieldLabel>
+            <TextInput value={data.subtitle} onChange={v => set({ subtitle: v })} placeholder="Frontend Developer | React" />
+          </div>
         </div>
-        <div>
-          <FieldLabel>Podtytuł / stanowisko</FieldLabel>
-          <TextInput value={data.subtitle} onChange={v => set({ subtitle: v })} placeholder="Frontend Developer | React" />
-        </div>
-      </div>
+      )}
 
       {/* ── Kontakt ──────────────────────────────────────────────────── */}
-      <SectionHeading title="Kontakt" />
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
-        <div>
-          <FieldLabel>Lokalizacja</FieldLabel>
-          <TextInput value={data.contact.location} onChange={v => set({ contact: { ...data.contact, location: v } })} placeholder="Miasto" />
-        </div>
-        <div>
-          <FieldLabel>Telefon</FieldLabel>
-          <TextInput value={data.contact.phone} onChange={v => set({ contact: { ...data.contact, phone: v } })} placeholder="000 000 000" />
-        </div>
-        <div>
-          <FieldLabel>E-mail</FieldLabel>
-          <TextInput value={data.contact.email} onChange={v => set({ contact: { ...data.contact, email: v } })} placeholder="email@example.com" />
-        </div>
-      </div>
-      <FieldLabel>Linki (LinkedIn, GitHub, Portfolio…)</FieldLabel>
-      <LinksEditor
-        links={data.contact.links}
-        dbLinks={dbLinks}
-        onChange={links => set({ contact: { ...data.contact, links } })}
+      <SectionHeading
+        title="Kontakt"
+        collapsed={collapsed['contact']}
+        onToggleCollapse={() => toggle('contact')}
       />
+      {!collapsed['contact'] && (
+        <>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+            <div>
+              <FieldLabel>Lokalizacja</FieldLabel>
+              <TextInput value={data.contact.location} onChange={v => set({ contact: { ...data.contact, location: v } })} placeholder="Miasto" />
+            </div>
+            <div>
+              <FieldLabel>Telefon</FieldLabel>
+              <TextInput value={data.contact.phone} onChange={v => set({ contact: { ...data.contact, phone: v } })} placeholder="000 000 000" />
+            </div>
+            <div>
+              <FieldLabel>E-mail</FieldLabel>
+              <TextInput value={data.contact.email} onChange={v => set({ contact: { ...data.contact, email: v } })} placeholder="email@example.com" />
+            </div>
+          </div>
+          <FieldLabel>Linki (LinkedIn, GitHub, Portfolio…)</FieldLabel>
+          <LinksEditor
+            links={data.contact.links}
+            dbLinks={dbLinks}
+            onChange={links => set({ contact: { ...data.contact, links } })}
+          />
+        </>
+      )}
 
       {/* ── Profil ───────────────────────────────────────────────────── */}
       <SectionHeading
         title={data.profileTitle || 'Profil'}
         onRename={v => set({ profileTitle: v })}
+        collapsed={collapsed['profile']}
+        onToggleCollapse={() => toggle('profile')}
       />
-      <TextArea value={data.profile} onChange={v => set({ profile: v })} rows={5} placeholder="Krótki opis..." />
+      {!collapsed['profile'] && (
+        <TextArea value={data.profile} onChange={v => set({ profile: v })} rows={5} placeholder="Krótki opis..." />
+      )}
 
       {/* ── Podejście do pracy (opcjonalne) ──────────────────────────── */}
       <SectionHeading
         title={data.approachTitle || 'Podejście do pracy'}
         onRename={v => set({ approachTitle: v })}
-        visible={data.showApproach !== false}
-        onToggle={() => set({ showApproach: data.showApproach === false ? true : false })}
+        enabled={data.showApproach !== false}
+        onToggleEnabled={() => set({ showApproach: !data.showApproach })}
+        collapsed={collapsed['approach']}
+        onToggleCollapse={() => toggle('approach')}
       />
-      {data.showApproach !== false && (
+      {!collapsed['approach'] && (
         <TextArea value={data.approach} onChange={v => set({ approach: v })} rows={4} placeholder="Jak pracujesz..." />
       )}
 
       {/* ── Technologie ──────────────────────────────────────────────── */}
-      <SectionHeading title="Technologie i narzędzia" />
-      {data.technologies.map((tech, ti) => (
-        <ItemCard key={ti} onRemove={() => set({ technologies: removeAt(data.technologies, ti) })}>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-2 pr-6">
-            <div>
-              <FieldLabel>Kategoria</FieldLabel>
-              <TextInput
-                value={tech.category}
-                onChange={v => set({ technologies: updateAt(data.technologies, ti, { ...tech, category: v }) })}
-                placeholder="Frontend:"
-              />
-            </div>
-            <div className="md:col-span-2">
-              <FieldLabel>Technologie</FieldLabel>
-              <TextInput
-                value={tech.items}
-                onChange={v => set({ technologies: updateAt(data.technologies, ti, { ...tech, items: v }) })}
-                placeholder="React, TypeScript, Tailwind…"
-              />
-            </div>
-          </div>
-        </ItemCard>
-      ))}
-      <Button variant="secondary" onClick={() => set({ technologies: [...data.technologies, { category: '', items: '' }] })}>
-        <Plus className="w-3.5 h-3.5 mr-1.5" /> Dodaj kategorię
-      </Button>
+      <SectionHeading
+        title="Technologie i narzędzia"
+        enabled={data.showTechnologies !== false}
+        onToggleEnabled={() => set({ showTechnologies: !data.showTechnologies })}
+        collapsed={collapsed['tech']}
+        onToggleCollapse={() => toggle('tech')}
+      />
+      {!collapsed['tech'] && (
+        <>
+          {data.technologies.map((tech, ti) => (
+            <ItemCard key={ti} onRemove={() => set({ technologies: removeAt(data.technologies, ti) })}>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-2 pr-6">
+                <div>
+                  <FieldLabel>Kategoria</FieldLabel>
+                  <TextInput
+                    value={tech.category}
+                    onChange={v => set({ technologies: updateAt(data.technologies, ti, { ...tech, category: v }) })}
+                    placeholder="Frontend:"
+                  />
+                </div>
+                <div className="md:col-span-2">
+                  <FieldLabel>Technologie</FieldLabel>
+                  <TextInput
+                    value={tech.items}
+                    onChange={v => set({ technologies: updateAt(data.technologies, ti, { ...tech, items: v }) })}
+                    placeholder="React, TypeScript, Tailwind…"
+                  />
+                </div>
+              </div>
+            </ItemCard>
+          ))}
+          <Button variant="secondary" onClick={() => set({ technologies: [...data.technologies, { category: '', items: '' }] })}>
+            <Plus className="w-3.5 h-3.5 mr-1.5" /> Dodaj kategorię
+          </Button>
+        </>
+      )}
 
       {/* ── Projekty ─────────────────────────────────────────────────── */}
-      <SectionHeading title="Wybrane projekty" />
-      {data.projects.map((proj, pi) => (
-        <ItemCard key={pi} onRemove={() => set({ projects: removeAt(data.projects, pi) })}>
-          <div className="space-y-3 pr-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <div>
-                <FieldLabel>Nazwa projektu</FieldLabel>
-                <TextInput value={proj.name} onChange={v => set({ projects: updateAt(data.projects, pi, { ...proj, name: v }) })} placeholder="NAZWA PROJEKTU" />
+      <SectionHeading
+        title="Wybrane projekty"
+        enabled={data.showProjects !== false}
+        onToggleEnabled={() => set({ showProjects: !data.showProjects })}
+        collapsed={collapsed['projects']}
+        onToggleCollapse={() => toggle('projects')}
+      />
+      {!collapsed['projects'] && (
+        <>
+          {data.projects.map((proj, pi) => (
+            <ItemCard key={pi} onRemove={() => set({ projects: removeAt(data.projects, pi) })}>
+              <div className="space-y-3 pr-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div>
+                    <FieldLabel>Nazwa projektu</FieldLabel>
+                    <TextInput value={proj.name} onChange={v => set({ projects: updateAt(data.projects, pi, { ...proj, name: v }) })} placeholder="NAZWA PROJEKTU" />
+                  </div>
+                  <div>
+                    <FieldLabel>Tagline</FieldLabel>
+                    <TextInput value={proj.tagline} onChange={v => set({ projects: updateAt(data.projects, pi, { ...proj, tagline: v }) })} placeholder="Jedno zdanie…" />
+                  </div>
+                </div>
+                <div>
+                  <FieldLabel>Opis</FieldLabel>
+                  <TextArea value={proj.description} onChange={v => set({ projects: updateAt(data.projects, pi, { ...proj, description: v }) })} rows={3} />
+                </div>
+                <div>
+                  <FieldLabel>Stack</FieldLabel>
+                  <TextInput value={proj.stack} onChange={v => set({ projects: updateAt(data.projects, pi, { ...proj, stack: v }) })} placeholder="Stack: React, TypeScript…" />
+                </div>
+                <div>
+                  <FieldLabel>Notatka (opcjonalna)</FieldLabel>
+                  <TextInput value={proj.note ?? ''} onChange={v => set({ projects: updateAt(data.projects, pi, { ...proj, note: v || undefined }) })} placeholder="np. Zbudowany z AI" />
+                </div>
+                <div>
+                  <FieldLabel>Linki</FieldLabel>
+                  <LinksEditor links={proj.links} dbLinks={dbLinks} onChange={links => set({ projects: updateAt(data.projects, pi, { ...proj, links }) })} />
+                </div>
               </div>
-              <div>
-                <FieldLabel>Tagline</FieldLabel>
-                <TextInput value={proj.tagline} onChange={v => set({ projects: updateAt(data.projects, pi, { ...proj, tagline: v }) })} placeholder="Jedno zdanie…" />
-              </div>
-            </div>
-            <div>
-              <FieldLabel>Opis</FieldLabel>
-              <TextArea value={proj.description} onChange={v => set({ projects: updateAt(data.projects, pi, { ...proj, description: v }) })} rows={3} />
-            </div>
-            <div>
-              <FieldLabel>Stack</FieldLabel>
-              <TextInput value={proj.stack} onChange={v => set({ projects: updateAt(data.projects, pi, { ...proj, stack: v }) })} placeholder="Stack: React, TypeScript…" />
-            </div>
-            <div>
-              <FieldLabel>Notatka (opcjonalna)</FieldLabel>
-              <TextInput value={proj.note ?? ''} onChange={v => set({ projects: updateAt(data.projects, pi, { ...proj, note: v || undefined }) })} placeholder="np. Zbudowany z AI" />
-            </div>
-            <div>
-              <FieldLabel>Linki</FieldLabel>
-              <LinksEditor links={proj.links} dbLinks={dbLinks} onChange={links => set({ projects: updateAt(data.projects, pi, { ...proj, links }) })} />
-            </div>
-          </div>
-        </ItemCard>
-      ))}
-      <Button variant="secondary" onClick={() => set({ projects: [...data.projects, { name: '', tagline: '', description: '', stack: '', links: [] }] })}>
-        <Plus className="w-3.5 h-3.5 mr-1.5" /> Dodaj projekt
-      </Button>
+            </ItemCard>
+          ))}
+          <Button variant="secondary" onClick={() => set({ projects: [...data.projects, { name: '', tagline: '', description: '', stack: '', links: [] }] })}>
+            <Plus className="w-3.5 h-3.5 mr-1.5" /> Dodaj projekt
+          </Button>
+        </>
+      )}
 
       {/* ── Doświadczenie ─────────────────────────────────────────────── */}
-      <SectionHeading title="Doświadczenie zawodowe" />
-      {data.experience.map((exp, ei) => (
-        <ItemCard key={ei} onRemove={() => set({ experience: removeAt(data.experience, ei) })}>
-          <div className="space-y-3 pr-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <div>
-                <FieldLabel>Firma</FieldLabel>
-                <TextInput value={exp.company} onChange={v => set({ experience: updateAt(data.experience, ei, { ...exp, company: v }) })} placeholder="NAZWA FIRMY" />
-              </div>
-              <div>
-                <FieldLabel>Link firmy (opcjonalny)</FieldLabel>
-                <div className="flex gap-2">
-                  <input
-                    value={exp.companyLink?.label ?? ''}
-                    onChange={e => {
-                      const label = e.target.value;
-                      const url = exp.companyLink?.url ?? '';
-                      set({ experience: updateAt(data.experience, ei, { ...exp, companyLink: label || url ? { label, url } : undefined }) });
-                    }}
-                    placeholder="Etykieta"
-                    className="w-24 px-2 py-1.5 bg-dark-700 text-slate-100 text-sm placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-primary-500 flex-shrink-0"
-                  />
-                  <input
-                    value={exp.companyLink?.url ?? ''}
-                    onChange={e => {
-                      const url = e.target.value;
-                      const label = exp.companyLink?.label ?? '';
-                      set({ experience: updateAt(data.experience, ei, { ...exp, companyLink: label || url ? { label, url } : undefined }) });
-                    }}
-                    placeholder="https://…"
-                    className="flex-1 px-2 py-1.5 bg-dark-700 text-slate-100 text-sm placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-primary-500 min-w-0"
-                  />
+      <SectionHeading
+        title="Doświadczenie zawodowe"
+        collapsed={collapsed['experience']}
+        onToggleCollapse={() => toggle('experience')}
+      />
+      {!collapsed['experience'] && (
+        <>
+          {data.experience.map((exp, ei) => (
+            <ItemCard key={ei} onRemove={() => set({ experience: removeAt(data.experience, ei) })}>
+              <div className="space-y-3 pr-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div>
+                    <FieldLabel>Firma</FieldLabel>
+                    <TextInput value={exp.company} onChange={v => set({ experience: updateAt(data.experience, ei, { ...exp, company: v }) })} placeholder="NAZWA FIRMY" />
+                  </div>
+                  <div>
+                    <FieldLabel>Link firmy (opcjonalny)</FieldLabel>
+                    <div className="flex gap-2">
+                      <input
+                        value={exp.companyLink?.label ?? ''}
+                        onChange={e => {
+                          const label = e.target.value;
+                          const url = exp.companyLink?.url ?? '';
+                          set({ experience: updateAt(data.experience, ei, { ...exp, companyLink: label || url ? { label, url } : undefined }) });
+                        }}
+                        placeholder="Etykieta"
+                        className="w-24 px-2 py-1.5 bg-dark-700 text-slate-100 text-sm placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-primary-500 flex-shrink-0"
+                      />
+                      <input
+                        value={exp.companyLink?.url ?? ''}
+                        onChange={e => {
+                          const url = e.target.value;
+                          const label = exp.companyLink?.label ?? '';
+                          set({ experience: updateAt(data.experience, ei, { ...exp, companyLink: label || url ? { label, url } : undefined }) });
+                        }}
+                        placeholder="https://…"
+                        className="flex-1 px-2 py-1.5 bg-dark-700 text-slate-100 text-sm placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-primary-500 min-w-0"
+                      />
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
 
-            {exp.roles.map((role, ri) => (
-              <div key={ri} className="bg-dark-700/60 p-3 relative">
+                {exp.roles.map((role, ri) => (
+                  <div key={ri} className="bg-dark-700/60 p-3 relative">
+                    <button
+                      type="button"
+                      onClick={() => set({ experience: updateAt(data.experience, ei, { ...exp, roles: removeAt(exp.roles, ri) }) })}
+                      className="absolute top-2 right-2 p-1 text-slate-600 hover:text-danger-400 transition-colors cursor-pointer"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                    </button>
+                    <div className="pr-6 mb-3">
+                      <FieldLabel>Stanowisko | lata</FieldLabel>
+                      <TextInput
+                        value={role.title}
+                        onChange={v => set({ experience: updateAt(data.experience, ei, { ...exp, roles: updateAt(exp.roles, ri, { ...role, title: v }) }) })}
+                        placeholder="Senior Developer | 2023 – obecnie"
+                      />
+                    </div>
+                    <FieldLabel>Punkty</FieldLabel>
+                    <BulletsEditor
+                      bullets={role.bullets}
+                      onChange={bullets => set({ experience: updateAt(data.experience, ei, { ...exp, roles: updateAt(exp.roles, ri, { ...role, bullets }) }) })}
+                    />
+                  </div>
+                ))}
                 <button
                   type="button"
-                  onClick={() => set({ experience: updateAt(data.experience, ei, { ...exp, roles: removeAt(exp.roles, ri) }) })}
-                  className="absolute top-2 right-2 p-1 text-slate-600 hover:text-danger-400 transition-colors cursor-pointer"
+                  onClick={() => set({ experience: updateAt(data.experience, ei, { ...exp, roles: [...exp.roles, { title: '', years: '', bullets: [] }] }) })}
+                  className="flex items-center gap-1.5 text-xs text-primary-400 hover:text-primary-300 transition-colors cursor-pointer"
                 >
-                  <Trash2 className="w-3 h-3" />
+                  <Plus className="w-3.5 h-3.5" /> Dodaj stanowisko
                 </button>
-                <div className="pr-6 mb-3">
-                  <FieldLabel>Stanowisko | lata</FieldLabel>
-                  <TextInput
-                    value={role.title}
-                    onChange={v => set({ experience: updateAt(data.experience, ei, { ...exp, roles: updateAt(exp.roles, ri, { ...role, title: v }) }) })}
-                    placeholder="Senior Developer | 2023 – obecnie"
-                  />
-                </div>
-                <FieldLabel>Punkty</FieldLabel>
-                <BulletsEditor
-                  bullets={role.bullets}
-                  onChange={bullets => set({ experience: updateAt(data.experience, ei, { ...exp, roles: updateAt(exp.roles, ri, { ...role, bullets }) }) })}
-                />
               </div>
-            ))}
-            <button
-              type="button"
-              onClick={() => set({ experience: updateAt(data.experience, ei, { ...exp, roles: [...exp.roles, { title: '', years: '', bullets: [] }] }) })}
-              className="flex items-center gap-1.5 text-xs text-primary-400 hover:text-primary-300 transition-colors cursor-pointer"
-            >
-              <Plus className="w-3.5 h-3.5" /> Dodaj stanowisko
-            </button>
-          </div>
-        </ItemCard>
-      ))}
-      <Button variant="secondary" onClick={() => set({ experience: [...data.experience, { company: '', roles: [{ title: '', years: '', bullets: [] }] }] })}>
-        <Plus className="w-3.5 h-3.5 mr-1.5" /> Dodaj firmę
-      </Button>
+            </ItemCard>
+          ))}
+          <Button variant="secondary" onClick={() => set({ experience: [...data.experience, { company: '', roles: [{ title: '', years: '', bullets: [] }] }] })}>
+            <Plus className="w-3.5 h-3.5 mr-1.5" /> Dodaj firmę
+          </Button>
+        </>
+      )}
 
       {/* ── Wykształcenie ─────────────────────────────────────────────── */}
-      <SectionHeading title="Wykształcenie" />
-      {data.education.map((edu, edi) => (
-        <ItemCard key={edi} onRemove={() => set({ education: removeAt(data.education, edi) })}>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-2 pr-6">
-            <div>
-              <FieldLabel>Szkoła / uczelnia</FieldLabel>
-              <TextInput value={edu.school} onChange={v => set({ education: updateAt(data.education, edi, { ...edu, school: v }) })} placeholder="UCZELNIA" />
-            </div>
-            <div>
-              <FieldLabel>Kierunek</FieldLabel>
-              <TextInput value={edu.degree} onChange={v => set({ education: updateAt(data.education, edi, { ...edu, degree: v }) })} placeholder="Informatyka" />
-            </div>
-            <div>
-              <FieldLabel>Lata</FieldLabel>
-              <TextInput value={edu.years} onChange={v => set({ education: updateAt(data.education, edi, { ...edu, years: v }) })} placeholder="2019 – 2023" />
-            </div>
-          </div>
-        </ItemCard>
-      ))}
-      <Button variant="secondary" onClick={() => set({ education: [...data.education, { school: '', degree: '', years: '' }] })}>
-        <Plus className="w-3.5 h-3.5 mr-1.5" /> Dodaj wykształcenie
-      </Button>
+      <SectionHeading
+        title="Wykształcenie"
+        collapsed={collapsed['education']}
+        onToggleCollapse={() => toggle('education')}
+      />
+      {!collapsed['education'] && (
+        <>
+          {data.education.map((edu, edi) => (
+            <ItemCard key={edi} onRemove={() => set({ education: removeAt(data.education, edi) })}>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-2 pr-6">
+                <div>
+                  <FieldLabel>Szkoła / uczelnia</FieldLabel>
+                  <TextInput value={edu.school} onChange={v => set({ education: updateAt(data.education, edi, { ...edu, school: v }) })} placeholder="UCZELNIA" />
+                </div>
+                <div>
+                  <FieldLabel>Kierunek</FieldLabel>
+                  <TextInput value={edu.degree} onChange={v => set({ education: updateAt(data.education, edi, { ...edu, degree: v }) })} placeholder="Informatyka" />
+                </div>
+                <div>
+                  <FieldLabel>Lata</FieldLabel>
+                  <TextInput value={edu.years} onChange={v => set({ education: updateAt(data.education, edi, { ...edu, years: v }) })} placeholder="2019 – 2023" />
+                </div>
+              </div>
+            </ItemCard>
+          ))}
+          <Button variant="secondary" onClick={() => set({ education: [...data.education, { school: '', degree: '', years: '' }] })}>
+            <Plus className="w-3.5 h-3.5 mr-1.5" /> Dodaj wykształcenie
+          </Button>
+        </>
+      )}
 
       {/* ── Sekcje własne ─────────────────────────────────────────────── */}
-      <SectionHeading title="Sekcje własne" />
-      <p className="text-xs text-slate-500 -mt-2 mb-3">Dowolne sekcje z własnym nagłówkiem — np. Certyfikaty, Języki, Wolontariat.</p>
-      {(data.customSections ?? []).map((sec, si) => (
-        <ItemCard key={sec.id} onRemove={() => set({ customSections: removeAt(data.customSections ?? [], si) })}>
-          <div className="space-y-2 pr-6">
-            <div>
-              <FieldLabel>Nagłówek sekcji</FieldLabel>
-              <TextInput
-                value={sec.title}
-                onChange={v => set({ customSections: updateAt(data.customSections ?? [], si, { ...sec, title: v }) })}
-                placeholder="np. Certyfikaty"
-              />
-            </div>
-            <div>
-              <FieldLabel>Treść</FieldLabel>
-              <TextArea
-                value={sec.content}
-                onChange={v => set({ customSections: updateAt(data.customSections ?? [], si, { ...sec, content: v }) })}
-                rows={3}
-              />
-            </div>
-          </div>
-        </ItemCard>
-      ))}
-      <Button variant="secondary" onClick={() => set({ customSections: [...(data.customSections ?? []), { id: uid(), title: '', content: '' }] })}>
-        <Plus className="w-3.5 h-3.5 mr-1.5" /> Dodaj sekcję
-      </Button>
+      <SectionHeading
+        title="Sekcje własne"
+        collapsed={collapsed['custom']}
+        onToggleCollapse={() => toggle('custom')}
+      />
+      {!collapsed['custom'] && (
+        <>
+          <p className="text-xs text-slate-500 -mt-2 mb-3">Dowolne sekcje z własnym nagłówkiem — np. Certyfikaty, Języki, Wolontariat.</p>
+          {(data.customSections ?? []).map((sec, si) => (
+            <ItemCard key={sec.id} onRemove={() => set({ customSections: removeAt(data.customSections ?? [], si) })}>
+              <div className="space-y-2 pr-6">
+                <div>
+                  <FieldLabel>Nagłówek sekcji</FieldLabel>
+                  <TextInput
+                    value={sec.title}
+                    onChange={v => set({ customSections: updateAt(data.customSections ?? [], si, { ...sec, title: v }) })}
+                    placeholder="np. Certyfikaty"
+                  />
+                </div>
+                <div>
+                  <FieldLabel>Treść</FieldLabel>
+                  <TextArea
+                    value={sec.content}
+                    onChange={v => set({ customSections: updateAt(data.customSections ?? [], si, { ...sec, content: v }) })}
+                    rows={3}
+                  />
+                </div>
+              </div>
+            </ItemCard>
+          ))}
+          <Button variant="secondary" onClick={() => set({ customSections: [...(data.customSections ?? []), { id: uid(), title: '', content: '' }] })}>
+            <Plus className="w-3.5 h-3.5 mr-1.5" /> Dodaj sekcję
+          </Button>
+        </>
+      )}
 
       {/* ── Zainteresowania ───────────────────────────────────────────── */}
-      <SectionHeading title="Zainteresowania" />
-      <TextInput value={data.interests} onChange={v => set({ interests: v })} placeholder="Kawa • Muzyka • Sport…" />
+      <SectionHeading
+        title="Zainteresowania"
+        collapsed={collapsed['interests']}
+        onToggleCollapse={() => toggle('interests')}
+      />
+      {!collapsed['interests'] && (
+        <TextInput value={data.interests} onChange={v => set({ interests: v })} placeholder="Kawa • Muzyka • Sport…" />
+      )}
 
       {/* ── RODO ──────────────────────────────────────────────────────── */}
-      <SectionHeading title="Klauzula RODO" />
-      <TextArea value={data.rodo} onChange={v => set({ rodo: v })} rows={2} placeholder="Wyrażam zgodę na przetwarzanie…" />
+      <SectionHeading
+        title="Klauzula RODO"
+        collapsed={collapsed['rodo']}
+        onToggleCollapse={() => toggle('rodo')}
+      />
+      {!collapsed['rodo'] && (
+        <TextArea value={data.rodo} onChange={v => set({ rodo: v })} rows={2} placeholder="Wyrażam zgodę na przetwarzanie…" />
+      )}
 
       </>)}
 
