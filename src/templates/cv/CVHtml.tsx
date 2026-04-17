@@ -164,7 +164,9 @@ export function CVHtml({ data, preview = false }: Props) {
       {data.education.map(edu => (
         <div key={edu.school} className="cv-edu-block">
           <div className="cv-edu-school">{edu.school}</div>
-          <div className="cv-edu-detail">{edu.degree} | {edu.years}</div>
+          <div className="cv-edu-detail-block">
+            <div className="cv-edu-detail">{edu.degree} | {edu.years}</div>
+          </div>
         </div>
       ))}
 

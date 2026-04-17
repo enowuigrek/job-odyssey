@@ -237,6 +237,13 @@ const s = StyleSheet.create({
     fontSize: 9.5,
     marginBottom: 1,
   },
+  eduDetailBlock: {
+    borderLeftWidth: 2.5,
+    borderLeftColor: TEAL,
+    paddingLeft: 9,
+    marginTop: 2,
+    marginBottom: 2,
+  },
   eduDetail: {
     fontWeight: 300,
     fontStyle: 'italic',
@@ -409,7 +416,9 @@ export function CVTemplate({ data }: CVTemplateProps) {
         {data.education.map(edu => (
           <View key={edu.school} style={s.eduBlock}>
             <Text style={s.eduSchool}>{edu.school}</Text>
-            <Text style={s.eduDetail}>{edu.degree} | {edu.years}</Text>
+            <View style={s.eduDetailBlock}>
+              <Text style={s.eduDetail}>{edu.degree} | {edu.years}</Text>
+            </View>
           </View>
         ))}
 
