@@ -186,7 +186,8 @@ export function CVHtml({ data, preview = false }: Props) {
       </div>
       <p className="cv-interests">{data.interests}</p>
 
-      {/* ── RODO ────────────────────────────────────────────────── */}
+      {/* ── RODO — always pinned to page bottom ─────────────────── */}
+      <div className="cv-rodo-spacer" />
       <p className="cv-rodo">{data.rodo}</p>
     </div>
   );

@@ -259,7 +259,6 @@ const s = StyleSheet.create({
     fontWeight: 300,
     fontSize: 7.5,
     color: GRAY,
-    marginTop: 20,
     fontStyle: 'italic',
   },
   // ── Page number ───────────────────────────────────────────────────────
@@ -446,7 +445,8 @@ export function CVTemplate({ data }: CVTemplateProps) {
         <SectionHeader title="ZAINTERESOWANIA" />
         <Text style={s.interests}>{data.interests}</Text>
 
-        {/* ── RODO ────────────────────────────────────────────────── */}
+        {/* ── RODO — spacer pushes it to page bottom ──────────────── */}
+        <View style={{ flexGrow: 1 }} />
         <Text style={s.rodo}>{data.rodo}</Text>
 
         {/* ── Page numbers ────────────────────────────────────────── */}

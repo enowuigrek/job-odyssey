@@ -64,6 +64,13 @@
   line-height: 1.55;
   background: white;
   box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+}
+
+.cv-rodo-spacer {
+  flex: 1;
+  min-height: 12pt;
 }
 
 /* ── Header ─────────────────────────────────────────────────────── */
