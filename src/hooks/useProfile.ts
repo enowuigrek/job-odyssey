@@ -28,6 +28,7 @@ export function useProfile() {
 
   const [isLoading, setIsLoading] = useState(true);
   const [profile, setProfile] = useState<CandidateProfile>({
+    name: '',
     location: '',
     phone: '',
     email: '',
