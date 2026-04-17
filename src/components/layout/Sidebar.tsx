@@ -35,13 +35,13 @@ const navItems = [
 ];
 
 const profileSubItems = [
-  { hash: 'kontakt', label: 'Kontakt' },
-  { hash: 'opisy', label: 'Opisy' },
-  { hash: 'doswiadczenie', label: 'Doświadczenie' },
-  { hash: 'projekty', label: 'Projekty' },
-  { hash: 'technologie', label: 'Technologie' },
-  { hash: 'wyksztalcenie', label: 'Wykształcenie' },
-  { hash: 'zainteresowania', label: 'Zainteresowania' },
+  { section: 'kontakt', label: 'Dane osobowe' },
+  { section: 'opisy', label: 'Opisy' },
+  { section: 'doswiadczenie', label: 'Doświadczenie' },
+  { section: 'projekty', label: 'Projekty' },
+  { section: 'technologie', label: 'Technologie' },
+  { section: 'wyksztalcenie', label: 'Wykształcenie' },
+  { section: 'zainteresowania', label: 'Zainteresowania' },
 ];
 
 const PROFILE_EXPANDED_KEY = 'jo-sidebar-profile-expanded';
@@ -67,7 +67,7 @@ export function Sidebar() {
     });
   };
 
-  const isProfilActive = location.pathname === '/profil';
+  const isProfilActive = location.pathname.startsWith('/profil');
 
   const handleNewClicks = useCallback((applicationIds: string[]) => {
     applicationIds.forEach(appId => {
@@ -182,24 +182,24 @@ export function Sidebar() {
             {/* Sub-items */}
             {profileExpanded && !isCollapsed && labelsVisible && (
               <ul className="mt-0.5 space-y-0.5">
-                {profileSubItems.map(sub => (
-                  <li key={sub.hash}>
-                    <a
-                      href={`#/profil#${sub.hash}`}
-                      className="flex items-center py-1.5 pl-10 pr-3 text-xs font-light text-slate-400 hover:text-white hover:bg-dark-700 transition-colors"
-                      onClick={e => {
-                        e.preventDefault();
-                        navigate('/profil');
-                        setTimeout(() => {
-                          const el = document.getElementById(sub.hash);
-                          if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                        }, 100);
-                      }}
-                    >
-                      {sub.label}
-                    </a>
-                  </li>
-                ))}
+                {profileSubItems.map(sub => {
+                  const isSubActive = location.pathname === `/profil/${sub.section}`;
+                  return (
+                    <li key={sub.section}>
+                      <button
+                        type="button"
+                        onClick={() => navigate(`/profil/${sub.section}`)}
+                        className={`flex items-center w-full py-2 pl-9 pr-3 text-sm font-normal transition-colors cursor-pointer ${
+                          isSubActive
+                            ? 'text-primary-400 bg-primary-500/10'
+                            : 'text-slate-200 hover:text-white hover:bg-dark-700'
+                        }`}
+                      >
+                        {sub.label}
+                      </button>
+                    </li>
+                  );
+                })}
               </ul>
             )}
           </li>

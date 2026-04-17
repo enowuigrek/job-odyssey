@@ -14,7 +14,6 @@ import {
   saveCVDataById,
 } from '../lib/generateCV';
 import { uploadCVFile } from '../lib/db';
-import { useUserLinks } from '../hooks/useUserLinks';
 import { useAuth } from '../contexts/AuthContext';
 import { useApp } from '../contexts/AppContext';
 
@@ -38,8 +37,6 @@ function removeAt<T>(arr: T[], i: number): T[] {
 }
 
 // ── Sub-components ────────────────────────────────────────────────────────────
-
-interface DbLink { label: string; targetUrl: string; }
 
 /** Editable section heading — pencil always visible, with collapse toggle and optional enable/disable checkbox */
 function SectionHeading({
@@ -153,8 +150,8 @@ function TextArea({
   );
 }
 
-function LinkRow({ link, dbLinks, onChange, onRemove }: {
-  link: CVLink; dbLinks: DbLink[]; onChange: (l: CVLink) => void; onRemove: () => void;
+function LinkRow({ link, onChange, onRemove }: {
+  link: CVLink; onChange: (l: CVLink) => void; onRemove: () => void;
 }) {
   return (
     <div className="flex gap-2 items-center mb-2">
@@ -170,19 +167,6 @@ function LinkRow({ link, dbLinks, onChange, onRemove }: {
         placeholder="https://..."
         className="flex-1 px-2 py-1.5 bg-dark-700 text-slate-100 text-sm placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-primary-500 min-w-0"
       />
-      {dbLinks.length > 0 && (
-        <select
-          value=""
-          onChange={e => {
-            const found = dbLinks.find(l => l.targetUrl === e.target.value);
-            if (found) onChange({ ...link, label: found.label, url: found.targetUrl });
-          }}
-          className="px-2 py-1.5 bg-dark-600 text-slate-400 text-xs focus:outline-none cursor-pointer flex-shrink-0"
-        >
-          <option value="">z bazy</option>
-          {dbLinks.map(l => <option key={l.targetUrl} value={l.targetUrl}>{l.label}</option>)}
-        </select>
-      )}
       <button type="button" onClick={onRemove} className="p-1 text-slate-600 hover:text-danger-400 transition-colors cursor-pointer flex-shrink-0">
         <Trash2 className="w-3.5 h-3.5" />
       </button>
@@ -190,8 +174,8 @@ function LinkRow({ link, dbLinks, onChange, onRemove }: {
   );
 }
 
-function LinksEditor({ links, dbLinks, onChange }: {
-  links: CVLink[]; dbLinks: DbLink[]; onChange: (links: CVLink[]) => void;
+function LinksEditor({ links, onChange }: {
+  links: CVLink[]; onChange: (links: CVLink[]) => void;
 }) {
   return (
     <div>
@@ -199,7 +183,6 @@ function LinksEditor({ links, dbLinks, onChange }: {
         <LinkRow
           key={i}
           link={link}
-          dbLinks={dbLinks}
           onChange={v => onChange(updateAt(links, i, v))}
           onRemove={() => onChange(removeAt(links, i))}
         />
@@ -271,8 +254,6 @@ export function CVEditorPage() {
   const [searchParams] = useSearchParams();
   const { user } = useAuth();
   const { state, dispatch } = useApp();
-  const { links: userLinks } = useUserLinks();
-
   const editCvId = searchParams.get('edit');
   const editingCv = editCvId ? state.cvs.find(cv => cv.id === editCvId) : null;
 
@@ -308,26 +289,22 @@ export function CVEditorPage() {
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
   const toggle = (id: string) => setCollapsed(c => ({ ...c, [id]: !c[id] }));
 
-  // Build dbLinks from user's link database (Moje linki)
-  const dbLinks: DbLink[] = userLinks.map(l => ({ label: l.label, targetUrl: l.url }));
-
-  // Auto-fill contact links + email for brand-new CVs (no draft, no edit)
-  const autoFilledLinks = useRef(false);
+  // Auto-fill email for brand-new CVs (no draft, no edit)
+  const autoFilledEmail = useRef(false);
   useEffect(() => {
     if (editCvId) return;
     if (localStorage.getItem(DRAFT_KEY)) return;
-    if (autoFilledLinks.current) return;
-    if (userLinks.length === 0 && !user?.email) return;
-    autoFilledLinks.current = true;
+    if (autoFilledEmail.current) return;
+    if (!user?.email) return;
+    autoFilledEmail.current = true;
     setData(d => ({
       ...d,
       contact: {
         ...d.contact,
-        ...(user?.email ? { email: user.email } : {}),
-        ...(userLinks.length > 0 ? { links: userLinks.map(l => ({ label: l.label, url: l.url })) } : {}),
+        email: user.email ?? d.contact.email,
       },
     }));
-  }, [userLinks, user, editCvId]);
+  }, [user, editCvId]);
 
   const set = (patch: Partial<CVData>) => setData(d => ({ ...d, ...patch }));
 
@@ -453,11 +430,6 @@ export function CVEditorPage() {
           className={nameError ? 'ring-1 ring-danger-500' : ''}
         />
         {nameError && <p className="text-xs text-danger-400 mt-1">Podaj nazwę CV przed zapisaniem.</p>}
-        {dbLinks.length > 0 && (
-          <p className="text-xs text-slate-500 mt-2">
-            {dbLinks.length} linków z bazy dostępnych w polach linków.
-          </p>
-        )}
       </div>
 
       {/* ── Nagłówek ─────────────────────────────────────────────────── */}
@@ -504,7 +476,6 @@ export function CVEditorPage() {
           <FieldLabel>Linki (LinkedIn, GitHub, Portfolio…)</FieldLabel>
           <LinksEditor
             links={data.contact.links}
-            dbLinks={dbLinks}
             onChange={links => set({ contact: { ...data.contact, links } })}
           />
         </>
@@ -609,7 +580,7 @@ export function CVEditorPage() {
                 </div>
                 <div>
                   <FieldLabel>Linki</FieldLabel>
-                  <LinksEditor links={proj.links} dbLinks={dbLinks} onChange={links => set({ projects: updateAt(data.projects, pi, { ...proj, links }) })} />
+                  <LinksEditor links={proj.links} onChange={links => set({ projects: updateAt(data.projects, pi, { ...proj, links }) })} />
                 </div>
               </div>
             </ItemCard>

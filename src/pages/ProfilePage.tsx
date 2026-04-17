@@ -1,10 +1,9 @@
 import { useState, useCallback } from 'react';
+import { useParams } from 'react-router-dom';
 import {
   User,
   Plus,
   Trash2,
-  ChevronDown,
-  ChevronRight,
   Check,
   Loader2,
 } from 'lucide-react';
@@ -40,19 +39,16 @@ function TextInput({
   onChange,
   placeholder,
   className = '',
-  onBlur,
 }: {
   value: string;
   onChange: (v: string) => void;
   placeholder?: string;
   className?: string;
-  onBlur?: () => void;
 }) {
   return (
     <input
       value={value}
       onChange={e => onChange(e.target.value)}
-      onBlur={onBlur}
       placeholder={placeholder}
       className={`w-full px-3 py-1.5 bg-dark-700 text-slate-100 text-sm font-light placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-primary-500 ${className}`}
     />
@@ -64,19 +60,16 @@ function TextArea({
   onChange,
   placeholder,
   rows = 4,
-  onBlur,
 }: {
   value: string;
   onChange: (v: string) => void;
   placeholder?: string;
   rows?: number;
-  onBlur?: () => void;
 }) {
   return (
     <textarea
       value={value}
       onChange={e => onChange(e.target.value)}
-      onBlur={onBlur}
       placeholder={placeholder}
       rows={rows}
       className="w-full px-3 py-2 bg-dark-700 text-slate-100 text-sm font-light placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-primary-500 resize-y"
@@ -99,7 +92,6 @@ function ItemCard({ children, onRemove }: { children: React.ReactNode; onRemove:
   );
 }
 
-/** Links editor for ProfileLink[] */
 function LinksEditor({
   links,
   onChange,
@@ -182,34 +174,6 @@ function BulletsEditor({
   );
 }
 
-/** Collapsible section heading */
-function SectionHeading({
-  id,
-  title,
-  collapsed,
-  onToggle,
-}: {
-  id: string;
-  title: string;
-  collapsed: boolean;
-  onToggle: () => void;
-}) {
-  return (
-    <div id={id} className="border-b border-primary-500/40 pb-1.5 mb-4 mt-8 flex items-center gap-2">
-      <h2 className="text-xs font-medium text-primary-400 uppercase tracking-widest">{title}</h2>
-      <div className="flex-1" />
-      <button
-        type="button"
-        onClick={onToggle}
-        className="p-1 text-slate-500 hover:text-slate-300 transition-colors cursor-pointer flex-shrink-0"
-      >
-        {collapsed ? <ChevronRight className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-      </button>
-    </div>
-  );
-}
-
-/** Save button with feedback state */
 function SaveButton({
   onClick,
   saving,
@@ -224,25 +188,37 @@ function SaveButton({
       type="button"
       onClick={onClick}
       disabled={saving}
-      className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium transition-colors cursor-pointer disabled:opacity-60 ${
+      className={`flex items-center gap-1.5 px-4 py-2 text-sm font-medium transition-colors cursor-pointer disabled:opacity-60 ${
         saved
           ? 'bg-success-500/20 text-success-400'
           : 'bg-primary-500 hover:bg-primary-400 text-slate-900'
       }`}
     >
       {saving ? (
-        <Loader2 className="w-3 h-3 animate-spin" />
+        <Loader2 className="w-3.5 h-3.5 animate-spin" />
       ) : saved ? (
-        <Check className="w-3 h-3" />
+        <Check className="w-3.5 h-3.5" />
       ) : null}
       {saving ? 'Zapisuję...' : saved ? 'Zapisano' : 'Zapisz sekcję'}
     </button>
   );
 }
 
+const SECTION_TITLES: Record<string, string> = {
+  kontakt: 'Dane osobowe',
+  opisy: 'Opisy profilu',
+  doswiadczenie: 'Doświadczenie zawodowe',
+  projekty: 'Projekty',
+  technologie: 'Technologie i narzędzia',
+  wyksztalcenie: 'Wykształcenie',
+  zainteresowania: 'Zainteresowania',
+};
+
 // ── Main component ─────────────────────────────────────────────────────────────
 
 export function ProfilePage() {
+  const { section = 'kontakt' } = useParams<{ section: string }>();
+
   const {
     profile,
     descriptions,
@@ -269,11 +245,7 @@ export function ProfilePage() {
     removeEducation,
   } = useProfile();
 
-  // Collapse state per section
-  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
-  const toggle = (id: string) => setCollapsed(c => ({ ...c, [id]: !c[id] }));
-
-  // Local draft state for sections that save explicitly
+  // ── Contact / interests draft ────────────────────────────────────────────────
   const [contactDraft, setContactDraft] = useState<CandidateProfile | null>(null);
   const [contactSaving, setContactSaving] = useState(false);
   const [contactSaved, setContactSaved] = useState(false);
@@ -282,7 +254,6 @@ export function ProfilePage() {
   const [interestsSaving, setInterestsSaving] = useState(false);
   const [interestsSaved, setInterestsSaved] = useState(false);
 
-  // Use profile from hook as base, merged with any local drafts
   const contact: CandidateProfile = contactDraft ?? profile;
   const interestsRodo = interestsDraft ?? { interests: profile.interests, rodo: profile.rodo };
 
@@ -295,7 +266,7 @@ export function ProfilePage() {
     setInterestsDraft({ interests: profile.interests, rodo: profile.rodo });
   }
 
-  // Per-description, per-experience, per-project, per-tech, per-edu saving state
+  // ── Per-item saving state ────────────────────────────────────────────────────
   const [savingMap, setSavingMap] = useState<Record<string, boolean>>({});
   const [savedMap, setSavedMap] = useState<Record<string, boolean>>({});
 
@@ -305,6 +276,25 @@ export function ProfilePage() {
     setSavedMap(m => ({ ...m, [id]: true }));
     setTimeout(() => setSavedMap(m => ({ ...m, [id]: false })), 2000);
   };
+
+  // ── Local optimistic state for list sections ─────────────────────────────────
+  const [localDescriptions, setLocalDescriptions] = useState<ProfileDescription[] | null>(null);
+  const [localExperiences, setLocalExperiences] = useState<ProfileExperience[] | null>(null);
+  const [localProjects, setLocalProjects] = useState<ProfileProject[] | null>(null);
+  const [localTech, setLocalTech] = useState<ProfileTechCategory[] | null>(null);
+  const [localEducation, setLocalEducation] = useState<ProfileEducation[] | null>(null);
+
+  if (profileLoaded && localDescriptions === null && descriptions.length >= 0) setLocalDescriptions(descriptions);
+  if (profileLoaded && localExperiences === null && experiences.length >= 0) setLocalExperiences(experiences);
+  if (profileLoaded && localProjects === null && projects.length >= 0) setLocalProjects(projects);
+  if (profileLoaded && localTech === null && techCategories.length >= 0) setLocalTech(techCategories);
+  if (profileLoaded && localEducation === null && education.length >= 0) setLocalEducation(education);
+
+  const descs = localDescriptions ?? descriptions;
+  const exps = localExperiences ?? experiences;
+  const projs = localProjects ?? projects;
+  const tech = localTech ?? techCategories;
+  const edu = localEducation ?? education;
 
   // ── Save handlers ────────────────────────────────────────────────────────────
 
@@ -334,89 +324,35 @@ export function ProfilePage() {
 
   const handleSaveDescription = useCallback(async (desc: ProfileDescription) => {
     markSaving(desc.id);
-    try {
-      await updateDescription(desc.id, desc);
-      markSaved(desc.id);
-    } catch (e) {
-      setSavingMap(m => ({ ...m, [desc.id]: false }));
-      console.error(e);
-    }
+    try { await updateDescription(desc.id, desc); markSaved(desc.id); }
+    catch (e) { setSavingMap(m => ({ ...m, [desc.id]: false })); console.error(e); }
   }, [updateDescription]);
 
   const handleSaveExperience = useCallback(async (exp: ProfileExperience) => {
     markSaving(exp.id);
-    try {
-      await updateExperience(exp.id, exp);
-      markSaved(exp.id);
-    } catch (e) {
-      setSavingMap(m => ({ ...m, [exp.id]: false }));
-      console.error(e);
-    }
+    try { await updateExperience(exp.id, exp); markSaved(exp.id); }
+    catch (e) { setSavingMap(m => ({ ...m, [exp.id]: false })); console.error(e); }
   }, [updateExperience]);
 
   const handleSaveProject = useCallback(async (proj: ProfileProject) => {
     markSaving(proj.id);
-    try {
-      await updateProject(proj.id, proj);
-      markSaved(proj.id);
-    } catch (e) {
-      setSavingMap(m => ({ ...m, [proj.id]: false }));
-      console.error(e);
-    }
+    try { await updateProject(proj.id, proj); markSaved(proj.id); }
+    catch (e) { setSavingMap(m => ({ ...m, [proj.id]: false })); console.error(e); }
   }, [updateProject]);
 
-  const handleSaveTech = useCallback(async (tech: ProfileTechCategory) => {
-    markSaving(tech.id);
-    try {
-      await updateTechCategory(tech.id, tech);
-      markSaved(tech.id);
-    } catch (e) {
-      setSavingMap(m => ({ ...m, [tech.id]: false }));
-      console.error(e);
-    }
+  const handleSaveTech = useCallback(async (t: ProfileTechCategory) => {
+    markSaving(t.id);
+    try { await updateTechCategory(t.id, t); markSaved(t.id); }
+    catch (e) { setSavingMap(m => ({ ...m, [t.id]: false })); console.error(e); }
   }, [updateTechCategory]);
 
-  const handleSaveEducation = useCallback(async (edu: ProfileEducation) => {
-    markSaving(edu.id);
-    try {
-      await updateEducation(edu.id, edu);
-      markSaved(edu.id);
-    } catch (e) {
-      setSavingMap(m => ({ ...m, [edu.id]: false }));
-      console.error(e);
-    }
+  const handleSaveEducation = useCallback(async (e: ProfileEducation) => {
+    markSaving(e.id);
+    try { await updateEducation(e.id, e); markSaved(e.id); }
+    catch (e2) { setSavingMap(m => ({ ...m, [e.id]: false })); console.error(e2); }
   }, [updateEducation]);
 
-  // ── Local state for list items (optimistic UI) ───────────────────────────────
-
-  const [localDescriptions, setLocalDescriptions] = useState<ProfileDescription[] | null>(null);
-  const [localExperiences, setLocalExperiences] = useState<ProfileExperience[] | null>(null);
-  const [localProjects, setLocalProjects] = useState<ProfileProject[] | null>(null);
-  const [localTech, setLocalTech] = useState<ProfileTechCategory[] | null>(null);
-  const [localEducation, setLocalEducation] = useState<ProfileEducation[] | null>(null);
-
-  // Sync from hook when data first arrives
-  if (profileLoaded && localDescriptions === null && descriptions.length >= 0) {
-    setLocalDescriptions(descriptions);
-  }
-  if (profileLoaded && localExperiences === null && experiences.length >= 0) {
-    setLocalExperiences(experiences);
-  }
-  if (profileLoaded && localProjects === null && projects.length >= 0) {
-    setLocalProjects(projects);
-  }
-  if (profileLoaded && localTech === null && techCategories.length >= 0) {
-    setLocalTech(techCategories);
-  }
-  if (profileLoaded && localEducation === null && education.length >= 0) {
-    setLocalEducation(education);
-  }
-
-  const descs = localDescriptions ?? descriptions;
-  const exps = localExperiences ?? experiences;
-  const projs = localProjects ?? projects;
-  const tech = localTech ?? techCategories;
-  const edu = localEducation ?? education;
+  // ── Loading ──────────────────────────────────────────────────────────────────
 
   if (isLoading) {
     return (
@@ -427,30 +363,36 @@ export function ProfilePage() {
     );
   }
 
+  const sectionTitle = SECTION_TITLES[section] ?? 'Profil kandydata';
+
+  // ── Render ───────────────────────────────────────────────────────────────────
+
   return (
-    <div className="space-y-2 pb-20">
+    <div className="space-y-6 pb-20">
       <PageHeader
         icon={User}
-        title="Profil kandydata"
-        description="Twoje dane źródłowe do generowania CV."
+        title={sectionTitle}
+        description="Profil kandydata"
       />
 
-      {/* ── Kontakt ─────────────────────────────────────────────────────────── */}
-      <SectionHeading
-        id="kontakt"
-        title="Kontakt"
-        collapsed={!!collapsed['kontakt']}
-        onToggle={() => toggle('kontakt')}
-      />
-      {!collapsed['kontakt'] && (
+      {/* ── DANE OSOBOWE ─────────────────────────────────────────────────────── */}
+      {section === 'kontakt' && (
         <div className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div>
+              <FieldLabel>Imię i nazwisko</FieldLabel>
+              <TextInput
+                value={contact.name}
+                onChange={v => setContactDraft(d => ({ ...(d ?? contact), name: v }))}
+                placeholder="Jan Kowalski"
+              />
+            </div>
             <div>
               <FieldLabel>Lokalizacja</FieldLabel>
               <TextInput
                 value={contact.location}
                 onChange={v => setContactDraft(d => ({ ...(d ?? contact), location: v }))}
-                placeholder="Miasto"
+                placeholder="Warszawa"
               />
             </div>
             <div>
@@ -477,26 +419,16 @@ export function ProfilePage() {
               onChange={links => setContactDraft(d => ({ ...(d ?? contact), links }))}
             />
           </div>
-          <div className="flex justify-end">
-            <SaveButton
-              onClick={handleSaveContact}
-              saving={contactSaving}
-              saved={contactSaved}
-            />
+          <div className="flex justify-end pt-2">
+            <SaveButton onClick={handleSaveContact} saving={contactSaving} saved={contactSaved} />
           </div>
         </div>
       )}
 
-      {/* ── Opisy profilu ───────────────────────────────────────────────────── */}
-      <SectionHeading
-        id="opisy"
-        title="Opisy profilu"
-        collapsed={!!collapsed['opisy']}
-        onToggle={() => toggle('opisy')}
-      />
-      {!collapsed['opisy'] && (
+      {/* ── OPISY PROFILU ────────────────────────────────────────────────────── */}
+      {section === 'opisy' && (
         <div className="space-y-3">
-          <p className="text-xs text-slate-500 font-light -mt-2">
+          <p className="text-xs text-slate-500 font-light">
             Nazwane opisy do różnych pozycji — np. "Frontend Dev", "AI Dev". Wybierane przy generowaniu CV.
           </p>
           {descs.map(desc => (
@@ -525,7 +457,7 @@ export function ProfilePage() {
                     onChange={v => setLocalDescriptions(prev =>
                       (prev ?? descs).map(d => d.id === desc.id ? { ...d, content: v } : d)
                     )}
-                    rows={4}
+                    rows={5}
                     placeholder="Opis profilu kandydata..."
                   />
                 </div>
@@ -543,23 +475,17 @@ export function ProfilePage() {
             type="button"
             onClick={async () => {
               await addDescription({ name: '', content: '' });
-              setLocalDescriptions(null); // re-sync from hook
+              setLocalDescriptions(null);
             }}
-            className="flex items-center gap-1.5 text-xs text-primary-400 hover:text-primary-300 transition-colors cursor-pointer"
+            className="flex items-center gap-1.5 text-sm text-primary-400 hover:text-primary-300 transition-colors cursor-pointer"
           >
-            <Plus className="w-3.5 h-3.5" /> Dodaj opis
+            <Plus className="w-4 h-4" /> Dodaj opis
           </button>
         </div>
       )}
 
-      {/* ── Doświadczenie zawodowe ───────────────────────────────────────────── */}
-      <SectionHeading
-        id="doswiadczenie"
-        title="Doświadczenie zawodowe"
-        collapsed={!!collapsed['doswiadczenie']}
-        onToggle={() => toggle('doswiadczenie')}
-      />
-      {!collapsed['doswiadczenie'] && (
+      {/* ── DOŚWIADCZENIE ZAWODOWE ───────────────────────────────────────────── */}
+      {section === 'doswiadczenie' && (
         <div className="space-y-3">
           {exps.map(exp => (
             <ItemCard
@@ -687,21 +613,15 @@ export function ProfilePage() {
               await addExperience({ company: '', roles: [{ title: '', bullets: [] }] });
               setLocalExperiences(null);
             }}
-            className="flex items-center gap-1.5 text-xs text-primary-400 hover:text-primary-300 transition-colors cursor-pointer"
+            className="flex items-center gap-1.5 text-sm text-primary-400 hover:text-primary-300 transition-colors cursor-pointer"
           >
-            <Plus className="w-3.5 h-3.5" /> Dodaj firmę
+            <Plus className="w-4 h-4" /> Dodaj firmę
           </button>
         </div>
       )}
 
-      {/* ── Projekty ────────────────────────────────────────────────────────── */}
-      <SectionHeading
-        id="projekty"
-        title="Projekty"
-        collapsed={!!collapsed['projekty']}
-        onToggle={() => toggle('projekty')}
-      />
-      {!collapsed['projekty'] && (
+      {/* ── PROJEKTY ────────────────────────────────────────────────────────── */}
+      {section === 'projekty' && (
         <div className="space-y-3">
           {projs.map(proj => (
             <ItemCard
@@ -789,21 +709,15 @@ export function ProfilePage() {
               await addProject({ name: '' });
               setLocalProjects(null);
             }}
-            className="flex items-center gap-1.5 text-xs text-primary-400 hover:text-primary-300 transition-colors cursor-pointer"
+            className="flex items-center gap-1.5 text-sm text-primary-400 hover:text-primary-300 transition-colors cursor-pointer"
           >
-            <Plus className="w-3.5 h-3.5" /> Dodaj projekt
+            <Plus className="w-4 h-4" /> Dodaj projekt
           </button>
         </div>
       )}
 
-      {/* ── Technologie i narzędzia ─────────────────────────────────────────── */}
-      <SectionHeading
-        id="technologie"
-        title="Technologie i narzędzia"
-        collapsed={!!collapsed['technologie']}
-        onToggle={() => toggle('technologie')}
-      />
-      {!collapsed['technologie'] && (
+      {/* ── TECHNOLOGIE I NARZĘDZIA ──────────────────────────────────────────── */}
+      {section === 'technologie' && (
         <div className="space-y-3">
           {tech.map(t => (
             <ItemCard
@@ -850,21 +764,15 @@ export function ProfilePage() {
               await addTechCategory({ category: '', items: '' });
               setLocalTech(null);
             }}
-            className="flex items-center gap-1.5 text-xs text-primary-400 hover:text-primary-300 transition-colors cursor-pointer"
+            className="flex items-center gap-1.5 text-sm text-primary-400 hover:text-primary-300 transition-colors cursor-pointer"
           >
-            <Plus className="w-3.5 h-3.5" /> Dodaj kategorię
+            <Plus className="w-4 h-4" /> Dodaj kategorię
           </button>
         </div>
       )}
 
-      {/* ── Wykształcenie ───────────────────────────────────────────────────── */}
-      <SectionHeading
-        id="wyksztalcenie"
-        title="Wykształcenie"
-        collapsed={!!collapsed['wyksztalcenie']}
-        onToggle={() => toggle('wyksztalcenie')}
-      />
-      {!collapsed['wyksztalcenie'] && (
+      {/* ── WYKSZTAŁCENIE ────────────────────────────────────────────────────── */}
+      {section === 'wyksztalcenie' && (
         <div className="space-y-3">
           {edu.map(e => (
             <ItemCard
@@ -921,21 +829,15 @@ export function ProfilePage() {
               await addEducation({ school: '', degree: '', years: '' });
               setLocalEducation(null);
             }}
-            className="flex items-center gap-1.5 text-xs text-primary-400 hover:text-primary-300 transition-colors cursor-pointer"
+            className="flex items-center gap-1.5 text-sm text-primary-400 hover:text-primary-300 transition-colors cursor-pointer"
           >
-            <Plus className="w-3.5 h-3.5" /> Dodaj wykształcenie
+            <Plus className="w-4 h-4" /> Dodaj wykształcenie
           </button>
         </div>
       )}
 
-      {/* ── Zainteresowania + RODO ──────────────────────────────────────────── */}
-      <SectionHeading
-        id="zainteresowania"
-        title="Zainteresowania + RODO"
-        collapsed={!!collapsed['zainteresowania']}
-        onToggle={() => toggle('zainteresowania')}
-      />
-      {!collapsed['zainteresowania'] && (
+      {/* ── ZAINTERESOWANIA + RODO ───────────────────────────────────────────── */}
+      {section === 'zainteresowania' && (
         <div className="space-y-4">
           <div>
             <FieldLabel>Zainteresowania</FieldLabel>
@@ -950,16 +852,12 @@ export function ProfilePage() {
             <TextArea
               value={interestsRodo.rodo}
               onChange={v => setInterestsDraft(d => ({ ...(d ?? interestsRodo), rodo: v }))}
-              rows={2}
+              rows={3}
               placeholder="Wyrażam zgodę na przetwarzanie moich danych osobowych..."
             />
           </div>
-          <div className="flex justify-end">
-            <SaveButton
-              onClick={handleSaveInterests}
-              saving={interestsSaving}
-              saved={interestsSaved}
-            />
+          <div className="flex justify-end pt-2">
+            <SaveButton onClick={handleSaveInterests} saving={interestsSaving} saved={interestsSaved} />
           </div>
         </div>
       )}

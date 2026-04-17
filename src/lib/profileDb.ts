@@ -25,6 +25,7 @@ export async function getOrCreateProfile(userId: string): Promise<CandidateProfi
   if (data) {
     return {
       id: data.id as string,
+      name: (data.name as string) ?? '',
       location: data.location as string,
       phone: data.phone as string,
       email: data.email as string,
@@ -45,6 +46,7 @@ export async function getOrCreateProfile(userId: string): Promise<CandidateProfi
 
   return {
     id: created.id as string,
+    name: '',
     location: '',
     phone: '',
     email: '',
@@ -60,6 +62,7 @@ export async function upsertProfile(userId: string, data: Omit<CandidateProfile,
     .upsert(
       {
         user_id: userId,
+        name: data.name,
         location: data.location,
         phone: data.phone,
         email: data.email,

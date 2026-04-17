@@ -12,6 +12,7 @@ export interface ProfileContact {
 
 export interface CandidateProfile {
   id?: string;
+  name: string;
   location: string;
   phone: string;
   email: string;
