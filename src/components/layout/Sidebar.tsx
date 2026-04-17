@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { NavLink, useNavigate } from 'react-router-dom';
+import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard,
   Briefcase,
@@ -14,8 +14,10 @@ import {
   LogOut,
   X,
   Trash2,
-  Link as LinkIcon,
+  User,
   FileOutput,
+  ChevronDown,
+  ChevronRight,
 } from 'lucide-react';
 import { CountBadge } from '../ui/CountBadge';
 import { useClickNotifications } from '../../hooks/useClickNotifications';
@@ -30,17 +32,42 @@ const navItems = [
   { to: '/interviews', icon: MessageSquare, label: 'Rozmowy' },
   { to: '/cv-editor', icon: FileOutput, label: 'Generator CV' },
   { to: '/cv', icon: FileText, label: 'Baza CV' },
-  { to: '/links', icon: LinkIcon, label: 'Moje linki' },
 ];
+
+const profileSubItems = [
+  { hash: 'kontakt', label: 'Kontakt' },
+  { hash: 'opisy', label: 'Opisy' },
+  { hash: 'doswiadczenie', label: 'Doświadczenie' },
+  { hash: 'projekty', label: 'Projekty' },
+  { hash: 'technologie', label: 'Technologie' },
+  { hash: 'wyksztalcenie', label: 'Wykształcenie' },
+  { hash: 'zainteresowania', label: 'Zainteresowania' },
+];
+
+const PROFILE_EXPANDED_KEY = 'jo-sidebar-profile-expanded';
 
 export function Sidebar() {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [labelsVisible, setLabelsVisible] = useState(true);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [profileExpanded, setProfileExpanded] = useState(() => {
+    try { return localStorage.getItem(PROFILE_EXPANDED_KEY) === 'true'; } catch { return false; }
+  });
   const notifRef = useRef<HTMLDivElement>(null);
   const { state, dispatch } = useApp();
   const { signOut } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const toggleProfileExpanded = () => {
+    setProfileExpanded(prev => {
+      const next = !prev;
+      try { localStorage.setItem(PROFILE_EXPANDED_KEY, String(next)); } catch { /* ignore */ }
+      return next;
+    });
+  };
+
+  const isProfilActive = location.pathname === '/profil';
 
   const handleNewClicks = useCallback((applicationIds: string[]) => {
     applicationIds.forEach(appId => {
@@ -127,6 +154,55 @@ export function Sidebar() {
               </NavLink>
             </li>
           ))}
+
+          {/* Profil kandydata — expandable */}
+          <li>
+            <button
+              type="button"
+              title={isCollapsed ? 'Profil kandydata' : undefined}
+              onClick={toggleProfileExpanded}
+              className={`flex items-center w-full py-2.5 transition-all ${isCollapsed ? 'justify-center px-2' : 'px-3'} ${
+                isProfilActive ? 'bg-primary-500/10 text-primary-400' : 'text-slate-300 hover:text-white hover:bg-dark-700'
+              } cursor-pointer`}
+            >
+              <User className="w-5 h-5 flex-shrink-0" />
+              {labelsVisible && !isCollapsed && (
+                <>
+                  <span className="font-medium whitespace-nowrap transition-all duration-200 ease-in-out ml-3 flex-1 text-left">
+                    Profil kandydata
+                  </span>
+                  {profileExpanded
+                    ? <ChevronDown className="w-3.5 h-3.5 flex-shrink-0" />
+                    : <ChevronRight className="w-3.5 h-3.5 flex-shrink-0" />
+                  }
+                </>
+              )}
+            </button>
+
+            {/* Sub-items */}
+            {profileExpanded && !isCollapsed && labelsVisible && (
+              <ul className="mt-0.5 space-y-0.5">
+                {profileSubItems.map(sub => (
+                  <li key={sub.hash}>
+                    <a
+                      href={`#/profil#${sub.hash}`}
+                      className="flex items-center py-1.5 pl-10 pr-3 text-xs font-light text-slate-400 hover:text-white hover:bg-dark-700 transition-colors"
+                      onClick={e => {
+                        e.preventDefault();
+                        navigate('/profil');
+                        setTimeout(() => {
+                          const el = document.getElementById(sub.hash);
+                          if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        }, 100);
+                      }}
+                    >
+                      {sub.label}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </li>
         </ul>
       </nav>
 
