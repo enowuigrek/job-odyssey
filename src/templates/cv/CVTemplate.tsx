@@ -392,16 +392,28 @@ export function CVTemplate({ data }: CVTemplateProps) {
         <SectionHeader title="DOŚWIADCZENIE ZAWODOWE" />
         {data.experience.map(exp => (
           <View key={exp.company}>
-            <View style={s.expCompanyRow}>
-              <Text style={s.expCompany}>{exp.company}</Text>
-              {exp.companyLink && (
-                <Link src={exp.companyLink.trackedUrl ?? exp.companyLink.url} style={s.expCompanyLink}>
-                  {exp.companyLink.url.replace(/^https?:\/\//, '')}
-                </Link>
+            {/* Company header + first role block kept together — prevents orphan heading */}
+            <View wrap={false}>
+              <View style={s.expCompanyRow}>
+                <Text style={s.expCompany}>{exp.company}</Text>
+                {exp.companyLink && (
+                  <Link src={exp.companyLink.trackedUrl ?? exp.companyLink.url} style={s.expCompanyLink}>
+                    {exp.companyLink.url.replace(/^https?:\/\//, '')}
+                  </Link>
+                )}
+              </View>
+              {exp.roles[0] && (
+                <View style={s.expRoleBlock}>
+                  <Text style={s.expRole}>{exp.roles[0].title}</Text>
+                  {exp.roles[0].bullets.map((bullet, bi) => (
+                    <Bullet key={bi} text={bullet} />
+                  ))}
+                </View>
               )}
             </View>
-            {exp.roles.map(role => (
-              <View key={role.title} style={s.expRoleBlock}>
+            {/* Remaining roles can break freely */}
+            {exp.roles.slice(1).map(role => (
+              <View key={role.title} style={s.expRoleBlock} wrap={false}>
                 <Text style={s.expRole}>{role.title}</Text>
                 {role.bullets.map((bullet, bi) => (
                   <Bullet key={bi} text={bullet} />

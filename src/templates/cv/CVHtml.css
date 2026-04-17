@@ -254,6 +254,8 @@
   margin-top: 14pt;
   margin-bottom: 3pt;
   flex-wrap: wrap;
+  break-after: avoid;
+  page-break-after: avoid;
 }
 
 .cv-exp-company {
@@ -309,6 +311,8 @@
   font-size: 9.5pt;
   font-weight: 700;
   margin: 0 0 2pt;
+  break-after: avoid;
+  page-break-after: avoid;
 }
 
 .cv-edu-detail-block {
