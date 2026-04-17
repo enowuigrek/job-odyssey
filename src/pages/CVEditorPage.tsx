@@ -334,8 +334,11 @@ export function CVEditorPage() {
   /** Save draft to localStorage — no PDF, no Supabase */
   const handleDraftSave = () => {
     if (editCvId) {
-      // For existing CV: just persist editor data locally
+      // For existing CV: persist editor data + sync name change to AppContext
       saveCVDataById(editCvId, data);
+      if (editingCv && cvName.trim() && cvName !== editingCv.name) {
+        dispatch({ type: 'UPDATE_CV', payload: { ...editingCv, name: cvName } });
+      }
     } else {
       localStorage.setItem(DRAFT_KEY, JSON.stringify({ name: cvName, data }));
     }
