@@ -148,6 +148,13 @@ const s = StyleSheet.create({
     fontWeight: 300,
     marginBottom: 4,
   },
+  projectBody: {
+    borderLeftWidth: 2.5,
+    borderLeftColor: TEAL,
+    paddingLeft: 9,
+    marginTop: 3,
+    marginBottom: 4,
+  },
   projectDesc: {
     fontWeight: 300,
     fontSize: 9,
@@ -352,6 +359,7 @@ export function CVTemplate({ data }: CVTemplateProps) {
               <View key={project.name} wrap={false}>
                 <Text style={s.projectName}>{project.name}</Text>
                 <Text style={s.projectTagline}>{project.tagline}</Text>
+                <View style={s.projectBody}>
                 <Text style={s.projectDesc}>{project.description}</Text>
                 <Text style={s.projectStack}>{project.stack}</Text>
                 {project.note && <Text style={s.projectNote}>{project.note}</Text>}
@@ -366,6 +374,7 @@ export function CVTemplate({ data }: CVTemplateProps) {
                       </Link>
                     </React.Fragment>
                   ))}
+                </View>
                 </View>
               </View>
             ))}

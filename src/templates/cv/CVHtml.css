@@ -204,6 +204,13 @@
   margin: 0 0 6pt;
 }
 
+.cv-project-body {
+  border-left: 2.5pt solid var(--teal);
+  padding-left: 10pt;
+  margin-top: 4pt;
+  margin-bottom: 4pt;
+}
+
 .cv-project-desc {
   font-size: 9pt;
   margin: 0 0 6pt;

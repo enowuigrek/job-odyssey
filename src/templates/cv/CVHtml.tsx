@@ -118,10 +118,12 @@ export function CVHtml({ data, preview = false }: Props) {
             <div key={project.name} className="cv-project">
               <div className="cv-project-name">{project.name}</div>
               <div className="cv-project-tagline">{project.tagline}</div>
-              <p className="cv-project-desc">{project.description}</p>
-              <p className="cv-project-stack">{project.stack}</p>
-              {project.note && <p className="cv-project-note">{project.note}</p>}
-              <ProjectLinks links={project.links} />
+              <div className="cv-project-body">
+                <p className="cv-project-desc">{project.description}</p>
+                <p className="cv-project-stack">{project.stack}</p>
+                {project.note && <p className="cv-project-note">{project.note}</p>}
+                <ProjectLinks links={project.links} />
+              </div>
             </div>
           ))}
         </>
