@@ -14,6 +14,7 @@ import {
   saveCVDataById,
 } from '../lib/generateCV';
 import { uploadCVFile } from '../lib/db';
+import { useProfile } from '../hooks/useProfile';
 import { useAuth } from '../contexts/AuthContext';
 import { useApp } from '../contexts/AppContext';
 
@@ -254,6 +255,7 @@ export function CVEditorPage() {
   const [searchParams] = useSearchParams();
   const { user } = useAuth();
   const { state, dispatch } = useApp();
+  const { profile, isLoading: profileLoading } = useProfile();
   const editCvId = searchParams.get('edit');
   const editingCv = editCvId ? state.cvs.find(cv => cv.id === editCvId) : null;
 
@@ -289,22 +291,28 @@ export function CVEditorPage() {
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
   const toggle = (id: string) => setCollapsed(c => ({ ...c, [id]: !c[id] }));
 
-  // Auto-fill email for brand-new CVs (no draft, no edit)
-  const autoFilledEmail = useRef(false);
+  // Auto-fill from Profil kandydata for brand-new CVs (no draft, no edit)
+  const autoFilledProfile = useRef(false);
   useEffect(() => {
     if (editCvId) return;
     if (localStorage.getItem(DRAFT_KEY)) return;
-    if (autoFilledEmail.current) return;
-    if (!user?.email) return;
-    autoFilledEmail.current = true;
+    if (autoFilledProfile.current) return;
+    if (profileLoading) return;
+    autoFilledProfile.current = true;
     setData(d => ({
       ...d,
+      name: profile.name || d.name,
       contact: {
         ...d.contact,
-        email: user.email ?? d.contact.email,
+        location: profile.location || d.contact.location,
+        phone: profile.phone || d.contact.phone,
+        email: profile.email || user?.email || d.contact.email,
+        links: profile.links.length > 0
+          ? profile.links.map(l => ({ label: l.label, url: l.url }))
+          : d.contact.links,
       },
     }));
-  }, [user, editCvId]);
+  }, [profile, profileLoading, user, editCvId]);
 
   const set = (patch: Partial<CVData>) => setData(d => ({ ...d, ...patch }));
 
@@ -397,24 +405,12 @@ export function CVEditorPage() {
         icon={FileEdit}
         title={editCvId ? 'Edytuj CV' : 'Nowe CV'}
         actions={
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => navigate(-1)}
-              className="p-2 text-slate-400 hover:text-slate-100 transition-colors cursor-pointer"
-            >
-              <ArrowLeft className="w-4 h-4" />
-            </button>
-            <button
-              onClick={handleDraftSave}
-              className={`flex items-center gap-1.5 px-4 py-1.5 text-sm font-medium transition-colors cursor-pointer ${
-                draftSaved ? 'bg-success-500/20 text-success-400' : 'bg-dark-700 hover:bg-dark-600 text-slate-300'
-              }`}
-              title="Zapisz szkic (bez eksportu do bazy CV)"
-            >
-              <Save className="w-4 h-4" />
-              {draftSaved ? 'Zapisano szkic' : 'Zapisz szkic'}
-            </button>
-          </div>
+          <button
+            onClick={() => navigate(-1)}
+            className="p-2 text-slate-400 hover:text-slate-100 transition-colors cursor-pointer"
+          >
+            <ArrowLeft className="w-4 h-4" />
+          </button>
         }
       />
       )}
@@ -781,15 +777,6 @@ export function CVEditorPage() {
           {showPreview ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
           <span className="hidden sm:inline">{showPreview ? 'Zamknij' : 'Podgląd'}</span>
         </button>
-        {/* Pobierz PDF */}
-        <button
-          onClick={handleDownloadPdf}
-          disabled={isGeneratingPdf}
-          title="Pobierz PDF"
-          className="flex items-center justify-center px-2.5 py-2 bg-dark-700 hover:bg-dark-600 text-slate-400 hover:text-slate-200 transition-colors cursor-pointer disabled:opacity-50"
-        >
-          {isGeneratingPdf ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileDown className="w-4 h-4" />}
-        </button>
         {/* Zapisz szkic */}
         <button
           onClick={handleDraftSave}
@@ -799,9 +786,9 @@ export function CVEditorPage() {
           title="Zapisz szkic lokalnie"
         >
           <Save className="w-4 h-4" />
-          <span className="hidden sm:inline">{draftSaved ? 'Szkic zapisany' : 'Zapisz szkic'}</span>
+          <span className="hidden sm:inline">{draftSaved ? 'Zapisano' : 'Zapisz'}</span>
         </button>
-        {/* Zapisz do bazy CV */}
+        {/* Dodaj / zapisz do bazy CV */}
         <button
           onClick={handleSave}
           disabled={isSaving}
@@ -811,7 +798,7 @@ export function CVEditorPage() {
         >
           {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
           <span className="hidden sm:inline">
-            {isSaving ? 'Generuję PDF…' : saved ? 'Zapisano!' : editCvId ? 'Zapisz zmiany' : 'Zapisz do Bazy CV'}
+            {isSaving ? 'Zapisuję…' : saved ? 'Zapisano!' : editCvId ? 'Zapisz zmiany' : 'Dodaj do Bazy CV'}
           </span>
         </button>
       </div>
