@@ -799,13 +799,15 @@ export function CVEditorPage() {
         <span className="text-sm text-slate-400 flex-1 truncate hidden sm:block">
           {cvName || <span className="text-slate-600">Brak nazwy CV</span>}
         </span>
+        {/* Podgląd */}
         <button
           onClick={handlePreview}
-          className="flex items-center gap-1.5 px-4 py-2 bg-dark-700 hover:bg-dark-600 text-slate-300 text-sm transition-colors cursor-pointer"
+          className="flex items-center gap-1.5 px-3 py-2 bg-dark-700 hover:bg-dark-600 text-slate-300 text-sm transition-colors cursor-pointer"
         >
           {showPreview ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-          {showPreview ? 'Zamknij' : 'Podgląd'}
+          <span className="hidden sm:inline">{showPreview ? 'Zamknij' : 'Podgląd'}</span>
         </button>
+        {/* Pobierz PDF */}
         <button
           onClick={handleDownloadPdf}
           disabled={isGeneratingPdf}
@@ -814,15 +816,29 @@ export function CVEditorPage() {
         >
           {isGeneratingPdf ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileDown className="w-4 h-4" />}
         </button>
+        {/* Zapisz szkic */}
+        <button
+          onClick={handleDraftSave}
+          className={`flex items-center gap-1.5 px-3 py-2 text-sm transition-colors cursor-pointer ${
+            draftSaved ? 'bg-success-500/20 text-success-400' : 'bg-dark-700 hover:bg-dark-600 text-slate-300'
+          }`}
+          title="Zapisz szkic lokalnie"
+        >
+          <Save className="w-4 h-4" />
+          <span className="hidden sm:inline">{draftSaved ? 'Szkic zapisany' : 'Zapisz szkic'}</span>
+        </button>
+        {/* Zapisz do bazy CV */}
         <button
           onClick={handleSave}
           disabled={isSaving}
-          className={`flex items-center gap-1.5 px-6 py-2 text-sm font-medium transition-colors cursor-pointer disabled:opacity-60 ${
+          className={`flex items-center gap-1.5 px-4 py-2 text-sm font-medium transition-colors cursor-pointer disabled:opacity-60 ${
             saved ? 'bg-success-500/20 text-success-400' : 'bg-primary-500 hover:bg-primary-400 text-slate-900'
           }`}
         >
           {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-          {isSaving ? 'Generuję PDF…' : saved ? 'Zapisano!' : editCvId ? 'Zapisz zmiany' : 'Zapisz do Bazy CV'}
+          <span className="hidden sm:inline">
+            {isSaving ? 'Generuję PDF…' : saved ? 'Zapisano!' : editCvId ? 'Zapisz zmiany' : 'Zapisz do Bazy CV'}
+          </span>
         </button>
       </div>
     </div>
