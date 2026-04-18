@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   Briefcase,
   CheckCircle,
@@ -20,6 +20,7 @@ import { ApplicationStatus, InterviewStatus } from '../types';
 
 export function DashboardPage() {
   const { state } = useApp();
+  const navigate = useNavigate();
 
   // Rozmowy zaplanowane na dziś
   const todaysInterviews = useMemo(() => {
@@ -333,7 +334,11 @@ export function DashboardPage() {
             ) : (
               <ul className="divide-y divide-dark-600">
                 {recentApplications.map((app) => (
-                  <li key={app.id} className="px-6 py-4 hover:bg-dark-700 transition-colors">
+                  <li
+                    key={app.id}
+                    className="px-6 py-4 hover:bg-dark-700 transition-colors cursor-pointer"
+                    onClick={() => navigate('/applications', { state: { openFor: app.id } })}
+                  >
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="font-medium text-slate-100">{app.position}</p>

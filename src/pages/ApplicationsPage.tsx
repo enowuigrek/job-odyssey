@@ -148,6 +148,15 @@ export function ApplicationsPage() {
   const [filtersOpen, setFiltersOpen] = useState(false);
   const filtersRef = useRef<HTMLDivElement>(null);
 
+  // Rozwiń aplikację jeśli przyszliśmy z dashboardu
+  useEffect(() => {
+    const openFor = (location.state as { openFor?: string } | null)?.openFor;
+    if (openFor) {
+      setExpandedId(openFor);
+      navigate('/applications', { replace: true, state: {} });
+    }
+  }, [location.state, navigate]);
+
   // Otwórz tracking modal jeśli przyszliśmy z powiadomienia
   useEffect(() => {
     const openFor = (location.state as { openTrackingFor?: string } | null)?.openTrackingFor;
@@ -444,7 +453,7 @@ export function ApplicationsPage() {
     };
 
     const cardContent = (
-      <Card className="transition-shadow">
+      <Card className="transition-shadow group">
         <CardBody className="p-0">
           {/* Główna sekcja - klikalna aby rozwinąć */}
           <div
@@ -488,53 +497,55 @@ export function ApplicationsPage() {
               </div>
             </div>
 
-            {/* Compact: icon-only action bar */}
+            {/* Compact: icon-only action bar — slides in on hover */}
             {compact && !isExpanded && (
-              <div className="flex items-center gap-1 mt-2 pt-2 border-t border-dark-600/50">
-                {app.jobUrl && (
-                  <a
-                    href={app.jobUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={(e) => e.stopPropagation()}
-                    className="p-1.5 text-slate-500 hover:text-primary-400 transition-colors cursor-pointer"
-                    title="Otwórz ofertę"
-                  >
-                    <ExternalLink className="w-3.5 h-3.5" />
-                  </a>
-                )}
-                <button
-                  onClick={(e) => { e.stopPropagation(); setTrackingApp(app); }}
-                  className="p-1.5 text-slate-500 hover:text-green-400 transition-colors cursor-pointer"
-                  title="Śledź CV"
-                >
-                  <MousePointerClick className="w-3.5 h-3.5" />
-                </button>
-                {app.cvId && getCVDataById(app.cvId) && (
+              <div className="overflow-hidden max-h-0 group-hover:max-h-12 transition-all duration-200 ease-out">
+                <div className="flex items-center gap-1 pt-2 mt-2 border-t border-dark-600/50">
+                  {app.jobUrl && (
+                    <a
+                      href={app.jobUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={(e) => e.stopPropagation()}
+                      className="p-1.5 text-slate-500 hover:text-primary-400 transition-colors cursor-pointer"
+                      title="Otwórz ofertę"
+                    >
+                      <ExternalLink className="w-3.5 h-3.5" />
+                    </a>
+                  )}
                   <button
-                    onClick={(e) => { e.stopPropagation(); downloadTaggedPdf(app); }}
-                    disabled={generatingTaggedFor === app.id}
-                    className="p-1.5 text-slate-500 hover:text-green-400 transition-colors cursor-pointer disabled:opacity-50"
-                    title="Pobierz otagowane CV"
+                    onClick={(e) => { e.stopPropagation(); setTrackingApp(app); }}
+                    className="p-1.5 text-slate-500 hover:text-green-400 transition-colors cursor-pointer"
+                    title="Śledź CV"
                   >
-                    <FileDown className="w-3.5 h-3.5" />
+                    <MousePointerClick className="w-3.5 h-3.5" />
                   </button>
-                )}
-                <div className="flex-1" />
-                <button
-                  onClick={(e) => { e.stopPropagation(); openModal(app); }}
-                  className="p-1.5 text-slate-500 hover:text-primary-400 transition-colors cursor-pointer"
-                  title="Edytuj"
-                >
-                  <Edit className="w-3.5 h-3.5" />
-                </button>
-                <button
-                  onClick={(e) => { e.stopPropagation(); handleDelete(app.id); }}
-                  className="p-1.5 text-slate-500 hover:text-danger-400 transition-colors cursor-pointer"
-                  title="Usuń"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                </button>
+                  {app.cvId && getCVDataById(app.cvId) && (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); downloadTaggedPdf(app); }}
+                      disabled={generatingTaggedFor === app.id}
+                      className="p-1.5 text-slate-500 hover:text-green-400 transition-colors cursor-pointer disabled:opacity-50"
+                      title="Pobierz otagowane CV"
+                    >
+                      <FileDown className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                  <div className="flex-1" />
+                  <button
+                    onClick={(e) => { e.stopPropagation(); openModal(app); }}
+                    className="p-1.5 text-slate-500 hover:text-primary-400 transition-colors cursor-pointer"
+                    title="Edytuj"
+                  >
+                    <Edit className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); handleDelete(app.id); }}
+                    className="p-1.5 text-slate-500 hover:text-danger-400 transition-colors cursor-pointer"
+                    title="Usuń"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
               </div>
             )}
           </div>
