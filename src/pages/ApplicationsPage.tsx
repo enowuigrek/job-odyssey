@@ -454,10 +454,10 @@ export function ApplicationsPage() {
 
     const cardContent = (
       <Card className="transition-shadow group">
-        <CardBody className="p-0">
+        <div className="p-0">
           {/* Główna sekcja - klikalna aby rozwinąć */}
           <div
-            className={`${compact ? 'px-3 py-2' : 'p-4'} cursor-pointer`}
+            className={`${compact ? 'px-2.5 py-1.5' : 'p-4'} cursor-pointer`}
             onClick={handleExpandClick}
           >
           <div className="flex items-center gap-1">
@@ -656,7 +656,7 @@ export function ApplicationsPage() {
               </div>
             </div>
           )}
-        </CardBody>
+        </div>
       </Card>
     );
 
@@ -850,7 +850,7 @@ export function ApplicationsPage() {
                     </div>
                   </div>
                   <div
-                    className={`flex-1 overflow-y-auto kanban-scroll space-y-3 min-h-[200px] p-2 transition-colors ${
+                    className={`flex-1 overflow-y-auto kanban-scroll space-y-1.5 min-h-[200px] p-1.5 transition-colors ${
                       dragOverStatus === status ? 'bg-primary-500/10 border-2 border-dashed border-primary-500/50' : 'border-2 border-transparent'
                     }`}
                   >

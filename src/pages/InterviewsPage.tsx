@@ -286,10 +286,10 @@ export function InterviewsPage() {
 
     const cardContent = (
       <Card className={`hover:shadow-md transition-shadow group ${isTodayInterview ? 'ring-2 ring-warning-400 bg-warning-500/10' : ''}`}>
-        <CardBody className="p-0">
+        <div className="p-0">
           {/* Główna sekcja - klikalna aby rozwinąć */}
           <div
-            className={`${compact ? 'px-3 py-2' : 'p-4'} hover:bg-dark-700 transition-colors cursor-pointer`}
+            className={`${compact ? 'px-2.5 py-1.5' : 'p-4'} hover:bg-dark-700 transition-colors cursor-pointer`}
             onClick={handleExpandClick}
           >
             <div className="flex items-center gap-1">
@@ -473,7 +473,7 @@ export function InterviewsPage() {
               </div>
             </div>
           )}
-        </CardBody>
+        </div>
       </Card>
     );
 
@@ -672,7 +672,7 @@ export function InterviewsPage() {
                     </div>
                   </div>
                   <div
-                    className={`flex-1 overflow-y-auto kanban-scroll space-y-3 min-h-[200px] p-2 transition-colors ${
+                    className={`flex-1 overflow-y-auto kanban-scroll space-y-1.5 min-h-[200px] p-1.5 transition-colors ${
                       dragOverStatus === status ? 'bg-primary-500/10 border-2 border-dashed border-primary-500/50' : 'border-2 border-transparent'
                     }`}
                   >
@@ -743,20 +743,12 @@ export function InterviewsPage() {
                 setFormData({ ...formData, status: e.target.value as InterviewStatus })
               }
             />
-            <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2 tracking-wide">Czas (min)</label>
-              <div className="flex gap-2">
-                <input
-                  type="number"
-                  value={formData.duration}
-                  onChange={(e) => setFormData({ ...formData, duration: parseInt(e.target.value) })}
-                  className="flex-1 px-4 py-3 bg-dark-700 text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
-                />
-                <div className="px-4 py-3 bg-dark-700 text-primary-400 flex items-center flex-shrink-0">
-                  <Clock className="w-5 h-5" />
-                </div>
-              </div>
-            </div>
+            <Input
+              label="Czas (min)"
+              type="number"
+              value={String(formData.duration)}
+              onChange={(e) => setFormData({ ...formData, duration: parseInt(e.target.value) })}
+            />
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
