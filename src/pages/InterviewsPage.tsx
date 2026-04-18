@@ -285,22 +285,22 @@ export function InterviewsPage() {
     };
 
     const cardContent = (
-      <Card className={`hover:shadow-md transition-shadow ${isTodayInterview ? 'ring-2 ring-warning-400 bg-warning-500/10' : ''}`}>
+      <Card className={`hover:shadow-md transition-shadow group ${isTodayInterview ? 'ring-2 ring-warning-400 bg-warning-500/10' : ''}`}>
         <CardBody className="p-0">
           {/* Główna sekcja - klikalna aby rozwinąć */}
           <div
-            className={`${compact ? 'p-3' : 'p-4'} hover:bg-dark-700 transition-colors cursor-pointer`}
+            className={`${compact ? 'px-3 py-2' : 'p-4'} hover:bg-dark-700 transition-colors cursor-pointer`}
             onClick={handleExpandClick}
           >
-            <div className="flex items-start justify-between">
+            <div className="flex items-center gap-1">
               {draggable && (
-                <div className="mr-2 text-slate-400 flex-shrink-0 pt-1 cursor-grab active:cursor-grabbing" onClick={(e) => e.stopPropagation()}>
+                <div className="mr-1 text-slate-400 flex-shrink-0 cursor-grab active:cursor-grabbing" onClick={(e) => e.stopPropagation()}>
                   <GripVertical className="w-4 h-4" />
                 </div>
               )}
               <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <h3 className={`font-semibold text-white ${compact ? 'text-sm' : 'text-lg'} truncate`}>
+                <div className="flex items-center gap-2 mb-0.5">
+                  <h3 className="font-semibold text-white text-sm truncate">
                     {app?.companyName || 'Nieznana firma'}
                   </h3>
                   {isTodayInterview && (
@@ -309,10 +309,10 @@ export function InterviewsPage() {
                     </span>
                   )}
                 </div>
-                <p className={`text-slate-300 ${compact ? 'text-xs' : 'text-sm'} mb-1 truncate`}>
+                <p className="text-slate-300 text-xs mb-1 truncate">
                   {app?.position}
                 </p>
-                <div className={`flex items-center gap-2 ${compact ? 'text-xs' : 'text-sm'} text-slate-400`}>
+                <div className="flex items-center gap-2 text-xs text-slate-400">
                   <span className="flex items-center gap-1">
                     <Calendar className="w-3.5 h-3.5" />
                     {format(interviewDate, 'd MMM', { locale: pl })}
@@ -330,7 +330,43 @@ export function InterviewsPage() {
                   </div>
                 )}
               </div>
-              {/* Ikona rozwijania */}
+
+              {/* Desktop md+: hover icons inline */}
+              {compact && !isExpanded && (
+                <div
+                  className="hidden md:flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity duration-150 flex-shrink-0"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  {interview.location && interview.location.startsWith('http') && (
+                    <a
+                      href={interview.location}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={(e) => e.stopPropagation()}
+                      className="p-1.5 text-slate-500 hover:text-primary-400 transition-colors cursor-pointer"
+                      title="Otwórz link"
+                    >
+                      <ExternalLink className="w-3.5 h-3.5" />
+                    </a>
+                  )}
+                  <button
+                    onClick={(e) => { e.stopPropagation(); openModal(interview); }}
+                    className="p-1.5 text-slate-500 hover:text-primary-400 transition-colors cursor-pointer"
+                    title="Edytuj"
+                  >
+                    <Edit className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); handleDelete(interview.id); }}
+                    className="p-1.5 text-slate-500 hover:text-danger-400 transition-colors cursor-pointer"
+                    title="Usuń"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              )}
+
+              {/* Chevron */}
               <div className="flex items-center justify-center w-6 h-6 text-slate-500 flex-shrink-0">
                 {isExpanded ? (
                   <ChevronUp className="w-4 h-4" />
@@ -339,6 +375,41 @@ export function InterviewsPage() {
                 )}
               </div>
             </div>
+
+            {/* Mobile: slide-up icon bar */}
+            {compact && !isExpanded && (
+              <div className="md:hidden overflow-hidden max-h-0 group-hover:max-h-12 transition-all duration-200 ease-out">
+                <div className="flex items-center gap-1 pt-2 mt-1.5 border-t border-dark-600/50">
+                  {interview.location && interview.location.startsWith('http') && (
+                    <a
+                      href={interview.location}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={(e) => e.stopPropagation()}
+                      className="p-1.5 text-slate-500 hover:text-primary-400 transition-colors cursor-pointer"
+                      title="Otwórz link"
+                    >
+                      <ExternalLink className="w-3.5 h-3.5" />
+                    </a>
+                  )}
+                  <div className="flex-1" />
+                  <button
+                    onClick={(e) => { e.stopPropagation(); openModal(interview); }}
+                    className="p-1.5 text-slate-500 hover:text-primary-400 transition-colors cursor-pointer"
+                    title="Edytuj"
+                  >
+                    <Edit className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); handleDelete(interview.id); }}
+                    className="p-1.5 text-slate-500 hover:text-danger-400 transition-colors cursor-pointer"
+                    title="Usuń"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Rozwinięte szczegóły */}
@@ -718,16 +789,18 @@ export function InterviewsPage() {
                 setFormData({ ...formData, status: e.target.value as InterviewStatus })
               }
             />
-            <div className="flex items-end gap-2">
-              <Input
-                label="Czas (min)"
-                type="number"
-                value={formData.duration}
-                onChange={(e) => setFormData({ ...formData, duration: parseInt(e.target.value) })}
-                className="flex-1"
-              />
-              <div className="p-3 bg-dark-700 text-primary-400">
-                <Clock className="w-5 h-5" />
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-2 tracking-wide">Czas (min)</label>
+              <div className="flex gap-2">
+                <input
+                  type="number"
+                  value={formData.duration}
+                  onChange={(e) => setFormData({ ...formData, duration: parseInt(e.target.value) })}
+                  className="flex-1 px-4 py-3 bg-dark-700 text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                />
+                <div className="px-4 py-3 bg-dark-700 text-primary-400 flex items-center flex-shrink-0">
+                  <Clock className="w-5 h-5" />
+                </div>
               </div>
             </div>
           </div>
@@ -755,29 +828,11 @@ export function InterviewsPage() {
             placeholder="https://meet.google.com/..."
           />
 
-          <div className="border-t border-dark-600 pt-4">
-            <h3 className="font-medium text-slate-100 mb-3">Po rozmowie (opcjonalne)</h3>
-
-            <Textarea
-              label="Co poszło dobrze?"
-              value={formData.whatWentWell}
-              onChange={(e) => setFormData({ ...formData, whatWentWell: e.target.value })}
-            />
-
-            <Textarea
-              label="Co mogło pójść lepiej?"
-              value={formData.whatWentWrong}
-              onChange={(e) => setFormData({ ...formData, whatWentWrong: e.target.value })}
-              className="mt-3"
-            />
-
-            <Textarea
-              label="Notatki"
-              value={formData.notes}
-              onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-              className="mt-3"
-            />
-          </div>
+          <Textarea
+            label="Notatki"
+            value={formData.notes}
+            onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+          />
 
           <div className="flex justify-end gap-3 pt-4 border-t border-dark-600">
             <Button type="button" variant="secondary" onClick={closeModal}>

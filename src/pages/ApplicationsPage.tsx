@@ -457,20 +457,19 @@ export function ApplicationsPage() {
         <CardBody className="p-0">
           {/* Główna sekcja - klikalna aby rozwinąć */}
           <div
-            className={`${compact ? 'p-3' : 'p-4'} cursor-pointer`}
+            className={`${compact ? 'px-3 py-2' : 'p-4'} cursor-pointer`}
             onClick={handleExpandClick}
           >
-            <div className="flex items-start justify-between">
+          <div className="flex items-center gap-1">
               {draggable && (
-                <div className="mr-2 text-slate-400 flex-shrink-0 pt-1 cursor-grab active:cursor-grabbing" onClick={(e) => e.stopPropagation()}>
+                <div className="mr-1 text-slate-400 flex-shrink-0 cursor-grab active:cursor-grabbing" onClick={(e) => e.stopPropagation()}>
                   <GripVertical className="w-4 h-4" />
                 </div>
               )}
               <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-1">
-                  {/* Source icon from job URL */}
+                <div className="flex items-center gap-2 mb-0.5">
                   <SourceIcon url={app.jobUrl} className="w-4 h-4 flex-shrink-0" />
-                  <h3 className={`font-semibold text-white ${compact ? 'text-sm' : 'text-lg'} truncate`}>
+                  <h3 className="font-semibold text-white text-sm truncate">
                     {app.companyName}
                   </h3>
                   {!compact && (
@@ -479,15 +478,66 @@ export function ApplicationsPage() {
                     </Badge>
                   )}
                 </div>
-
                 {app.position && (
-                  <div className={`${compact ? 'text-xs text-slate-400' : 'text-sm text-slate-400'} truncate`}>
+                  <div className="text-xs text-slate-400 truncate">
                     {app.position}
                   </div>
                 )}
               </div>
 
-              {/* Ikona rozwijania */}
+              {/* Desktop md+: hover icons inline before chevron */}
+              {compact && !isExpanded && (
+                <div
+                  className="hidden md:flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity duration-150 flex-shrink-0"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  {app.jobUrl && (
+                    <a
+                      href={app.jobUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={(e) => e.stopPropagation()}
+                      className="p-1.5 text-slate-500 hover:text-primary-400 transition-colors cursor-pointer"
+                      title="Otwórz ofertę"
+                    >
+                      <ExternalLink className="w-3.5 h-3.5" />
+                    </a>
+                  )}
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setTrackingApp(app); }}
+                    className="p-1.5 text-slate-500 hover:text-green-400 transition-colors cursor-pointer"
+                    title="Śledź CV"
+                  >
+                    <MousePointerClick className="w-3.5 h-3.5" />
+                  </button>
+                  {app.cvId && getCVDataById(app.cvId) && (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); downloadTaggedPdf(app); }}
+                      disabled={generatingTaggedFor === app.id}
+                      className="p-1.5 text-slate-500 hover:text-green-400 transition-colors cursor-pointer disabled:opacity-50"
+                      title="Pobierz otagowane CV"
+                    >
+                      <FileDown className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                  <button
+                    onClick={(e) => { e.stopPropagation(); openModal(app); }}
+                    className="p-1.5 text-slate-500 hover:text-primary-400 transition-colors cursor-pointer"
+                    title="Edytuj"
+                  >
+                    <Edit className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); handleDelete(app.id); }}
+                    className="p-1.5 text-slate-500 hover:text-danger-400 transition-colors cursor-pointer"
+                    title="Usuń"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              )}
+
+              {/* Chevron */}
               <div className="flex items-center justify-center w-6 h-6 text-slate-500 flex-shrink-0">
                 {isExpanded ? (
                   <ChevronUp className="w-4 h-4" />
@@ -497,10 +547,10 @@ export function ApplicationsPage() {
               </div>
             </div>
 
-            {/* Compact: icon-only action bar — slides in on hover */}
+            {/* Mobile: slide-up icon bar on hover */}
             {compact && !isExpanded && (
-              <div className="overflow-hidden max-h-0 group-hover:max-h-12 transition-all duration-200 ease-out">
-                <div className="flex items-center gap-1 pt-2 mt-2 border-t border-dark-600/50">
+              <div className="md:hidden overflow-hidden max-h-0 group-hover:max-h-12 transition-all duration-200 ease-out">
+                <div className="flex items-center gap-1 pt-2 mt-1.5 border-t border-dark-600/50">
                   {app.jobUrl && (
                     <a
                       href={app.jobUrl}
@@ -554,18 +604,26 @@ export function ApplicationsPage() {
           {isExpanded && (
             <div className="px-4 pb-4 border-t border-dark-600">
               {/* Szybka zmiana statusu */}
-              <div className="mt-4 mb-4">
-                <label className="text-xs text-slate-400 mb-1 block">Zmień status:</label>
-                <select
-                  value={app.status}
-                  onChange={(e) => { e.stopPropagation(); handleStatusChange(app, e.target.value as ApplicationStatus); }}
-                  onClick={(e) => e.stopPropagation()}
-                  className="w-full px-3 py-2 bg-dark-700 text-slate-100 border border-dark-600 text-sm focus:outline-none focus:ring-1 focus:ring-primary-500 cursor-pointer"
-                >
-                  {statusOptions.map(opt => (
-                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+              <div className="mt-3 mb-3">
+                <p className="text-xs text-slate-400 mb-2">Zmień status:</p>
+                <div className="flex flex-wrap gap-1">
+                  {statusOptions.map((opt) => (
+                    <button
+                      key={opt.value}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleStatusChange(app, opt.value as ApplicationStatus);
+                      }}
+                      className={`px-2 py-1 text-xs transition-colors cursor-pointer ${
+                        app.status === opt.value
+                          ? 'bg-primary-500 text-slate-900'
+                          : 'bg-dark-700 text-slate-300 hover:bg-dark-600'
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
                   ))}
-                </select>
+                </div>
               </div>
 
               {/* Szczegóły */}
@@ -820,7 +878,7 @@ export function ApplicationsPage() {
           ) : (
             <div className="grid gap-4">
               {filteredApplications.map((app) => (
-                <ApplicationCard key={app.id} app={app} />
+                <ApplicationCard key={app.id} app={app} compact />
               ))}
             </div>
           )}
