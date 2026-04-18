@@ -485,58 +485,6 @@ export function ApplicationsPage() {
                 )}
               </div>
 
-              {/* Desktop md+: hover icons inline before chevron */}
-              {compact && !isExpanded && (
-                <div
-                  className="hidden md:flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity duration-150 flex-shrink-0"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  {app.jobUrl && (
-                    <a
-                      href={app.jobUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      onClick={(e) => e.stopPropagation()}
-                      className="p-1.5 text-slate-500 hover:text-primary-400 transition-colors cursor-pointer"
-                      title="Otwórz ofertę"
-                    >
-                      <ExternalLink className="w-3.5 h-3.5" />
-                    </a>
-                  )}
-                  <button
-                    onClick={(e) => { e.stopPropagation(); setTrackingApp(app); }}
-                    className="p-1.5 text-slate-500 hover:text-green-400 transition-colors cursor-pointer"
-                    title="Śledź CV"
-                  >
-                    <MousePointerClick className="w-3.5 h-3.5" />
-                  </button>
-                  {app.cvId && getCVDataById(app.cvId) && (
-                    <button
-                      onClick={(e) => { e.stopPropagation(); downloadTaggedPdf(app); }}
-                      disabled={generatingTaggedFor === app.id}
-                      className="p-1.5 text-slate-500 hover:text-green-400 transition-colors cursor-pointer disabled:opacity-50"
-                      title="Pobierz otagowane CV"
-                    >
-                      <FileDown className="w-3.5 h-3.5" />
-                    </button>
-                  )}
-                  <button
-                    onClick={(e) => { e.stopPropagation(); openModal(app); }}
-                    className="p-1.5 text-slate-500 hover:text-primary-400 transition-colors cursor-pointer"
-                    title="Edytuj"
-                  >
-                    <Edit className="w-3.5 h-3.5" />
-                  </button>
-                  <button
-                    onClick={(e) => { e.stopPropagation(); handleDelete(app.id); }}
-                    className="p-1.5 text-slate-500 hover:text-danger-400 transition-colors cursor-pointer"
-                    title="Usuń"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              )}
-
               {/* Chevron */}
               <div className="flex items-center justify-center w-6 h-6 text-slate-500 flex-shrink-0">
                 {isExpanded ? (
@@ -547,9 +495,9 @@ export function ApplicationsPage() {
               </div>
             </div>
 
-            {/* Mobile: slide-up icon bar on hover */}
+            {/* Slide-up icon bar on hover */}
             {compact && !isExpanded && (
-              <div className="md:hidden overflow-hidden max-h-0 group-hover:max-h-12 transition-all duration-200 ease-out">
+              <div className="overflow-hidden max-h-0 group-hover:max-h-12 transition-all duration-200 ease-out">
                 <div className="flex items-center gap-1 pt-2 mt-1.5 border-t border-dark-600/50">
                   {app.jobUrl && (
                     <a
@@ -605,25 +553,14 @@ export function ApplicationsPage() {
             <div className="px-4 pb-4 border-t border-dark-600">
               {/* Szybka zmiana statusu */}
               <div className="mt-3 mb-3">
-                <p className="text-xs text-slate-400 mb-2">Zmień status:</p>
-                <div className="flex flex-wrap gap-1">
-                  {statusOptions.map((opt) => (
-                    <button
-                      key={opt.value}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleStatusChange(app, opt.value as ApplicationStatus);
-                      }}
-                      className={`px-2 py-1 text-xs transition-colors cursor-pointer ${
-                        app.status === opt.value
-                          ? 'bg-primary-500 text-slate-900'
-                          : 'bg-dark-700 text-slate-300 hover:bg-dark-600'
-                      }`}
-                    >
-                      {opt.label}
-                    </button>
-                  ))}
-                </div>
+                <Select
+                  label="Zmień status"
+                  options={statusOptions}
+                  value={app.status}
+                  onChange={(e) => {
+                    handleStatusChange(app, e.target.value as ApplicationStatus);
+                  }}
+                />
               </div>
 
               {/* Szczegóły */}
@@ -876,7 +813,7 @@ export function ApplicationsPage() {
               }
             />
           ) : (
-            <div className="grid gap-4">
+            <div className="grid gap-2">
               {filteredApplications.map((app) => (
                 <ApplicationCard key={app.id} app={app} compact />
               ))}

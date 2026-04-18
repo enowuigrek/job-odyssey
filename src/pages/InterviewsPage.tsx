@@ -331,41 +331,6 @@ export function InterviewsPage() {
                 )}
               </div>
 
-              {/* Desktop md+: hover icons inline */}
-              {compact && !isExpanded && (
-                <div
-                  className="hidden md:flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity duration-150 flex-shrink-0"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  {interview.location && interview.location.startsWith('http') && (
-                    <a
-                      href={interview.location}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      onClick={(e) => e.stopPropagation()}
-                      className="p-1.5 text-slate-500 hover:text-primary-400 transition-colors cursor-pointer"
-                      title="Otwórz link"
-                    >
-                      <ExternalLink className="w-3.5 h-3.5" />
-                    </a>
-                  )}
-                  <button
-                    onClick={(e) => { e.stopPropagation(); openModal(interview); }}
-                    className="p-1.5 text-slate-500 hover:text-primary-400 transition-colors cursor-pointer"
-                    title="Edytuj"
-                  >
-                    <Edit className="w-3.5 h-3.5" />
-                  </button>
-                  <button
-                    onClick={(e) => { e.stopPropagation(); handleDelete(interview.id); }}
-                    className="p-1.5 text-slate-500 hover:text-danger-400 transition-colors cursor-pointer"
-                    title="Usuń"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              )}
-
               {/* Chevron */}
               <div className="flex items-center justify-center w-6 h-6 text-slate-500 flex-shrink-0">
                 {isExpanded ? (
@@ -376,9 +341,9 @@ export function InterviewsPage() {
               </div>
             </div>
 
-            {/* Mobile: slide-up icon bar */}
+            {/* Slide-up icon bar on hover */}
             {compact && !isExpanded && (
-              <div className="md:hidden overflow-hidden max-h-0 group-hover:max-h-12 transition-all duration-200 ease-out">
+              <div className="overflow-hidden max-h-0 group-hover:max-h-12 transition-all duration-200 ease-out">
                 <div className="flex items-center gap-1 pt-2 mt-1.5 border-t border-dark-600/50">
                   {interview.location && interview.location.startsWith('http') && (
                     <a
@@ -417,25 +382,14 @@ export function InterviewsPage() {
             <div className="px-3 pb-3 border-t border-dark-600">
               {/* Szybka zmiana statusu */}
               <div className="mt-3 mb-3">
-                <p className="text-xs text-slate-400 mb-2">Zmień status:</p>
-                <div className="flex flex-wrap gap-1">
-                  {statusOptions.map((opt) => (
-                    <button
-                      key={opt.value}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleStatusChange(interview, opt.value as InterviewStatus);
-                      }}
-                      className={`px-2 py-1 text-xs transition-colors cursor-pointer ${
-                        interview.status === opt.value
-                          ? 'bg-primary-500 text-slate-900'
-                          : 'bg-dark-700 text-slate-300 hover:bg-dark-600'
-                      }`}
-                    >
-                      {opt.label}
-                    </button>
-                  ))}
-                </div>
+                <Select
+                  label="Zmień status"
+                  options={statusOptions}
+                  value={interview.status}
+                  onChange={(e) => {
+                    handleStatusChange(interview, e.target.value as InterviewStatus);
+                  }}
+                />
               </div>
 
               {/* Szczegóły */}
@@ -682,9 +636,9 @@ export function InterviewsPage() {
               }
             />
           ) : (
-            <div className="grid gap-4">
+            <div className="grid gap-2">
               {filteredInterviews.map((interview) => (
-                <InterviewCard key={interview.id} interview={interview} />
+                <InterviewCard key={interview.id} interview={interview} compact />
               ))}
             </div>
           )}
