@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate, useLocation } from 'react-router-dom';
 import {
   Plus,
   Filter,
@@ -50,6 +50,8 @@ const kanbanColumns: InterviewStatus[] = ['scheduled', 'waiting', 'positive', 'n
 export function InterviewsPage() {
   const { state, dispatch } = useApp();
   const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const location = useLocation();
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilters, setStatusFilters] = useState<InterviewStatus[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -60,6 +62,16 @@ export function InterviewsPage() {
   const [dragOverStatus, setDragOverStatus] = useState<InterviewStatus | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [filtersOpen, setFiltersOpen] = useState(false);
+
+  // Rozwiń rozmowę jeśli przyszliśmy z innej strony
+  useEffect(() => {
+    const openFor = (location.state as { openFor?: string } | null)?.openFor;
+    if (openFor) {
+      setExpandedId(openFor);
+      setViewMode('list');
+      navigate('/interviews', { replace: true, state: {} });
+    }
+  }, [location.state, navigate]);
 
   const toggleExpand = (id: string) => {
     setExpandedId(expandedId === id ? null : id);
@@ -289,7 +301,7 @@ export function InterviewsPage() {
         <div className="p-0">
           {/* Główna sekcja - klikalna aby rozwinąć */}
           <div
-            className={`${compact ? 'px-2.5 py-1.5' : 'p-4'} hover:bg-dark-700 transition-colors cursor-pointer`}
+            className={`${compact ? 'px-2.5 py-1.5' : 'p-4'} cursor-pointer`}
             onClick={handleExpandClick}
           >
             <div className="flex items-center gap-1">

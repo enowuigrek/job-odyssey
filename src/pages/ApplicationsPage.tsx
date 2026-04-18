@@ -592,7 +592,8 @@ export function ApplicationsPage() {
                       {interviews.map((interview) => (
                         <div
                           key={interview.id}
-                          className="flex items-center justify-between text-xs bg-dark-700/50 p-2"
+                          className="flex items-center justify-between text-xs bg-dark-700/50 p-2 hover:bg-dark-700 cursor-pointer transition-colors"
+                          onClick={(e) => { e.stopPropagation(); navigate('/interviews', { state: { openFor: interview.id } }); }}
                         >
                           <span className="text-slate-300">
                             {format(parseISO(interview.scheduledDate), 'd MMM yyyy, HH:mm', { locale: pl })}
