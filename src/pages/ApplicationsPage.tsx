@@ -457,7 +457,7 @@ export function ApplicationsPage() {
         <div className="p-0">
           {/* Główna sekcja - klikalna aby rozwinąć */}
           <div
-            className={`${compact ? 'px-2.5 py-1.5' : 'p-4'} cursor-pointer`}
+            className={`${compact ? 'px-2.5 py-2.5' : 'p-4'} cursor-pointer`}
             onClick={handleExpandClick}
           >
           <div className="flex items-center gap-1">
