@@ -1,7 +1,7 @@
 import { useState, useEffect, createElement, useRef } from 'react';
 import type { ReactElement } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Plus, Trash2, Save, Eye, EyeOff, ArrowLeft, FileEdit, Pencil, Check, FileDown, Loader2, ChevronDown, ChevronRight } from 'lucide-react';
+import { Plus, Trash2, Save, Eye, EyeOff, ArrowLeft, FileEdit, Pencil, Check, FileDown, Loader2, ChevronDown, ChevronRight, Database } from 'lucide-react';
 import { pdf } from '@react-pdf/renderer';
 import type { DocumentProps } from '@react-pdf/renderer';
 import { Button, PageHeader } from '../components/ui';
@@ -248,6 +248,87 @@ function ItemCard({ children, onRemove }: { children: React.ReactNode; onRemove:
   );
 }
 
+// ── ProfileImportMenu ─────────────────────────────────────────────────────────
+
+function ProfileImportMenu<T>({
+  items,
+  labelFn,
+  onImport,
+}: {
+  items: T[];
+  labelFn: (item: T) => string;
+  onImport: (selected: T[]) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [selected, setSelected] = useState<Set<number>>(new Set());
+
+  if (items.length === 0) return null;
+
+  const toggle = (i: number) =>
+    setSelected(prev => {
+      const next = new Set(prev);
+      if (next.has(i)) next.delete(i); else next.add(i);
+      return next;
+    });
+
+  const handleImport = () => {
+    onImport(items.filter((_, i) => selected.has(i)));
+    setOpen(false);
+    setSelected(new Set());
+  };
+
+  const handleCancel = () => {
+    setOpen(false);
+    setSelected(new Set());
+  };
+
+  return (
+    <div className="relative inline-block">
+      <button
+        type="button"
+        onClick={() => setOpen(v => !v)}
+        className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-primary-400 transition-colors cursor-pointer"
+      >
+        <Database className="w-3.5 h-3.5" /> z profilu
+      </button>
+      {open && (
+        <div className="absolute z-20 bottom-full mb-1 left-0 bg-dark-800 border border-dark-600 p-3 w-64 shadow-xl">
+          <p className="text-xs text-slate-400 mb-2">Wybierz z profilu:</p>
+          <div className="max-h-48 overflow-y-auto space-y-0.5">
+            {items.map((item, i) => (
+              <label key={i} className="flex items-center gap-2 py-1 text-xs text-slate-300 hover:text-slate-100 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={selected.has(i)}
+                  onChange={() => toggle(i)}
+                  className="flex-shrink-0"
+                />
+                <span className="truncate">{labelFn(item)}</span>
+              </label>
+            ))}
+          </div>
+          <div className="border-t border-dark-700 mt-2 pt-2 flex gap-2">
+            <button
+              type="button"
+              onClick={handleImport}
+              className="text-xs px-3 py-1.5 bg-primary-500 text-slate-900 hover:bg-primary-400 cursor-pointer transition-colors"
+            >
+              Importuj
+            </button>
+            <button
+              type="button"
+              onClick={handleCancel}
+              className="text-xs px-3 py-1.5 bg-dark-700 text-slate-400 hover:bg-dark-600 cursor-pointer transition-colors"
+            >
+              Anuluj
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Main component ────────────────────────────────────────────────────────────
 
 export function CVEditorPage() {
@@ -255,7 +336,7 @@ export function CVEditorPage() {
   const [searchParams] = useSearchParams();
   const { user } = useAuth();
   const { state, dispatch } = useApp();
-  const { profile, isLoading: profileLoading } = useProfile();
+  const { profile, descriptions, experiences, projects: profileProjects, techCategories, education: profileEducation, isLoading: profileLoading } = useProfile();
   const editCvId = searchParams.get('edit');
   const editingCv = editCvId ? state.cvs.find(cv => cv.id === editCvId) : null;
 
@@ -485,7 +566,14 @@ export function CVEditorPage() {
         onToggleCollapse={() => toggle('profile')}
       />
       {!collapsed['profile'] && (
-        <TextArea value={data.profile} onChange={v => set({ profile: v })} rows={5} placeholder="Krótki opis..." />
+        <div className="space-y-2">
+          <TextArea value={data.profile} onChange={v => set({ profile: v })} rows={5} placeholder="Krótki opis..." />
+          <ProfileImportMenu
+            items={descriptions}
+            labelFn={d => d.name}
+            onImport={items => set({ profile: items.map(d => d.content).join('\n\n') })}
+          />
+        </div>
       )}
 
       {/* ── Podejście do pracy (opcjonalne) ──────────────────────────── */}
@@ -533,9 +621,16 @@ export function CVEditorPage() {
               </div>
             </ItemCard>
           ))}
-          <Button variant="secondary" onClick={() => set({ technologies: [...data.technologies, { category: '', items: '' }] })}>
-            <Plus className="w-3.5 h-3.5 mr-1.5" /> Dodaj kategorię
-          </Button>
+          <div className="flex items-center gap-3 flex-wrap">
+            <Button variant="secondary" onClick={() => set({ technologies: [...data.technologies, { category: '', items: '' }] })}>
+              <Plus className="w-3.5 h-3.5 mr-1.5" /> Dodaj kategorię
+            </Button>
+            <ProfileImportMenu
+              items={techCategories}
+              labelFn={t => `${t.category}: ${t.items.slice(0, 40)}`}
+              onImport={items => set({ technologies: [...data.technologies, ...items.map(t => ({ category: t.category, items: t.items }))] })}
+            />
+          </div>
         </>
       )}
 
@@ -581,9 +676,16 @@ export function CVEditorPage() {
               </div>
             </ItemCard>
           ))}
-          <Button variant="secondary" onClick={() => set({ projects: [...data.projects, { name: '', tagline: '', description: '', stack: '', links: [] }] })}>
-            <Plus className="w-3.5 h-3.5 mr-1.5" /> Dodaj projekt
-          </Button>
+          <div className="flex items-center gap-3 flex-wrap">
+            <Button variant="secondary" onClick={() => set({ projects: [...data.projects, { name: '', tagline: '', description: '', stack: '', links: [] }] })}>
+              <Plus className="w-3.5 h-3.5 mr-1.5" /> Dodaj projekt
+            </Button>
+            <ProfileImportMenu
+              items={profileProjects}
+              labelFn={p => p.name || '(bez nazwy)'}
+              onImport={items => set({ projects: [...data.projects, ...items.map(p => ({ name: p.name, tagline: p.tagline, description: p.description, stack: p.stack, note: p.note, links: p.links.map(l => ({ label: l.label, url: l.url })) }))] })}
+            />
+          </div>
         </>
       )}
 
@@ -664,9 +766,16 @@ export function CVEditorPage() {
               </div>
             </ItemCard>
           ))}
-          <Button variant="secondary" onClick={() => set({ experience: [...data.experience, { company: '', roles: [{ title: '', years: '', bullets: [] }] }] })}>
-            <Plus className="w-3.5 h-3.5 mr-1.5" /> Dodaj firmę
-          </Button>
+          <div className="flex items-center gap-3 flex-wrap">
+            <Button variant="secondary" onClick={() => set({ experience: [...data.experience, { company: '', roles: [{ title: '', years: '', bullets: [] }] }] })}>
+              <Plus className="w-3.5 h-3.5 mr-1.5" /> Dodaj firmę
+            </Button>
+            <ProfileImportMenu
+              items={experiences}
+              labelFn={e => e.company}
+              onImport={items => set({ experience: [...data.experience, ...items.map(e => ({ company: e.company, companyLink: e.company_link, roles: e.roles.map(r => ({ title: r.title, years: '', bullets: r.bullets })) }))] })}
+            />
+          </div>
         </>
       )}
 
@@ -696,9 +805,16 @@ export function CVEditorPage() {
               </div>
             </ItemCard>
           ))}
-          <Button variant="secondary" onClick={() => set({ education: [...data.education, { school: '', degree: '', years: '' }] })}>
-            <Plus className="w-3.5 h-3.5 mr-1.5" /> Dodaj wykształcenie
-          </Button>
+          <div className="flex items-center gap-3 flex-wrap">
+            <Button variant="secondary" onClick={() => set({ education: [...data.education, { school: '', degree: '', years: '' }] })}>
+              <Plus className="w-3.5 h-3.5 mr-1.5" /> Dodaj wykształcenie
+            </Button>
+            <ProfileImportMenu
+              items={profileEducation}
+              labelFn={e => `${e.school}${e.degree ? ' \u2013 ' + e.degree : ''}`}
+              onImport={items => set({ education: [...data.education, ...items.map(e => ({ school: e.school, degree: e.degree, years: e.years }))] })}
+            />
+          </div>
         </>
       )}
 
