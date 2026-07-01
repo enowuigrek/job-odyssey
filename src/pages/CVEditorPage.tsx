@@ -18,7 +18,9 @@ import { useProfile } from '../hooks/useProfile';
 import { useAuth } from '../contexts/AuthContext';
 import { useApp } from '../contexts/AppContext';
 
-const DRAFT_KEY = 'jo-cv-editor-draft';
+function draftKey(userId?: string) {
+  return userId ? `jo-cv-editor-draft-${userId}` : 'jo-cv-editor-draft';
+}
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -345,6 +347,7 @@ export function CVEditorPage() {
   const { profile, descriptions, experiences, projects: profileProjects, techCategories, education: profileEducation, certificates: profileCertificates, isLoading: profileLoading } = useProfile();
   const editCvId = searchParams.get('edit');
   const editingCv = editCvId ? state.cvs.find(cv => cv.id === editCvId) : null;
+  const DRAFT_KEY = draftKey(user?.id);
 
   const [data, setData] = useState<CVData>(() => {
     if (editCvId) {

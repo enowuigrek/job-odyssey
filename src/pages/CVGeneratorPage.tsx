@@ -5,7 +5,8 @@ import React, { ReactElement } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CVHtml } from '../templates/cv/CVHtml';
 import { CVTemplate } from '../templates/cv/CVTemplate';
-import { CV_PRINT_STORAGE_KEY, getCVEditorData } from '../lib/generateCV';
+import { getCVEditorData, getCVPrintData, clearCVPrintData } from '../lib/generateCV';
+import { useAuth } from '../contexts/AuthContext';
 import type { CVData } from '../templates/cv/types';
 
 async function downloadPDF(data: CVData) {
@@ -22,20 +23,17 @@ async function downloadPDF(data: CVData) {
 
 export function CVGeneratorPage() {
   const navigate = useNavigate();
-  const [data, setData] = useState<CVData>(getCVEditorData);
+  const { user } = useAuth();
+  const [data, setData] = useState<CVData>(() => getCVEditorData(user?.id));
   const [isGenerating, setIsGenerating] = useState(false);
 
   useEffect(() => {
-    const raw = localStorage.getItem(CV_PRINT_STORAGE_KEY);
-    if (raw) {
-      try {
-        setData(JSON.parse(raw) as CVData);
-      } catch {
-        // ignore, use editor data
-      }
-      localStorage.removeItem(CV_PRINT_STORAGE_KEY);
+    const printData = getCVPrintData(user?.id);
+    if (printData) {
+      setData(printData);
+      clearCVPrintData(user?.id);
     }
-  }, []);
+  }, [user]);
 
   const handleDownload = async () => {
     setIsGenerating(true);

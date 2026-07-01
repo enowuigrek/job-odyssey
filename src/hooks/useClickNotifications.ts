@@ -2,7 +2,8 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { getRecentClicksForUser } from '../lib/db';
 
-const STORAGE_KEY = 'job-odyssey-last-seen-click';
+const LAST_SEEN_KEY_BASE = 'job-odyssey-last-seen-click';
+const DISMISSED_KEY_BASE = 'job-odyssey-dismissed-clicks';
 const POLL_INTERVAL = 30_000; // 30 sekund
 
 export interface ClickNotification {
@@ -15,10 +16,12 @@ export interface ClickNotification {
 
 export function useClickNotifications(onNewClicks?: (applicationIds: string[]) => void) {
   const { user } = useAuth();
+  const lastSeenKey = `${LAST_SEEN_KEY_BASE}-${user?.id ?? 'anon'}`;
+  const dismissedKey = `${DISMISSED_KEY_BASE}-${user?.id ?? 'anon'}`;
   const [notifications, setNotifications] = useState<ClickNotification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [lastSeenAt, setLastSeenAt] = useState<string>(() => {
-    return localStorage.getItem(STORAGE_KEY) ?? new Date(0).toISOString();
+    return localStorage.getItem(lastSeenKey) ?? new Date(0).toISOString();
   });
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const prevNotifIdsRef = useRef<Set<string>>(new Set());
@@ -52,7 +55,7 @@ export function useClickNotifications(onNewClicks?: (applicationIds: string[]) =
 
   const [dismissed, setDismissed] = useState<Set<string>>(() => {
     try {
-      const raw = localStorage.getItem('job-odyssey-dismissed-clicks');
+      const raw = localStorage.getItem(dismissedKey);
       return new Set(raw ? JSON.parse(raw) : []);
     } catch { return new Set(); }
   });
@@ -61,29 +64,29 @@ export function useClickNotifications(onNewClicks?: (applicationIds: string[]) =
 
   const markAllRead = useCallback(() => {
     const now = new Date().toISOString();
-    localStorage.setItem(STORAGE_KEY, now);
+    localStorage.setItem(lastSeenKey, now);
     setLastSeenAt(now);
     setUnreadCount(0);
-  }, []);
+  }, [lastSeenKey]);
 
   const dismissOne = useCallback((id: string) => {
     setDismissed(prev => {
       const next = new Set(prev);
       next.add(id);
-      localStorage.setItem('job-odyssey-dismissed-clicks', JSON.stringify([...next]));
+      localStorage.setItem(dismissedKey, JSON.stringify([...next]));
       return next;
     });
-  }, []);
+  }, [dismissedKey]);
 
   const dismissAll = useCallback(() => {
     const ids = notifications.map(n => n.id);
     setDismissed(prev => {
       const next = new Set([...prev, ...ids]);
-      localStorage.setItem('job-odyssey-dismissed-clicks', JSON.stringify([...next]));
+      localStorage.setItem(dismissedKey, JSON.stringify([...next]));
       return next;
     });
     markAllRead();
-  }, [notifications, markAllRead]);
+  }, [notifications, markAllRead, dismissedKey]);
 
   return { notifications: visibleNotifications, unreadCount, markAllRead, dismissOne, dismissAll, refetch: fetchClicks };
 }

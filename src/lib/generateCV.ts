@@ -2,19 +2,36 @@ import { CVData, CVLink } from '../templates/cv/types';
 import { defaultCVData } from '../templates/cv/defaultCVData';
 import type { TrackingLink } from './db';
 
-export const CV_PRINT_STORAGE_KEY = 'jo-cv-print-data';
-export const CV_EDITOR_STORAGE_KEY = 'jo-cv-editor-data';
+function cvEditorStorageKey(userId?: string) {
+  return userId ? `jo-cv-editor-data-${userId}` : 'jo-cv-editor-data';
+}
 
-export function getCVEditorData(): CVData {
-  const raw = localStorage.getItem(CV_EDITOR_STORAGE_KEY);
+function cvPrintStorageKey(userId?: string) {
+  return userId ? `jo-cv-print-data-${userId}` : 'jo-cv-print-data';
+}
+
+export function getCVEditorData(userId?: string): CVData {
+  const raw = localStorage.getItem(cvEditorStorageKey(userId));
   if (raw) {
     try { return JSON.parse(raw) as CVData; } catch { /* ignore */ }
   }
   return defaultCVData;
 }
 
-export function saveCVEditorData(data: CVData): void {
-  localStorage.setItem(CV_EDITOR_STORAGE_KEY, JSON.stringify(data));
+export function saveCVEditorData(data: CVData, userId?: string): void {
+  localStorage.setItem(cvEditorStorageKey(userId), JSON.stringify(data));
+}
+
+export function getCVPrintData(userId?: string): CVData | null {
+  const raw = localStorage.getItem(cvPrintStorageKey(userId));
+  if (raw) {
+    try { return JSON.parse(raw) as CVData; } catch { /* ignore */ }
+  }
+  return null;
+}
+
+export function clearCVPrintData(userId?: string): void {
+  localStorage.removeItem(cvPrintStorageKey(userId));
 }
 
 export function getCVDataById(cvId: string): CVData | null {
@@ -99,7 +116,8 @@ function injectTrackedUrls(data: CVData, urlMap: Map<string, string>): CVData {
 export function prepareTrackedCV(
   trackingLinks: TrackingLink[],
   cvData: CVData = getCVEditorData(),
-  cvId?: string
+  cvId?: string,
+  userId?: string
 ): CVData {
   if (cvId) {
     const stored = getCVDataById(cvId);
@@ -107,7 +125,7 @@ export function prepareTrackedCV(
   }
   const urlMap = buildTrackedUrlMap(trackingLinks, cvData);
   const trackedData = injectTrackedUrls(cvData, urlMap);
-  localStorage.setItem(CV_PRINT_STORAGE_KEY, JSON.stringify(trackedData));
+  localStorage.setItem(cvPrintStorageKey(userId), JSON.stringify(trackedData));
   return trackedData;
 }
 

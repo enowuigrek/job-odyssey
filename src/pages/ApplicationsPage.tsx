@@ -226,7 +226,7 @@ export function ApplicationsPage() {
         setPdfError('Brak linków do śledzenia. Dodaj linki w „Moje linki".');
         return;
       }
-      const trackedData = prepareTrackedCV(trackingLinks, cvData, cvId!);
+      const trackedData = prepareTrackedCV(trackingLinks, cvData, cvId!, user.id);
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const el = createElement(CVTemplate, { data: trackedData }) as unknown as ReactElement<DocumentProps, any>;
       const blob = await pdf(el).toBlob();
