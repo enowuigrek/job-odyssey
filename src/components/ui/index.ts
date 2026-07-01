@@ -10,3 +10,4 @@ export { CountBadge } from './CountBadge';
 export { PageHeader } from './PageHeader';
 export { useConfirm } from './ConfirmDialog';
 export { CollapsibleItem } from './CollapsibleItem';
+export { Checkbox } from './Checkbox';

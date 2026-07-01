@@ -16,6 +16,7 @@ import {
   Textarea,
   PageHeader,
   useConfirm,
+  Checkbox,
 } from '../components/ui';
 import { CV } from '../types';
 import { format, parseISO } from 'date-fns';
@@ -397,15 +398,18 @@ export function CVPage() {
             placeholder="Dodatkowe informacje o tym CV..."
           />
 
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input
-              type="checkbox"
+          <div className="flex items-center gap-2">
+            <Checkbox
               checked={formData.isDefault}
-              onChange={(e) => setFormData({ ...formData, isDefault: e.target.checked })}
-              className="w-4 h-4 text-primary-500 bg-dark-700 focus:ring-primary-500"
+              onChange={() => setFormData({ ...formData, isDefault: !formData.isDefault })}
             />
-            <span className="text-sm text-slate-300">Ustaw jako domyślne CV</span>
-          </label>
+            <span
+              className="text-sm text-slate-300 cursor-pointer"
+              onClick={() => setFormData({ ...formData, isDefault: !formData.isDefault })}
+            >
+              Ustaw jako domyślne CV
+            </span>
+          </div>
 
           {formError && (
             <p className="text-sm text-danger-400 bg-danger-500/10 px-3 py-2">{formError}</p>

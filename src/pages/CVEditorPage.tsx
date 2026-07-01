@@ -4,7 +4,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Plus, Trash2, Save, Eye, EyeOff, ArrowLeft, FileEdit, Pencil, Check, FileDown, Loader2, ChevronDown, ChevronRight, Database } from 'lucide-react';
 import { pdf } from '@react-pdf/renderer';
 import type { DocumentProps } from '@react-pdf/renderer';
-import { Button, PageHeader, CollapsibleItem } from '../components/ui';
+import { Button, PageHeader, CollapsibleItem, Checkbox } from '../components/ui';
 import type { CVData, CVLink, CVCustomSection, CVCertificate } from '../templates/cv/types';
 import { defaultCVData } from '../templates/cv/defaultCVData';
 import { CVTemplate } from '../templates/cv/CVTemplate';
@@ -102,14 +102,13 @@ function SectionHeading({
       )}
       <div className="flex-1" />
       {onToggleEnabled !== undefined && enabled !== undefined && (
-        <label className="flex items-center gap-1 cursor-pointer flex-shrink-0 mr-1" title={enabled ? 'Wyłącz sekcję' : 'Włącz sekcję'} onClick={e => e.stopPropagation()}>
-          <input
-            type="checkbox"
+        <div className="flex-shrink-0 mr-1" onClick={e => e.stopPropagation()}>
+          <Checkbox
             checked={enabled}
             onChange={onToggleEnabled}
-            className="w-3.5 h-3.5"
+            title={enabled ? 'Wyłącz sekcję' : 'Włącz sekcję'}
           />
-        </label>
+        </div>
       )}
       {onToggleCollapse && (
         <span className="p-1 text-slate-500 flex-shrink-0">
@@ -290,13 +289,10 @@ function ProfileImportMenu<T>({
       <button
         type="button"
         onClick={() => setOpen(v => !v)}
-        className={primaryLabel
-          ? 'flex items-center gap-1.5 px-3 py-1.5 text-sm bg-dark-700 text-slate-300 hover:bg-dark-600 transition-colors cursor-pointer'
-          : 'flex items-center gap-1.5 text-xs text-slate-400 hover:text-primary-400 transition-colors cursor-pointer'
-        }
+        className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-dark-700 text-slate-300 hover:bg-dark-600 hover:text-white transition-colors cursor-pointer"
       >
         {primaryLabel ? <Plus className="w-3.5 h-3.5" /> : <Database className="w-3.5 h-3.5" />}
-        {primaryLabel ?? 'z profilu'}
+        {primaryLabel ?? 'Wybierz z profilu'}
       </button>
       {open && (
         <div className="absolute z-20 bottom-full mb-1 left-0 bg-dark-800 border border-dark-600 p-3 w-64 shadow-xl">
@@ -307,15 +303,10 @@ function ProfileImportMenu<T>({
               <p className="text-xs text-slate-400 mb-2">Wybierz z profilu:</p>
               <div className="max-h-48 overflow-y-auto space-y-0.5">
                 {items.map((item, i) => (
-                  <label key={i} className="flex items-center gap-2 py-1 text-xs text-slate-300 hover:text-slate-100 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={selected.has(i)}
-                      onChange={() => toggle(i)}
-                      className="flex-shrink-0"
-                    />
-                    <span className="truncate">{labelFn(item)}</span>
-                  </label>
+                  <div key={i} className="flex items-center gap-2 py-1 text-xs text-slate-300 hover:text-slate-100">
+                    <Checkbox checked={selected.has(i)} onChange={() => toggle(i)} />
+                    <span className="truncate cursor-pointer" onClick={() => toggle(i)}>{labelFn(item)}</span>
+                  </div>
                 ))}
               </div>
             </>
