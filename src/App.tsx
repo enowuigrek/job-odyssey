@@ -1,9 +1,11 @@
+import { useState } from 'react';
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { AppProvider } from './contexts/AppContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { Layout } from './components/layout/Layout';
 import { LoginPage } from './pages/LoginPage';
+import { LandingPage } from './pages/LandingPage';
 import { CVPrintPage } from './pages/CVPrintPage';
 import {
   DashboardPage,
@@ -21,6 +23,8 @@ import {
 
 function AppRoutes() {
   const { user, isLoading } = useAuth();
+  const [showAuth, setShowAuth] = useState(false);
+  const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
 
   if (isLoading) {
     return (
@@ -31,7 +35,15 @@ function AppRoutes() {
   }
 
   if (!user) {
-    return <LoginPage />;
+    if (showAuth) {
+      return <LoginPage initialMode={authMode} onBack={() => setShowAuth(false)} />;
+    }
+    return (
+      <LandingPage
+        onLoginClick={() => { setAuthMode('login'); setShowAuth(true); }}
+        onRegisterClick={() => { setAuthMode('register'); setShowAuth(true); }}
+      />
+    );
   }
 
   return (

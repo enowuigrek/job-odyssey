@@ -1,9 +1,15 @@
 import { useState, FormEvent } from 'react';
+import { ArrowLeft } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
-export function LoginPage() {
+interface LoginPageProps {
+  initialMode?: 'login' | 'register';
+  onBack?: () => void;
+}
+
+export function LoginPage({ initialMode = 'login', onBack }: LoginPageProps) {
   const { signIn, signUp } = useAuth();
-  const [mode, setMode] = useState<'login' | 'register'>('login');
+  const [mode, setMode] = useState<'login' | 'register'>(initialMode);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -34,6 +40,15 @@ export function LoginPage() {
   return (
     <div className="min-h-screen bg-dark-900 flex items-center justify-center p-4">
       <div className="w-full max-w-sm">
+        {onBack && (
+          <button
+            type="button"
+            onClick={onBack}
+            className="flex items-center gap-1.5 text-sm text-slate-400 hover:text-primary-400 transition-colors mb-6 cursor-pointer"
+          >
+            <ArrowLeft className="w-4 h-4" /> Strona główna
+          </button>
+        )}
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-slate-100">Job Odyssey</h1>
           <p className="text-slate-400 mt-2">Twój osobisty CRM do rekrutacji</p>
