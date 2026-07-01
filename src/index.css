@@ -425,3 +425,21 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator {
 .border-dark-700 { border-color: var(--color-dark-700); }
 .border-dark-600 { border-color: var(--color-dark-600); }
 .divide-dark-600 > :not([hidden]) ~ :not([hidden]) { border-color: var(--color-dark-600); }
+
+/* ============================================
+   Delikatne wejście — LandingPage
+   ============================================ */
+@keyframes fade-in-up {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in-up {
+  animation: fade-in-up 0.7s ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-in-up {
+    animation: none;
+  }
+}
