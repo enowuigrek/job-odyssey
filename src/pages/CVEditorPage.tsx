@@ -1,11 +1,12 @@
 import { useState, useEffect, createElement, useRef } from 'react';
 import type { ReactElement } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Plus, Trash2, Save, Eye, EyeOff, ArrowLeft, FileEdit, Pencil, Check, FileDown, Loader2, ChevronDown, ChevronRight, Database } from 'lucide-react';
+import { Plus, Trash2, Save, Eye, EyeOff, ArrowLeft, FileEdit, Pencil, Check, Loader2, ChevronDown, ChevronRight, Database } from 'lucide-react';
 import { pdf } from '@react-pdf/renderer';
 import type { DocumentProps } from '@react-pdf/renderer';
 import { Button, PageHeader, CollapsibleItem, Checkbox } from '../components/ui';
-import type { CVData, CVLink, CVCustomSection, CVCertificate } from '../templates/cv/types';
+import { FieldLabel, TextInput, TextArea, LinksEditor, BulletsEditor } from '../components/forms/FormPrimitives';
+import type { CVData } from '../templates/cv/types';
 import { defaultCVData } from '../templates/cv/defaultCVData';
 import { CVTemplate } from '../templates/cv/CVTemplate';
 import { CVHtml } from '../templates/cv/CVHtml';
@@ -17,6 +18,7 @@ import { uploadCVFile } from '../lib/db';
 import { useProfile } from '../hooks/useProfile';
 import { useAuth } from '../contexts/AuthContext';
 import { useApp } from '../contexts/AppContext';
+import { updateAt, removeAt } from '../utils/array';
 
 function draftKey(userId?: string) {
   return userId ? `jo-cv-editor-draft-${userId}` : 'jo-cv-editor-draft';
@@ -32,12 +34,6 @@ function uid() {
   return crypto.randomUUID?.() ?? Math.random().toString(36).slice(2);
 }
 
-function updateAt<T>(arr: T[], i: number, val: T): T[] {
-  return arr.map((x, idx) => (idx === i ? val : x));
-}
-function removeAt<T>(arr: T[], i: number): T[] {
-  return arr.filter((_, idx) => idx !== i);
-}
 function moveAt<T>(arr: T[], from: number, to: number): T[] {
   if (to < 0 || to >= arr.length) return arr;
   const next = [...arr];
@@ -124,119 +120,6 @@ function SectionHeading({
           {collapsed ? <ChevronRight className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
         </span>
       )}
-    </div>
-  );
-}
-
-function FieldLabel({ children }: { children: React.ReactNode }) {
-  return <label className="block text-xs text-slate-400 mb-1">{children}</label>;
-}
-
-function TextInput({
-  value, onChange, placeholder, className = '',
-}: { value: string; onChange: (v: string) => void; placeholder?: string; className?: string }) {
-  return (
-    <input
-      value={value}
-      onChange={e => onChange(e.target.value)}
-      placeholder={placeholder}
-      className={`w-full px-3 py-1.5 bg-dark-700 text-slate-100 text-sm placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-primary-500 ${className}`}
-    />
-  );
-}
-
-function TextArea({
-  value, onChange, placeholder, rows = 4,
-}: { value: string; onChange: (v: string) => void; placeholder?: string; rows?: number }) {
-  return (
-    <textarea
-      value={value}
-      onChange={e => onChange(e.target.value)}
-      placeholder={placeholder}
-      rows={rows}
-      className="w-full px-3 py-2 bg-dark-700 text-slate-100 text-sm placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-primary-500 resize-y"
-    />
-  );
-}
-
-function LinkRow({ link, onChange, onRemove }: {
-  link: CVLink; onChange: (l: CVLink) => void; onRemove: () => void;
-}) {
-  return (
-    <div className="flex gap-2 items-center mb-2">
-      <input
-        value={link.label}
-        onChange={e => onChange({ ...link, label: e.target.value })}
-        placeholder="Etykieta"
-        className="w-28 px-2 py-1.5 bg-dark-700 text-slate-100 text-sm placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-primary-500 flex-shrink-0"
-      />
-      <input
-        value={link.url}
-        onChange={e => onChange({ ...link, url: e.target.value })}
-        placeholder="https://..."
-        className="flex-1 px-2 py-1.5 bg-dark-700 text-slate-100 text-sm placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-primary-500 min-w-0"
-      />
-      <button type="button" onClick={onRemove} className="p-1 text-slate-600 hover:text-danger-400 transition-colors cursor-pointer flex-shrink-0">
-        <Trash2 className="w-3.5 h-3.5" />
-      </button>
-    </div>
-  );
-}
-
-function LinksEditor({ links, onChange }: {
-  links: CVLink[]; onChange: (links: CVLink[]) => void;
-}) {
-  return (
-    <div>
-      {links.map((link, i) => (
-        <LinkRow
-          key={i}
-          link={link}
-          onChange={v => onChange(updateAt(links, i, v))}
-          onRemove={() => onChange(removeAt(links, i))}
-        />
-      ))}
-      <button
-        type="button"
-        onClick={() => onChange([...links, { label: '', url: '' }])}
-        className="flex items-center gap-1.5 text-xs text-primary-400 hover:text-primary-300 transition-colors cursor-pointer mt-1"
-      >
-        <Plus className="w-3.5 h-3.5" /> Dodaj link
-      </button>
-    </div>
-  );
-}
-
-/** Individual bullet fields — each textarea is one bullet point */
-function BulletsEditor({ bullets, onChange }: { bullets: string[]; onChange: (b: string[]) => void }) {
-  return (
-    <div>
-      {bullets.map((bullet, i) => (
-        <div key={i} className="flex gap-2 items-start mb-2">
-          <span className="text-slate-400 text-sm mt-1.5 flex-shrink-0 w-4">•</span>
-          <textarea
-            value={bullet}
-            onChange={e => onChange(updateAt(bullets, i, e.target.value))}
-            rows={2}
-            placeholder="Opis..."
-            className="flex-1 px-2 py-1.5 bg-dark-700 text-slate-100 text-sm placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-primary-500 resize-y min-w-0"
-          />
-          <button
-            type="button"
-            onClick={() => onChange(removeAt(bullets, i))}
-            className="mt-1.5 p-1 text-slate-600 hover:text-danger-400 transition-colors cursor-pointer flex-shrink-0"
-          >
-            <Trash2 className="w-3.5 h-3.5" />
-          </button>
-        </div>
-      ))}
-      <button
-        type="button"
-        onClick={() => onChange([...bullets, ''])}
-        className="flex items-center gap-1.5 text-xs text-primary-400 hover:text-primary-300 transition-colors cursor-pointer mt-1"
-      >
-        <Plus className="w-3.5 h-3.5" /> Dodaj punkt
-      </button>
     </div>
   );
 }
@@ -382,7 +265,6 @@ export function CVEditorPage() {
   const [draftSaved, setDraftSaved] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
-  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
 
   const nameRef = useRef<HTMLDivElement>(null);
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({
@@ -481,23 +363,6 @@ export function CVEditorPage() {
   };
 
   const handlePreview = () => setShowPreview(v => !v);
-
-  const handleDownloadPdf = async () => {
-    setIsGeneratingPdf(true);
-    try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const el = createElement(CVTemplate, { data }) as unknown as ReactElement<DocumentProps, any>;
-      const blob = await pdf(el).toBlob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `${data.name || 'CV'}.pdf`;
-      a.click();
-      URL.revokeObjectURL(url);
-    } finally {
-      setIsGeneratingPdf(false);
-    }
-  };
 
   return (
     <div className={showPreview ? 'pb-20' : 'space-y-2 pb-28'}>

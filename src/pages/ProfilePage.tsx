@@ -10,10 +10,12 @@ import {
   ExternalLink,
 } from 'lucide-react';
 import { PageHeader, CollapsibleItem } from '../components/ui';
+import { FieldLabel, TextInput, TextArea, LinksEditor, BulletsEditor } from '../components/forms/FormPrimitives';
 import { useProfile } from '../hooks/useProfile';
 import { useUserLinks } from '../hooks/useUserLinks';
 import { uploadCertificateFile } from '../lib/profileDb';
 import { useAuth } from '../contexts/AuthContext';
+import { updateAt, removeAt } from '../utils/array';
 import type {
   CandidateProfile,
   ProfileDescription,
@@ -22,17 +24,9 @@ import type {
   ProfileTechCategory,
   ProfileEducation,
   ProfileCertificate,
-  ProfileLink,
 } from '../types/profile';
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
-
-function updateAt<T>(arr: T[], i: number, val: T): T[] {
-  return arr.map((x, idx) => (idx === i ? val : x));
-}
-function removeAt<T>(arr: T[], i: number): T[] {
-  return arr.filter((_, idx) => idx !== i);
-}
 
 /** Swaps sort_order between two adjacent items and persists both, with an optimistic local update */
 async function moveItem<T extends { id: string; sort_order: number }>(
@@ -57,135 +51,6 @@ async function moveItem<T extends { id: string; sort_order: number }>(
 }
 
 // ── Small UI building blocks ───────────────────────────────────────────────────
-
-function FieldLabel({ children }: { children: React.ReactNode }) {
-  return <label className="block text-xs text-slate-400 mb-1 font-light">{children}</label>;
-}
-
-function TextInput({
-  value,
-  onChange,
-  placeholder,
-  className = '',
-}: {
-  value: string;
-  onChange: (v: string) => void;
-  placeholder?: string;
-  className?: string;
-}) {
-  return (
-    <input
-      value={value}
-      onChange={e => onChange(e.target.value)}
-      placeholder={placeholder}
-      className={`w-full px-3 py-1.5 bg-dark-700 text-slate-100 text-sm font-light placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-primary-500 ${className}`}
-    />
-  );
-}
-
-function TextArea({
-  value,
-  onChange,
-  placeholder,
-  rows = 4,
-}: {
-  value: string;
-  onChange: (v: string) => void;
-  placeholder?: string;
-  rows?: number;
-}) {
-  return (
-    <textarea
-      value={value}
-      onChange={e => onChange(e.target.value)}
-      placeholder={placeholder}
-      rows={rows}
-      className="w-full px-3 py-2 bg-dark-700 text-slate-100 text-sm font-light placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-primary-500 resize-y"
-    />
-  );
-}
-
-function LinksEditor({
-  links,
-  onChange,
-}: {
-  links: ProfileLink[];
-  onChange: (links: ProfileLink[]) => void;
-}) {
-  return (
-    <div>
-      {links.map((link, i) => (
-        <div key={i} className="flex gap-2 items-center mb-2">
-          <input
-            value={link.label}
-            onChange={e => onChange(updateAt(links, i, { ...link, label: e.target.value }))}
-            placeholder="Etykieta"
-            className="w-28 px-2 py-1.5 bg-dark-700 text-slate-100 text-sm font-light placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-primary-500 flex-shrink-0"
-          />
-          <input
-            value={link.url}
-            onChange={e => onChange(updateAt(links, i, { ...link, url: e.target.value }))}
-            placeholder="https://..."
-            className="flex-1 px-2 py-1.5 bg-dark-700 text-slate-100 text-sm font-light placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-primary-500 min-w-0"
-          />
-          <button
-            type="button"
-            onClick={() => onChange(removeAt(links, i))}
-            className="p-1 text-slate-600 hover:text-danger-400 transition-colors cursor-pointer flex-shrink-0"
-          >
-            <Trash2 className="w-3.5 h-3.5" />
-          </button>
-        </div>
-      ))}
-      <button
-        type="button"
-        onClick={() => onChange([...links, { label: '', url: '' }])}
-        className="flex items-center gap-1.5 text-xs text-primary-400 hover:text-primary-300 transition-colors cursor-pointer mt-1"
-      >
-        <Plus className="w-3.5 h-3.5" /> Dodaj link
-      </button>
-    </div>
-  );
-}
-
-function BulletsEditor({
-  bullets,
-  onChange,
-}: {
-  bullets: string[];
-  onChange: (b: string[]) => void;
-}) {
-  return (
-    <div>
-      {bullets.map((bullet, i) => (
-        <div key={i} className="flex gap-2 items-start mb-2">
-          <span className="text-slate-400 text-sm mt-1.5 flex-shrink-0 w-4">•</span>
-          <textarea
-            value={bullet}
-            onChange={e => onChange(updateAt(bullets, i, e.target.value))}
-            rows={2}
-            placeholder="Opis..."
-            className="flex-1 px-2 py-1.5 bg-dark-700 text-slate-100 text-sm font-light placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-primary-500 resize-y min-w-0"
-          />
-          <button
-            type="button"
-            onClick={() => onChange(removeAt(bullets, i))}
-            className="mt-1.5 p-1 text-slate-600 hover:text-danger-400 transition-colors cursor-pointer flex-shrink-0"
-          >
-            <Trash2 className="w-3.5 h-3.5" />
-          </button>
-        </div>
-      ))}
-      <button
-        type="button"
-        onClick={() => onChange([...bullets, ''])}
-        className="flex items-center gap-1.5 text-xs text-primary-400 hover:text-primary-300 transition-colors cursor-pointer mt-1"
-      >
-        <Plus className="w-3.5 h-3.5" /> Dodaj punkt
-      </button>
-    </div>
-  );
-}
 
 function SaveButton({
   onClick,
@@ -443,32 +308,32 @@ export function ProfilePage() {
         <div className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
-              <FieldLabel>Imię i nazwisko</FieldLabel>
-              <TextInput
+              <FieldLabel light>Imię i nazwisko</FieldLabel>
+              <TextInput light
                 value={contact.name}
                 onChange={v => setContactDraft(d => ({ ...(d ?? contact), name: v }))}
                 placeholder="Jan Kowalski"
               />
             </div>
             <div>
-              <FieldLabel>Lokalizacja</FieldLabel>
-              <TextInput
+              <FieldLabel light>Lokalizacja</FieldLabel>
+              <TextInput light
                 value={contact.location}
                 onChange={v => setContactDraft(d => ({ ...(d ?? contact), location: v }))}
                 placeholder="Warszawa"
               />
             </div>
             <div>
-              <FieldLabel>Telefon</FieldLabel>
-              <TextInput
+              <FieldLabel light>Telefon</FieldLabel>
+              <TextInput light
                 value={contact.phone}
                 onChange={v => setContactDraft(d => ({ ...(d ?? contact), phone: v }))}
                 placeholder="000 000 000"
               />
             </div>
             <div>
-              <FieldLabel>E-mail</FieldLabel>
-              <TextInput
+              <FieldLabel light>E-mail</FieldLabel>
+              <TextInput light
                 value={contact.email}
                 onChange={v => setContactDraft(d => ({ ...(d ?? contact), email: v }))}
                 placeholder="email@example.com"
@@ -476,8 +341,8 @@ export function ProfilePage() {
             </div>
           </div>
           <div>
-            <FieldLabel>Linki (LinkedIn, GitHub, Portfolio…)</FieldLabel>
-            <LinksEditor
+            <FieldLabel light>Linki (LinkedIn, GitHub, Portfolio…)</FieldLabel>
+            <LinksEditor light
               links={contact.links}
               onChange={links => setContactDraft(d => ({ ...(d ?? contact), links }))}
             />
@@ -507,8 +372,8 @@ export function ProfilePage() {
             >
               <div className="space-y-2">
                 <div>
-                  <FieldLabel>Nazwa opisu</FieldLabel>
-                  <TextInput
+                  <FieldLabel light>Nazwa opisu</FieldLabel>
+                  <TextInput light
                     value={desc.name}
                     onChange={v => setLocalDescriptions(prev =>
                       (prev ?? descs).map(d => d.id === desc.id ? { ...d, name: v } : d)
@@ -517,8 +382,8 @@ export function ProfilePage() {
                   />
                 </div>
                 <div>
-                  <FieldLabel>Treść</FieldLabel>
-                  <TextArea
+                  <FieldLabel light>Treść</FieldLabel>
+                  <TextArea light
                     value={desc.content}
                     onChange={v => setLocalDescriptions(prev =>
                       (prev ?? descs).map(d => d.id === desc.id ? { ...d, content: v } : d)
@@ -567,8 +432,8 @@ export function ProfilePage() {
               <div className="space-y-3">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <div>
-                    <FieldLabel>Firma</FieldLabel>
-                    <TextInput
+                    <FieldLabel light>Firma</FieldLabel>
+                    <TextInput light
                       value={exp.company}
                       onChange={v => setLocalExperiences(prev =>
                         (prev ?? exps).map(e => e.id === exp.id ? { ...e, company: v } : e)
@@ -577,7 +442,7 @@ export function ProfilePage() {
                     />
                   </div>
                   <div>
-                    <FieldLabel>Link firmy (opcjonalny)</FieldLabel>
+                    <FieldLabel light>Link firmy (opcjonalny)</FieldLabel>
                     <div className="flex gap-2">
                       <input
                         value={exp.company_link?.label ?? ''}
@@ -628,8 +493,8 @@ export function ProfilePage() {
                       <Trash2 className="w-3 h-3" />
                     </button>
                     <div className="pr-6 mb-3">
-                      <FieldLabel>Stanowisko | lata</FieldLabel>
-                      <TextInput
+                      <FieldLabel light>Stanowisko | lata</FieldLabel>
+                      <TextInput light
                         value={role.title}
                         onChange={v => setLocalExperiences(prev =>
                           (prev ?? exps).map(ex => ex.id === exp.id
@@ -640,8 +505,8 @@ export function ProfilePage() {
                         placeholder="Senior Developer | 2023 – obecnie"
                       />
                     </div>
-                    <FieldLabel>Punkty</FieldLabel>
-                    <BulletsEditor
+                    <FieldLabel light>Punkty</FieldLabel>
+                    <BulletsEditor light
                       bullets={role.bullets}
                       onChange={bullets => setLocalExperiences(prev =>
                         (prev ?? exps).map(ex => ex.id === exp.id
@@ -706,8 +571,8 @@ export function ProfilePage() {
               <div className="space-y-3">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <div>
-                    <FieldLabel>Nazwa projektu</FieldLabel>
-                    <TextInput
+                    <FieldLabel light>Nazwa projektu</FieldLabel>
+                    <TextInput light
                       value={proj.name}
                       onChange={v => setLocalProjects(prev =>
                         (prev ?? projs).map(p => p.id === proj.id ? { ...p, name: v } : p)
@@ -716,8 +581,8 @@ export function ProfilePage() {
                     />
                   </div>
                   <div>
-                    <FieldLabel>Tagline</FieldLabel>
-                    <TextInput
+                    <FieldLabel light>Tagline</FieldLabel>
+                    <TextInput light
                       value={proj.tagline}
                       onChange={v => setLocalProjects(prev =>
                         (prev ?? projs).map(p => p.id === proj.id ? { ...p, tagline: v } : p)
@@ -727,8 +592,8 @@ export function ProfilePage() {
                   </div>
                 </div>
                 <div>
-                  <FieldLabel>Opis</FieldLabel>
-                  <TextArea
+                  <FieldLabel light>Opis</FieldLabel>
+                  <TextArea light
                     value={proj.description}
                     onChange={v => setLocalProjects(prev =>
                       (prev ?? projs).map(p => p.id === proj.id ? { ...p, description: v } : p)
@@ -737,8 +602,8 @@ export function ProfilePage() {
                   />
                 </div>
                 <div>
-                  <FieldLabel>Stack</FieldLabel>
-                  <TextInput
+                  <FieldLabel light>Stack</FieldLabel>
+                  <TextInput light
                     value={proj.stack}
                     onChange={v => setLocalProjects(prev =>
                       (prev ?? projs).map(p => p.id === proj.id ? { ...p, stack: v } : p)
@@ -747,8 +612,8 @@ export function ProfilePage() {
                   />
                 </div>
                 <div>
-                  <FieldLabel>Notatka (opcjonalna)</FieldLabel>
-                  <TextInput
+                  <FieldLabel light>Notatka (opcjonalna)</FieldLabel>
+                  <TextInput light
                     value={proj.note ?? ''}
                     onChange={v => setLocalProjects(prev =>
                       (prev ?? projs).map(p => p.id === proj.id ? { ...p, note: v || undefined } : p)
@@ -757,8 +622,8 @@ export function ProfilePage() {
                   />
                 </div>
                 <div>
-                  <FieldLabel>Linki</FieldLabel>
-                  <LinksEditor
+                  <FieldLabel light>Linki</FieldLabel>
+                  <LinksEditor light
                     links={proj.links}
                     onChange={links => setLocalProjects(prev =>
                       (prev ?? projs).map(p => p.id === proj.id ? { ...p, links } : p)
@@ -804,8 +669,8 @@ export function ProfilePage() {
             >
               <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
                 <div>
-                  <FieldLabel>Kategoria</FieldLabel>
-                  <TextInput
+                  <FieldLabel light>Kategoria</FieldLabel>
+                  <TextInput light
                     value={t.category}
                     onChange={v => setLocalTech(prev =>
                       (prev ?? tech).map(x => x.id === t.id ? { ...x, category: v } : x)
@@ -814,8 +679,8 @@ export function ProfilePage() {
                   />
                 </div>
                 <div className="md:col-span-2">
-                  <FieldLabel>Technologie</FieldLabel>
-                  <TextInput
+                  <FieldLabel light>Technologie</FieldLabel>
+                  <TextInput light
                     value={t.items}
                     onChange={v => setLocalTech(prev =>
                       (prev ?? tech).map(x => x.id === t.id ? { ...x, items: v } : x)
@@ -862,8 +727,8 @@ export function ProfilePage() {
             >
               <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
                 <div>
-                  <FieldLabel>Szkoła / uczelnia</FieldLabel>
-                  <TextInput
+                  <FieldLabel light>Szkoła / uczelnia</FieldLabel>
+                  <TextInput light
                     value={e.school}
                     onChange={v => setLocalEducation(prev =>
                       (prev ?? edu).map(x => x.id === e.id ? { ...x, school: v } : x)
@@ -872,8 +737,8 @@ export function ProfilePage() {
                   />
                 </div>
                 <div>
-                  <FieldLabel>Kierunek</FieldLabel>
-                  <TextInput
+                  <FieldLabel light>Kierunek</FieldLabel>
+                  <TextInput light
                     value={e.degree}
                     onChange={v => setLocalEducation(prev =>
                       (prev ?? edu).map(x => x.id === e.id ? { ...x, degree: v } : x)
@@ -882,8 +747,8 @@ export function ProfilePage() {
                   />
                 </div>
                 <div>
-                  <FieldLabel>Lata</FieldLabel>
-                  <TextInput
+                  <FieldLabel light>Lata</FieldLabel>
+                  <TextInput light
                     value={e.years}
                     onChange={v => setLocalEducation(prev =>
                       (prev ?? edu).map(x => x.id === e.id ? { ...x, years: v } : x)
@@ -946,8 +811,8 @@ export function ProfilePage() {
               <div className="space-y-3">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
                   <div className="md:col-span-2">
-                    <FieldLabel>Nazwa certyfikatu</FieldLabel>
-                    <TextInput
+                    <FieldLabel light>Nazwa certyfikatu</FieldLabel>
+                    <TextInput light
                       value={cert.name}
                       onChange={v => setLocalCertificates(prev =>
                         (prev ?? certs).map(c => c.id === cert.id ? { ...c, name: v } : c)
@@ -956,8 +821,8 @@ export function ProfilePage() {
                     />
                   </div>
                   <div>
-                    <FieldLabel>Rok</FieldLabel>
-                    <TextInput
+                    <FieldLabel light>Rok</FieldLabel>
+                    <TextInput light
                       value={cert.year}
                       onChange={v => setLocalCertificates(prev =>
                         (prev ?? certs).map(c => c.id === cert.id ? { ...c, year: v } : c)
@@ -967,8 +832,8 @@ export function ProfilePage() {
                   </div>
                 </div>
                 <div>
-                  <FieldLabel>Wystawca</FieldLabel>
-                  <TextInput
+                  <FieldLabel light>Wystawca</FieldLabel>
+                  <TextInput light
                     value={cert.issuer}
                     onChange={v => setLocalCertificates(prev =>
                       (prev ?? certs).map(c => c.id === cert.id ? { ...c, issuer: v } : c)
@@ -1033,16 +898,16 @@ export function ProfilePage() {
       {section === 'zainteresowania' && (
         <div className="space-y-4">
           <div>
-            <FieldLabel>Zainteresowania</FieldLabel>
-            <TextInput
+            <FieldLabel light>Zainteresowania</FieldLabel>
+            <TextInput light
               value={interestsRodo.interests}
               onChange={v => setInterestsDraft(d => ({ ...(d ?? interestsRodo), interests: v }))}
               placeholder="Kawa • Muzyka • Sport…"
             />
           </div>
           <div>
-            <FieldLabel>Klauzula RODO</FieldLabel>
-            <TextArea
+            <FieldLabel light>Klauzula RODO</FieldLabel>
+            <TextArea light
               value={interestsRodo.rodo}
               onChange={v => setInterestsDraft(d => ({ ...(d ?? interestsRodo), rodo: v }))}
               rows={3}
