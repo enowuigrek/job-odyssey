@@ -402,7 +402,7 @@ export function QuestionsPage() {
                       {question.myAnswer && (
                         <div className="mt-4">
                           <p className="text-sm font-medium text-slate-300 mb-1 flex items-center gap-1">
-                            <Lightbulb className="w-4 h-4 text-yellow-500" />
+                            <Lightbulb className="w-4 h-4 text-warning-500" />
                             Moja odpowiedź:
                           </p>
                           <p className="text-sm text-slate-400 whitespace-pre-wrap bg-success-500/10 p-3 border-0">

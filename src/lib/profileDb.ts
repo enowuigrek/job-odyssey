@@ -6,6 +6,7 @@ import type {
   ProfileProject,
   ProfileTechCategory,
   ProfileEducation,
+  ProfileCertificate,
   FullProfile,
 } from '../types/profile';
 
@@ -335,18 +336,87 @@ export async function deleteEducation(id: string): Promise<void> {
 }
 
 // ============================================================
+// Profile Certificates
+// ============================================================
+
+export async function getCertificates(userId: string): Promise<ProfileCertificate[]> {
+  const { data, error } = await supabase
+    .from('profile_certificates')
+    .select('*')
+    .eq('user_id', userId)
+    .order('sort_order', { ascending: true });
+
+  if (error) throw error;
+  return (data ?? []).map(r => ({
+    id: r.id as string,
+    name: r.name as string,
+    issuer: r.issuer as string,
+    year: r.year as string,
+    file_url: (r.file_url as string | null) ?? undefined,
+    sort_order: r.sort_order as number,
+  }));
+}
+
+export async function upsertCertificate(userId: string, cert: Partial<ProfileCertificate> & { name: string }): Promise<ProfileCertificate> {
+  const row = {
+    ...(cert.id ? { id: cert.id } : {}),
+    user_id: userId,
+    name: cert.name,
+    issuer: cert.issuer ?? '',
+    year: cert.year ?? '',
+    file_url: cert.file_url ?? null,
+    sort_order: cert.sort_order ?? 0,
+  };
+
+  const { data, error } = await supabase
+    .from('profile_certificates')
+    .upsert(row)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return {
+    id: data.id as string,
+    name: data.name as string,
+    issuer: data.issuer as string,
+    year: data.year as string,
+    file_url: (data.file_url as string | null) ?? undefined,
+    sort_order: data.sort_order as number,
+  };
+}
+
+export async function deleteCertificate(id: string): Promise<void> {
+  await supabase.from('profile_certificates').delete().eq('id', id);
+}
+
+export async function uploadCertificateFile(userId: string, certId: string, file: File): Promise<string> {
+  const ext = file.name.split('.').pop() ?? 'pdf';
+  const path = `${userId}/${certId}/${Date.now()}.${ext}`;
+
+  const { error } = await supabase.storage
+    .from('certificates')
+    .upload(path, file, { upsert: true });
+
+  if (error) throw error;
+
+  const { data } = supabase.storage.from('certificates').getPublicUrl(path);
+  return data.publicUrl;
+}
+
+// ============================================================
 // Full profile loader
 // ============================================================
 
 export async function getFullProfile(userId: string): Promise<FullProfile> {
-  const [contact, descriptions, experiences, projects, techCategories, education] = await Promise.all([
+  const [contact, descriptions, experiences, projects, techCategories, education, certificates] = await Promise.all([
     getOrCreateProfile(userId),
     getDescriptions(userId),
     getExperiences(userId),
     getProjects(userId),
     getTechCategories(userId),
     getEducation(userId),
+    getCertificates(userId),
   ]);
 
-  return { contact, descriptions, experiences, projects, techCategories, education };
+  return { contact, descriptions, experiences, projects, techCategories, education, certificates };
 }

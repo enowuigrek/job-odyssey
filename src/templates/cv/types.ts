@@ -46,6 +46,15 @@ export interface CVEducation {
   years: string;
 }
 
+export interface CVCertificate {
+  name: string;
+  issuer: string;
+  year: string;
+  /** Public URL of the certificate file; if tracking is on, trackedUrl is used as href */
+  url?: string;
+  trackedUrl?: string;
+}
+
 export interface CVCustomSection {
   id: string;
   title: string;
@@ -71,5 +80,7 @@ export interface CVData {
   education: CVEducation[];
   interests: string;
   rodo: string;
+  certificates?: CVCertificate[];
+  showCertificates?: boolean;
   customSections?: CVCustomSection[];
 }

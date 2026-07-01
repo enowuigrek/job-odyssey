@@ -130,7 +130,7 @@ export function MobileHeader() {
                         className="group flex items-start gap-3 px-4 py-3 border-b border-dark-700 hover:bg-dark-700 transition-colors cursor-pointer"
                         onClick={() => handleNotifClick(n.applicationId)}
                       >
-                        <MousePointerClick className="w-4 h-4 text-green-400 flex-shrink-0 mt-0.5" />
+                        <MousePointerClick className="w-4 h-4 text-success-400 flex-shrink-0 mt-0.5" />
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium text-slate-100 truncate">
                             {app ? `${app.companyName} — ${n.label}` : n.label}

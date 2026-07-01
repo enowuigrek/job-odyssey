@@ -7,7 +7,7 @@ interface CountBadgeProps {
 export function CountBadge({ count, variant = 'default', size = 'sm' }: CountBadgeProps) {
   const variants = {
     default: 'bg-dark-600 text-slate-300',
-    success: 'bg-green-500 text-white',
+    success: 'bg-success-500 text-white',
     primary: 'bg-primary-600 text-white',
     warning: 'bg-warning-500 text-dark-900',
   };

@@ -7,6 +7,7 @@ import type {
   ProfileProject,
   ProfileTechCategory,
   ProfileEducation,
+  ProfileCertificate,
 } from '../types/profile';
 import {
   getFullProfile,
@@ -21,6 +22,8 @@ import {
   deleteTechCategory,
   upsertEducation,
   deleteEducation,
+  upsertCertificate,
+  deleteCertificate,
 } from '../lib/profileDb';
 
 export function useProfile() {
@@ -41,6 +44,7 @@ export function useProfile() {
   const [projects, setProjects] = useState<ProfileProject[]>([]);
   const [techCategories, setTechCategories] = useState<ProfileTechCategory[]>([]);
   const [education, setEducation] = useState<ProfileEducation[]>([]);
+  const [certificates, setCertificates] = useState<ProfileCertificate[]>([]);
 
   useEffect(() => {
     if (!user) {
@@ -56,6 +60,7 @@ export function useProfile() {
         setProjects(full.projects);
         setTechCategories(full.techCategories);
         setEducation(full.education);
+        setCertificates(full.certificates);
       })
       .catch(console.error)
       .finally(() => setIsLoading(false));
@@ -191,6 +196,29 @@ export function useProfile() {
     setEducation(prev => prev.filter(e => e.id !== id));
   }, []);
 
+  // ── Certificates ─────────────────────────────────────────────────────────────
+
+  const addCertificate = useCallback(async (cert: { name: string; issuer: string; year: string }) => {
+    if (!user) return;
+    const sortOrder = certificates.length;
+    const saved = await upsertCertificate(user.id, { ...cert, sort_order: sortOrder });
+    setCertificates(prev => [...prev, saved]);
+  }, [user, certificates]);
+
+  const updateCertificate = useCallback(async (id: string, patch: Partial<ProfileCertificate>) => {
+    if (!user) return;
+    const existing = certificates.find(c => c.id === id);
+    if (!existing) return;
+    const updated = { ...existing, ...patch };
+    const saved = await upsertCertificate(user.id, updated);
+    setCertificates(prev => prev.map(c => c.id === id ? saved : c));
+  }, [user, certificates]);
+
+  const removeCertificate = useCallback(async (id: string) => {
+    await deleteCertificate(id);
+    setCertificates(prev => prev.filter(c => c.id !== id));
+  }, []);
+
   return {
     profile,
     descriptions,
@@ -215,5 +243,9 @@ export function useProfile() {
     addEducation,
     updateEducation,
     removeEducation,
+    certificates,
+    addCertificate,
+    updateCertificate,
+    removeCertificate,
   };
 }

@@ -382,17 +382,19 @@ input:focus, textarea:focus, select:focus {
   @apply ring-2 ring-primary-500;
 }
 
-/* Nagłówki - grubsze dla kontrastu z cienkim body */
+/* Nagłówki - bazowy letter-spacing; weight kontrolowany przez klasy komponentów */
 h1, h2, h3, h4, h5, h6 {
-  font-weight: 300;
   letter-spacing: 0.02em;
 }
-
-h1 { font-weight: 400; }
 
 /* Tekst podkreślony/ważny */
 strong, b {
   font-weight: 400;
+}
+
+/* Globalny czas tranzycji — 200ms jako kanon projektu */
+*, *::before, *::after {
+  transition-duration: 200ms;
 }
 
 /* Globalny cursor-pointer dla przycisków i elementów klikalnych */

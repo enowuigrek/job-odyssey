@@ -8,7 +8,7 @@ import {
   StyleSheet,
   Font,
 } from '@react-pdf/renderer';
-import { CVData, CVLink } from './types';
+import { CVData, CVLink, CVCertificate } from './types';
 
 // ---------------------------------------------------------------------------
 // Font registration
@@ -249,6 +249,25 @@ const s = StyleSheet.create({
     fontStyle: 'italic',
     fontSize: 9,
   },
+  // ── Certificates ──────────────────────────────────────────────────────
+  certRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    marginBottom: 6,
+  },
+  certName: {
+    fontSize: 9.5,
+    fontWeight: 'bold',
+    color: TEAL,
+    textDecoration: 'none',
+    marginRight: 6,
+  },
+  certMeta: {
+    fontWeight: 300,
+    fontStyle: 'italic',
+    fontSize: 8.5,
+    color: GRAY,
+  },
   // ── Interests / RODO ──────────────────────────────────────────────────
   interests: {
     fontWeight: 300,
@@ -440,6 +459,27 @@ export function CVTemplate({ data }: CVTemplateProps) {
             <Text style={s.body}>{sec.content}</Text>
           </View>
         ))}
+
+        {/* ── CERTYFIKATY ─────────────────────────────────────────── */}
+        {data.showCertificates !== false && data.certificates && data.certificates.length > 0 && (
+          <>
+            <SectionHeader title="CERTYFIKATY" />
+            {data.certificates.map((cert, i) => (
+              <View key={i} style={s.certRow}>
+                {cert.url ? (
+                  <Link src={cert.trackedUrl ?? cert.url} style={s.certName}>
+                    {cert.name}
+                  </Link>
+                ) : (
+                  <Text style={{ ...s.certName, color: '#1C1C1C' }}>{cert.name}</Text>
+                )}
+                <Text style={s.certMeta}>
+                  {cert.issuer}{cert.issuer && cert.year ? ' · ' : ''}{cert.year}
+                </Text>
+              </View>
+            ))}
+          </>
+        )}
 
         {/* ── ZAINTERESOWANIA ─────────────────────────────────────── */}
         <SectionHeader title="ZAINTERESOWANIA" />

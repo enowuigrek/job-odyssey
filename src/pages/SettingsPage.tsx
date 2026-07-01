@@ -19,7 +19,7 @@ import { Card, CardBody, CardHeader, PageHeader, Input, Button, useConfirm } fro
 
 function StatusMsg({ type, text }: { type: 'ok' | 'err'; text: string }) {
   return (
-    <p className={`flex items-center gap-2 text-sm mt-2 ${type === 'ok' ? 'text-green-400' : 'text-danger-400'}`}>
+    <p className={`flex items-center gap-2 text-sm mt-2 ${type === 'ok' ? 'text-success-400' : 'text-danger-400'}`}>
       {type === 'ok' ? <CheckCircle className="w-4 h-4 flex-shrink-0" /> : <AlertCircle className="w-4 h-4 flex-shrink-0" />}
       {text}
     </p>
@@ -224,23 +224,23 @@ export function SettingsPage() {
         <CardBody>
           <div className="grid grid-cols-5 gap-4 text-center">
             <div>
-              <p className="text-2xl font-bold text-slate-100">{stats.applications}</p>
+              <p className="text-3xl font-bold text-slate-100">{stats.applications}</p>
               <p className="text-sm text-slate-400">Aplikacji</p>
             </div>
             <div>
-              <p className="text-2xl font-bold text-slate-100">{stats.interviews}</p>
+              <p className="text-3xl font-bold text-slate-100">{stats.interviews}</p>
               <p className="text-sm text-slate-400">Rozmów</p>
             </div>
             <div>
-              <p className="text-2xl font-bold text-slate-100">{stats.cvs}</p>
+              <p className="text-3xl font-bold text-slate-100">{stats.cvs}</p>
               <p className="text-sm text-slate-400">CV</p>
             </div>
             <div>
-              <p className="text-2xl font-bold text-slate-100">{stats.questions}</p>
+              <p className="text-3xl font-bold text-slate-100">{stats.questions}</p>
               <p className="text-sm text-slate-400">Pytań</p>
             </div>
             <div>
-              <p className="text-2xl font-bold text-slate-100">{stats.stories}</p>
+              <p className="text-3xl font-bold text-slate-100">{stats.stories}</p>
               <p className="text-sm text-slate-400">Historii</p>
             </div>
           </div>

@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 
-export type LinkType = 'linkedin' | 'github' | 'project' | 'other';
+export type LinkType = 'linkedin' | 'github' | 'project' | 'certificate' | 'other';
 
 export interface UserLink {
   id: string;

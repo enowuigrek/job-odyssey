@@ -236,8 +236,8 @@ export function StoriesPage() {
                                   key={star}
                                   className={`w-4 h-4 ${
                                     star <= story.effectiveness!
-                                      ? 'text-warning-400 fill-yellow-400'
-                                      : 'text-gray-300'
+                                      ? 'text-warning-400 fill-warning-400'
+                                      : 'text-slate-300'
                                   }`}
                                 />
                               ))}
@@ -472,8 +472,8 @@ export function StoriesPage() {
                   <Star
                     className={`w-6 h-6 ${
                       star <= formData.effectiveness
-                        ? 'text-warning-400 fill-yellow-400'
-                        : 'text-gray-300'
+                        ? 'text-warning-400 fill-warning-400'
+                        : 'text-slate-300'
                     }`}
                   />
                 </button>

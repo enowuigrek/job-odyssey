@@ -5,7 +5,7 @@ import { Plus, Trash2, Save, Eye, EyeOff, ArrowLeft, FileEdit, Pencil, Check, Fi
 import { pdf } from '@react-pdf/renderer';
 import type { DocumentProps } from '@react-pdf/renderer';
 import { Button, PageHeader } from '../components/ui';
-import type { CVData, CVLink, CVCustomSection } from '../templates/cv/types';
+import type { CVData, CVLink, CVCustomSection, CVCertificate } from '../templates/cv/types';
 import { defaultCVData } from '../templates/cv/defaultCVData';
 import { CVTemplate } from '../templates/cv/CVTemplate';
 import { CVHtml } from '../templates/cv/CVHtml';
@@ -336,7 +336,7 @@ export function CVEditorPage() {
   const [searchParams] = useSearchParams();
   const { user } = useAuth();
   const { state, dispatch } = useApp();
-  const { profile, descriptions, experiences, projects: profileProjects, techCategories, education: profileEducation, isLoading: profileLoading } = useProfile();
+  const { profile, descriptions, experiences, projects: profileProjects, techCategories, education: profileEducation, certificates: profileCertificates, isLoading: profileLoading } = useProfile();
   const editCvId = searchParams.get('edit');
   const editingCv = editCvId ? state.cvs.find(cv => cv.id === editCvId) : null;
 
@@ -813,6 +813,57 @@ export function CVEditorPage() {
               items={profileEducation}
               labelFn={e => `${e.school}${e.degree ? ' \u2013 ' + e.degree : ''}`}
               onImport={items => set({ education: [...data.education, ...items.map(e => ({ school: e.school, degree: e.degree, years: e.years }))] })}
+            />
+          </div>
+        </>
+      )}
+
+      {/* ── Certyfikaty ───────────────────────────────────────────────── */}
+      <SectionHeading
+        title="Certyfikaty"
+        collapsed={collapsed['certificates']}
+        onToggleCollapse={() => toggle('certificates')}
+      />
+      {!collapsed['certificates'] && (
+        <>
+          {(data.certificates ?? []).map((cert, ci) => (
+            <ItemCard key={ci} onRemove={() => set({ certificates: removeAt(data.certificates ?? [], ci) })}>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-2 pr-6">
+                <div className="md:col-span-2">
+                  <FieldLabel>Nazwa certyfikatu</FieldLabel>
+                  <TextInput
+                    value={cert.name}
+                    onChange={v => set({ certificates: updateAt(data.certificates ?? [], ci, { ...cert, name: v }) })}
+                    placeholder="AWS Certified Developer"
+                  />
+                </div>
+                <div>
+                  <FieldLabel>Rok</FieldLabel>
+                  <TextInput
+                    value={cert.year}
+                    onChange={v => set({ certificates: updateAt(data.certificates ?? [], ci, { ...cert, year: v }) })}
+                    placeholder="2024"
+                  />
+                </div>
+                <div className="md:col-span-3">
+                  <FieldLabel>Wystawca</FieldLabel>
+                  <TextInput
+                    value={cert.issuer}
+                    onChange={v => set({ certificates: updateAt(data.certificates ?? [], ci, { ...cert, issuer: v }) })}
+                    placeholder="Amazon Web Services"
+                  />
+                </div>
+              </div>
+            </ItemCard>
+          ))}
+          <div className="flex items-center gap-3 flex-wrap">
+            <Button variant="secondary" onClick={() => set({ certificates: [...(data.certificates ?? []), { name: '', issuer: '', year: '' }] })}>
+              <Plus className="w-3.5 h-3.5 mr-1.5" /> Dodaj certyfikat
+            </Button>
+            <ProfileImportMenu
+              items={profileCertificates}
+              labelFn={c => `${c.name}${c.issuer ? ' – ' + c.issuer : ''}${c.year ? ' (' + c.year + ')' : ''}`}
+              onImport={items => set({ certificates: [...(data.certificates ?? []), ...items.map(c => ({ name: c.name, issuer: c.issuer, year: c.year, url: c.file_url }))] })}
             />
           </div>
         </>

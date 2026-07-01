@@ -86,10 +86,10 @@ export function LoginPage() {
             </div>
 
             {error && (
-              <p className="text-sm text-red-400 bg-red-400/10 px-3 py-2">{error}</p>
+              <p className="text-sm text-danger-400 bg-danger-500/10 px-3 py-2">{error}</p>
             )}
             {info && (
-              <p className="text-sm text-green-400 bg-green-400/10 px-3 py-2">{info}</p>
+              <p className="text-sm text-success-400 bg-success-500/10 px-3 py-2">{info}</p>
             )}
 
             <button

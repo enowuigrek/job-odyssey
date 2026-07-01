@@ -513,7 +513,7 @@ export function ApplicationsPage() {
                   )}
                   <button
                     onClick={(e) => { e.stopPropagation(); setTrackingApp(app); }}
-                    className="p-1.5 text-slate-500 hover:text-green-400 transition-colors cursor-pointer"
+                    className="p-1.5 text-slate-500 hover:text-success-400 transition-colors cursor-pointer"
                     title="Śledź CV"
                   >
                     <MousePointerClick className="w-3.5 h-3.5" />
@@ -522,7 +522,7 @@ export function ApplicationsPage() {
                     <button
                       onClick={(e) => { e.stopPropagation(); downloadTaggedPdf(app); }}
                       disabled={generatingTaggedFor === app.id}
-                      className="p-1.5 text-slate-500 hover:text-green-400 transition-colors cursor-pointer disabled:opacity-50"
+                      className="p-1.5 text-slate-500 hover:text-success-400 transition-colors cursor-pointer disabled:opacity-50"
                       title="Pobierz otagowane CV"
                     >
                       <FileDown className="w-3.5 h-3.5" />
@@ -624,7 +624,7 @@ export function ApplicationsPage() {
                 )}
                 <button
                   onClick={(e) => { e.stopPropagation(); setTrackingApp(app); }}
-                  className="p-2 text-slate-500 hover:text-green-400 transition-colors cursor-pointer"
+                  className="p-2 text-slate-500 hover:text-success-400 transition-colors cursor-pointer"
                   title="Śledź CV"
                 >
                   <MousePointerClick className="w-4 h-4" />
@@ -633,7 +633,7 @@ export function ApplicationsPage() {
                   <button
                     onClick={(e) => { e.stopPropagation(); downloadTaggedPdf(app); }}
                     disabled={generatingTaggedFor === app.id}
-                    className="p-2 text-slate-500 hover:text-green-400 transition-colors cursor-pointer disabled:opacity-50"
+                    className="p-2 text-slate-500 hover:text-success-400 transition-colors cursor-pointer disabled:opacity-50"
                     title="Pobierz otagowane CV"
                   >
                     <FileDown className="w-4 h-4" />
@@ -973,7 +973,7 @@ export function ApplicationsPage() {
               </select>
             </div>
             {formData.cvId && !state.cvs.find(cv => cv.id === formData.cvId)?.fileName && (
-              <p className="text-xs text-amber-400">
+              <p className="text-xs text-warning-400">
                 To CV nie ma pliku PDF — nie można wygenerować otagowanego PDF.
               </p>
             )}
@@ -1005,7 +1005,7 @@ export function ApplicationsPage() {
                   type="button"
                   onClick={handleGeneratePdf}
                   disabled={isGeneratingPdf}
-                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-green-600 hover:bg-green-500 text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-success-600 hover:bg-success-500 text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer"
                 >
                   <FileDown className="w-3.5 h-3.5" />
                   {isGeneratingPdf ? 'Generuję...' : 'Pobierz otagowane CV'}

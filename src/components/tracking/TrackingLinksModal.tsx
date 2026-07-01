@@ -255,7 +255,7 @@ export function TrackingLinksModal({ isOpen, onClose, application, onFirstClick 
                             href={trackUrl(link.token)}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="p-1.5 text-slate-400 hover:text-green-400 transition-colors"
+                            className="p-1.5 text-slate-400 hover:text-success-400 transition-colors"
                             title="Testuj link (otwórz w przeglądarce)"
                           >
                             <ExternalLink className="w-4 h-4" />
@@ -266,7 +266,7 @@ export function TrackingLinksModal({ isOpen, onClose, application, onFirstClick 
                             title="Kopiuj URL"
                           >
                             {copiedToken === link.token ? (
-                              <Check className="w-4 h-4 text-green-400" />
+                              <Check className="w-4 h-4 text-success-400" />
                             ) : (
                               <Copy className="w-4 h-4" />
                             )}
@@ -382,7 +382,7 @@ export function TrackingLinksModal({ isOpen, onClose, application, onFirstClick 
               ) : (
                 <>
                   <p className="text-sm text-slate-400">
-                    Rekruter kliknął <span className="text-green-400 font-medium">{clicks.length}</span> {clicks.length === 1 ? 'link' : clicks.length < 5 ? 'linki' : 'linków'}
+                    Rekruter kliknął <span className="text-success-400 font-medium">{clicks.length}</span> {clicks.length === 1 ? 'link' : clicks.length < 5 ? 'linki' : 'linków'}
                   </p>
 
                   {/* Checklist linków */}
@@ -395,19 +395,19 @@ export function TrackingLinksModal({ isOpen, onClose, application, onFirstClick 
                           key={link.id}
                           className={`p-3 border ${
                             linkClicks.length > 0
-                              ? 'border-green-500/30 bg-green-500/5'
+                              ? 'border-success-500/30 bg-success-500/5'
                               : 'border-dark-600 bg-dark-700/50'
                           }`}
                         >
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2">
                               {linkClicks.length > 0 ? (
-                                <Check className="w-4 h-4 text-green-400 flex-shrink-0" />
+                                <Check className="w-4 h-4 text-success-400 flex-shrink-0" />
                               ) : (
                                 <div className="w-4 h-4 flex-shrink-0 border border-slate-600 flex-shrink-0" />
                               )}
                               <span className={`text-sm font-medium ${
-                                linkClicks.length > 0 ? 'text-green-400' : 'text-slate-400'
+                                linkClicks.length > 0 ? 'text-success-400' : 'text-slate-400'
                               }`}>
                                 {link.label}
                               </span>
@@ -436,7 +436,7 @@ export function TrackingLinksModal({ isOpen, onClose, application, onFirstClick 
                         return (
                           <div key={click.id} className="flex items-center justify-between text-xs text-slate-400">
                             <div className="flex items-center gap-2">
-                              <ExternalLink className="w-3 h-3 text-green-400" />
+                              <ExternalLink className="w-3 h-3 text-success-400" />
                               <span>{link?.label ?? 'Nieznany'}</span>
                             </div>
                             <span className="text-slate-500">

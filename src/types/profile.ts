@@ -67,6 +67,15 @@ export interface ProfileEducation {
   sort_order: number;
 }
 
+export interface ProfileCertificate {
+  id: string;
+  name: string;
+  issuer: string;
+  year: string;
+  file_url?: string;
+  sort_order: number;
+}
+
 export interface FullProfile {
   contact: CandidateProfile;
   descriptions: ProfileDescription[];
@@ -74,4 +83,5 @@ export interface FullProfile {
   projects: ProfileProject[];
   techCategories: ProfileTechCategory[];
   education: ProfileEducation[];
+  certificates: ProfileCertificate[];
 }

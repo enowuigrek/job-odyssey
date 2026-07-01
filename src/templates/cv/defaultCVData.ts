@@ -81,6 +81,8 @@ export const defaultCVData: CVData = {
       years: '2015 – 2019',
     },
   ],
+  certificates: [],
+  showCertificates: false,
   interests: 'Tutaj wpisz swoje zainteresowania — krótko, kilka słów oddzielonych kropką',
   rodo: 'Wyrażam zgodę na przetwarzanie moich danych osobowych dla potrzeb niezbędnych do realizacji procesu rekrutacji.',
 };

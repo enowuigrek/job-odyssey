@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import {
   User,
@@ -6,9 +6,14 @@ import {
   Trash2,
   Check,
   Loader2,
+  Upload,
+  ExternalLink,
 } from 'lucide-react';
 import { PageHeader } from '../components/ui';
 import { useProfile } from '../hooks/useProfile';
+import { useUserLinks } from '../hooks/useUserLinks';
+import { uploadCertificateFile } from '../lib/profileDb';
+import { useAuth } from '../contexts/AuthContext';
 import type {
   CandidateProfile,
   ProfileDescription,
@@ -16,6 +21,7 @@ import type {
   ProfileProject,
   ProfileTechCategory,
   ProfileEducation,
+  ProfileCertificate,
   ProfileLink,
 } from '../types/profile';
 
@@ -211,6 +217,7 @@ const SECTION_TITLES: Record<string, string> = {
   projekty: 'Projekty',
   technologie: 'Technologie i narzędzia',
   wyksztalcenie: 'Wykształcenie',
+  certyfikaty: 'Certyfikaty',
   zainteresowania: 'Zainteresowania',
 };
 
@@ -218,6 +225,8 @@ const SECTION_TITLES: Record<string, string> = {
 
 export function ProfilePage() {
   const { section = 'kontakt' } = useParams<{ section: string }>();
+  const { user } = useAuth();
+  const { links: userLinks, addLink, updateLink } = useUserLinks();
 
   const {
     profile,
@@ -226,6 +235,7 @@ export function ProfilePage() {
     projects,
     techCategories,
     education,
+    certificates,
     isLoading,
     updateProfile,
     addDescription,
@@ -243,6 +253,9 @@ export function ProfilePage() {
     addEducation,
     updateEducation,
     removeEducation,
+    addCertificate,
+    updateCertificate,
+    removeCertificate,
   } = useProfile();
 
   // ── Contact / interests draft ────────────────────────────────────────────────
@@ -283,18 +296,24 @@ export function ProfilePage() {
   const [localProjects, setLocalProjects] = useState<ProfileProject[] | null>(null);
   const [localTech, setLocalTech] = useState<ProfileTechCategory[] | null>(null);
   const [localEducation, setLocalEducation] = useState<ProfileEducation[] | null>(null);
+  const [localCertificates, setLocalCertificates] = useState<ProfileCertificate[] | null>(null);
+  const [uploadingCertId, setUploadingCertId] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const pendingUploadCertId = useRef<string | null>(null);
 
   if (profileLoaded && localDescriptions === null && descriptions.length >= 0) setLocalDescriptions(descriptions);
   if (profileLoaded && localExperiences === null && experiences.length >= 0) setLocalExperiences(experiences);
   if (profileLoaded && localProjects === null && projects.length >= 0) setLocalProjects(projects);
   if (profileLoaded && localTech === null && techCategories.length >= 0) setLocalTech(techCategories);
   if (profileLoaded && localEducation === null && education.length >= 0) setLocalEducation(education);
+  if (profileLoaded && localCertificates === null && certificates.length >= 0) setLocalCertificates(certificates);
 
   const descs = localDescriptions ?? descriptions;
   const exps = localExperiences ?? experiences;
   const projs = localProjects ?? projects;
   const tech = localTech ?? techCategories;
   const edu = localEducation ?? education;
+  const certs = localCertificates ?? certificates;
 
   // ── Save handlers ────────────────────────────────────────────────────────────
 
@@ -351,6 +370,43 @@ export function ProfilePage() {
     try { await updateEducation(e.id, e); markSaved(e.id); }
     catch (e2) { setSavingMap(m => ({ ...m, [e.id]: false })); console.error(e2); }
   }, [updateEducation]);
+
+  const syncCertificateToUserLinks = useCallback((cert: ProfileCertificate) => {
+    if (!cert.file_url) return;
+    const existing = userLinks.find(l => l.type === 'certificate' && l.url === cert.file_url);
+    if (!existing) {
+      addLink({ label: cert.name || 'Certyfikat', url: cert.file_url, type: 'certificate' });
+    } else if (existing.label !== cert.name) {
+      updateLink(existing.id, { label: cert.name });
+    }
+  }, [userLinks, addLink, updateLink]);
+
+  const handleSaveCertificate = useCallback(async (cert: ProfileCertificate) => {
+    markSaving(cert.id);
+    try {
+      await updateCertificate(cert.id, cert);
+      syncCertificateToUserLinks(cert);
+      markSaved(cert.id);
+    }
+    catch (e) { setSavingMap(m => ({ ...m, [cert.id]: false })); console.error(e); }
+  }, [updateCertificate, syncCertificateToUserLinks]);
+
+  const handleUploadFile = useCallback(async (certId: string, file: File) => {
+    if (!user) return;
+    setUploadingCertId(certId);
+    try {
+      const url = await uploadCertificateFile(user.id, certId, file);
+      const cert = (localCertificates ?? certificates).find(c => c.id === certId);
+      if (!cert) return;
+      const updated = { ...cert, file_url: url };
+      setLocalCertificates(prev => (prev ?? []).map(c => c.id === certId ? updated : c));
+      await updateCertificate(certId, { file_url: url });
+      syncCertificateToUserLinks(updated);
+      markSaved(certId);
+    }
+    catch (e) { console.error(e); }
+    finally { setUploadingCertId(null); }
+  }, [user, localCertificates, certificates, updateCertificate, syncCertificateToUserLinks]);
 
   // ── Loading ──────────────────────────────────────────────────────────────────
 
@@ -832,6 +888,118 @@ export function ProfilePage() {
             className="flex items-center gap-1.5 text-sm text-primary-400 hover:text-primary-300 transition-colors cursor-pointer"
           >
             <Plus className="w-4 h-4" /> Dodaj wykształcenie
+          </button>
+        </div>
+      )}
+
+      {/* ── CERTYFIKATY ──────────────────────────────────────────────────────── */}
+      {section === 'certyfikaty' && (
+        <div className="space-y-3">
+          <p className="text-xs text-slate-500 font-light">
+            Certyfikaty z plikiem stają się klikalnym linkiem w CV — rekruter może otworzyć plik, a Ty dostaniesz powiadomienie.
+          </p>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".pdf,.png,.jpg,.jpeg,.webp"
+            className="hidden"
+            onChange={async e => {
+              const file = e.target.files?.[0];
+              const certId = pendingUploadCertId.current;
+              if (file && certId) await handleUploadFile(certId, file);
+              e.target.value = '';
+            }}
+          />
+          {certs.map(cert => (
+            <ItemCard
+              key={cert.id}
+              onRemove={async () => {
+                setLocalCertificates(prev => (prev ?? certs).filter(c => c.id !== cert.id));
+                await removeCertificate(cert.id);
+              }}
+            >
+              <div className="space-y-3 pr-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                  <div className="md:col-span-2">
+                    <FieldLabel>Nazwa certyfikatu</FieldLabel>
+                    <TextInput
+                      value={cert.name}
+                      onChange={v => setLocalCertificates(prev =>
+                        (prev ?? certs).map(c => c.id === cert.id ? { ...c, name: v } : c)
+                      )}
+                      placeholder="AWS Certified Developer"
+                    />
+                  </div>
+                  <div>
+                    <FieldLabel>Rok</FieldLabel>
+                    <TextInput
+                      value={cert.year}
+                      onChange={v => setLocalCertificates(prev =>
+                        (prev ?? certs).map(c => c.id === cert.id ? { ...c, year: v } : c)
+                      )}
+                      placeholder="2024"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <FieldLabel>Wystawca</FieldLabel>
+                  <TextInput
+                    value={cert.issuer}
+                    onChange={v => setLocalCertificates(prev =>
+                      (prev ?? certs).map(c => c.id === cert.id ? { ...c, issuer: v } : c)
+                    )}
+                    placeholder="Amazon Web Services"
+                  />
+                </div>
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      pendingUploadCertId.current = cert.id;
+                      fileInputRef.current?.click();
+                    }}
+                    disabled={uploadingCertId === cert.id}
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-dark-700 text-slate-300 hover:text-white hover:bg-dark-600 transition-colors cursor-pointer disabled:opacity-60"
+                  >
+                    {uploadingCertId === cert.id
+                      ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      : <Upload className="w-3.5 h-3.5" />
+                    }
+                    {cert.file_url ? 'Zmień plik' : 'Wgraj plik'}
+                  </button>
+                  {cert.file_url && (
+                    <a
+                      href={cert.file_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1 text-xs text-primary-400 hover:text-primary-300 transition-colors"
+                    >
+                      <ExternalLink className="w-3 h-3" /> Podgląd
+                    </a>
+                  )}
+                  {cert.file_url && (
+                    <span className="text-xs text-success-400">Plik wgrany</span>
+                  )}
+                </div>
+                <div className="flex justify-end">
+                  <SaveButton
+                    onClick={() => handleSaveCertificate(certs.find(c => c.id === cert.id) ?? cert)}
+                    saving={!!savingMap[cert.id]}
+                    saved={!!savedMap[cert.id]}
+                  />
+                </div>
+              </div>
+            </ItemCard>
+          ))}
+          <button
+            type="button"
+            onClick={async () => {
+              await addCertificate({ name: '', issuer: '', year: '' });
+              setLocalCertificates(null);
+            }}
+            className="flex items-center gap-1.5 text-sm text-primary-400 hover:text-primary-300 transition-colors cursor-pointer"
+          >
+            <Plus className="w-4 h-4" /> Dodaj certyfikat
           </button>
         </div>
       )}
