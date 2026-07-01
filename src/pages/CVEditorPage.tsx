@@ -248,21 +248,56 @@ function ItemCard({ children, onRemove }: { children: React.ReactNode; onRemove:
   );
 }
 
+function CollapsibleItem({ label, onRemove, children }: { label: string; onRemove: () => void; children: React.ReactNode }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="bg-dark-800 border border-dark-600 mb-2">
+      <div
+        className="flex items-center gap-2 px-4 py-2.5 cursor-pointer hover:bg-dark-700 transition-colors select-none"
+        onClick={() => setOpen(v => !v)}
+      >
+        {open
+          ? <ChevronDown className="w-3.5 h-3.5 text-slate-500 flex-shrink-0" />
+          : <ChevronRight className="w-3.5 h-3.5 text-slate-500 flex-shrink-0" />
+        }
+        <span className="text-sm text-slate-200 flex-1 truncate">
+          {label || <span className="text-slate-500 italic">bez nazwy</span>}
+        </span>
+        <button
+          type="button"
+          onClick={e => { e.stopPropagation(); onRemove(); }}
+          className="p-1 text-slate-600 hover:text-danger-400 transition-colors cursor-pointer flex-shrink-0"
+        >
+          <Trash2 className="w-3.5 h-3.5" />
+        </button>
+      </div>
+      {open && (
+        <div className="px-4 pb-4 pt-3 border-t border-dark-700">
+          {children}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── ProfileImportMenu ─────────────────────────────────────────────────────────
 
 function ProfileImportMenu<T>({
   items,
   labelFn,
   onImport,
+  primaryLabel,
 }: {
   items: T[];
   labelFn: (item: T) => string;
   onImport: (selected: T[]) => void;
+  /** Gdy podany — przycisk wygląda jak główny "Dodaj X" i otwiera picker z profilu */
+  primaryLabel?: string;
 }) {
   const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState<Set<number>>(new Set());
 
-  if (items.length === 0) return null;
+  if (items.length === 0 && !primaryLabel) return null;
 
   const toggle = (i: number) =>
     setSelected(prev => {
@@ -287,34 +322,46 @@ function ProfileImportMenu<T>({
       <button
         type="button"
         onClick={() => setOpen(v => !v)}
-        className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-primary-400 transition-colors cursor-pointer"
+        className={primaryLabel
+          ? 'flex items-center gap-1.5 px-3 py-1.5 text-sm bg-dark-700 text-slate-300 hover:bg-dark-600 transition-colors cursor-pointer'
+          : 'flex items-center gap-1.5 text-xs text-slate-400 hover:text-primary-400 transition-colors cursor-pointer'
+        }
       >
-        <Database className="w-3.5 h-3.5" /> z profilu
+        {primaryLabel ? <Plus className="w-3.5 h-3.5" /> : <Database className="w-3.5 h-3.5" />}
+        {primaryLabel ?? 'z profilu'}
       </button>
       {open && (
         <div className="absolute z-20 bottom-full mb-1 left-0 bg-dark-800 border border-dark-600 p-3 w-64 shadow-xl">
-          <p className="text-xs text-slate-400 mb-2">Wybierz z profilu:</p>
-          <div className="max-h-48 overflow-y-auto space-y-0.5">
-            {items.map((item, i) => (
-              <label key={i} className="flex items-center gap-2 py-1 text-xs text-slate-300 hover:text-slate-100 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={selected.has(i)}
-                  onChange={() => toggle(i)}
-                  className="flex-shrink-0"
-                />
-                <span className="truncate">{labelFn(item)}</span>
-              </label>
-            ))}
-          </div>
+          {items.length === 0 ? (
+            <p className="text-xs text-slate-400 py-1">Brak pozycji w profilu kandydata.</p>
+          ) : (
+            <>
+              <p className="text-xs text-slate-400 mb-2">Wybierz z profilu:</p>
+              <div className="max-h-48 overflow-y-auto space-y-0.5">
+                {items.map((item, i) => (
+                  <label key={i} className="flex items-center gap-2 py-1 text-xs text-slate-300 hover:text-slate-100 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={selected.has(i)}
+                      onChange={() => toggle(i)}
+                      className="flex-shrink-0"
+                    />
+                    <span className="truncate">{labelFn(item)}</span>
+                  </label>
+                ))}
+              </div>
+            </>
+          )}
           <div className="border-t border-dark-700 mt-2 pt-2 flex gap-2">
-            <button
-              type="button"
-              onClick={handleImport}
-              className="text-xs px-3 py-1.5 bg-primary-500 text-slate-900 hover:bg-primary-400 cursor-pointer transition-colors"
-            >
-              Importuj
-            </button>
+            {items.length > 0 && (
+              <button
+                type="button"
+                onClick={handleImport}
+                className="text-xs px-3 py-1.5 bg-primary-500 text-slate-900 hover:bg-primary-400 cursor-pointer transition-colors"
+              >
+                Importuj
+              </button>
+            )}
             <button
               type="button"
               onClick={handleCancel}
@@ -369,7 +416,11 @@ export function CVEditorPage() {
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
 
   const nameRef = useRef<HTMLDivElement>(null);
-  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
+  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({
+    header: true, contact: true, profile: true, approach: true,
+    tech: true, projects: true, experience: true, education: true,
+    certificates: true, custom: true, interests: true, rodo: true,
+  });
   const toggle = (id: string) => setCollapsed(c => ({ ...c, [id]: !c[id] }));
 
   // Auto-fill from Profil kandydata for brand-new CVs (no draft, no edit)
@@ -600,8 +651,12 @@ export function CVEditorPage() {
       {!collapsed['tech'] && (
         <>
           {data.technologies.map((tech, ti) => (
-            <ItemCard key={ti} onRemove={() => set({ technologies: removeAt(data.technologies, ti) })}>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-2 pr-6">
+            <CollapsibleItem
+              key={ti}
+              label={tech.category}
+              onRemove={() => set({ technologies: removeAt(data.technologies, ti) })}
+            >
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
                 <div>
                   <FieldLabel>Kategoria</FieldLabel>
                   <TextInput
@@ -619,18 +674,14 @@ export function CVEditorPage() {
                   />
                 </div>
               </div>
-            </ItemCard>
+            </CollapsibleItem>
           ))}
-          <div className="flex items-center gap-3 flex-wrap">
-            <Button variant="secondary" onClick={() => set({ technologies: [...data.technologies, { category: '', items: '' }] })}>
-              <Plus className="w-3.5 h-3.5 mr-1.5" /> Dodaj kategorię
-            </Button>
-            <ProfileImportMenu
-              items={techCategories}
-              labelFn={t => `${t.category}: ${t.items.slice(0, 40)}`}
-              onImport={items => set({ technologies: [...data.technologies, ...items.map(t => ({ category: t.category, items: t.items }))] })}
-            />
-          </div>
+          <ProfileImportMenu
+            items={techCategories}
+            labelFn={t => `${t.category}: ${t.items.slice(0, 40)}`}
+            onImport={items => set({ technologies: [...data.technologies, ...items.map(t => ({ category: t.category, items: t.items }))] })}
+            primaryLabel="Dodaj kategorię"
+          />
         </>
       )}
 
@@ -645,8 +696,12 @@ export function CVEditorPage() {
       {!collapsed['projects'] && (
         <>
           {data.projects.map((proj, pi) => (
-            <ItemCard key={pi} onRemove={() => set({ projects: removeAt(data.projects, pi) })}>
-              <div className="space-y-3 pr-6">
+            <CollapsibleItem
+              key={pi}
+              label={proj.name}
+              onRemove={() => set({ projects: removeAt(data.projects, pi) })}
+            >
+              <div className="space-y-3">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <div>
                     <FieldLabel>Nazwa projektu</FieldLabel>
@@ -674,18 +729,14 @@ export function CVEditorPage() {
                   <LinksEditor links={proj.links} onChange={links => set({ projects: updateAt(data.projects, pi, { ...proj, links }) })} />
                 </div>
               </div>
-            </ItemCard>
+            </CollapsibleItem>
           ))}
-          <div className="flex items-center gap-3 flex-wrap">
-            <Button variant="secondary" onClick={() => set({ projects: [...data.projects, { name: '', tagline: '', description: '', stack: '', links: [] }] })}>
-              <Plus className="w-3.5 h-3.5 mr-1.5" /> Dodaj projekt
-            </Button>
-            <ProfileImportMenu
-              items={profileProjects}
-              labelFn={p => p.name || '(bez nazwy)'}
-              onImport={items => set({ projects: [...data.projects, ...items.map(p => ({ name: p.name, tagline: p.tagline, description: p.description, stack: p.stack, note: p.note, links: p.links.map(l => ({ label: l.label, url: l.url })) }))] })}
-            />
-          </div>
+          <ProfileImportMenu
+            items={profileProjects}
+            labelFn={p => p.name || '(bez nazwy)'}
+            onImport={items => set({ projects: [...data.projects, ...items.map(p => ({ name: p.name, tagline: p.tagline, description: p.description, stack: p.stack, note: p.note, links: p.links.map(l => ({ label: l.label, url: l.url })) }))] })}
+            primaryLabel="Dodaj projekt"
+          />
         </>
       )}
 
@@ -698,8 +749,12 @@ export function CVEditorPage() {
       {!collapsed['experience'] && (
         <>
           {data.experience.map((exp, ei) => (
-            <ItemCard key={ei} onRemove={() => set({ experience: removeAt(data.experience, ei) })}>
-              <div className="space-y-3 pr-6">
+            <CollapsibleItem
+              key={ei}
+              label={exp.company}
+              onRemove={() => set({ experience: removeAt(data.experience, ei) })}
+            >
+              <div className="space-y-3">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <div>
                     <FieldLabel>Firma</FieldLabel>
@@ -764,18 +819,14 @@ export function CVEditorPage() {
                   <Plus className="w-3.5 h-3.5" /> Dodaj stanowisko
                 </button>
               </div>
-            </ItemCard>
+            </CollapsibleItem>
           ))}
-          <div className="flex items-center gap-3 flex-wrap">
-            <Button variant="secondary" onClick={() => set({ experience: [...data.experience, { company: '', roles: [{ title: '', years: '', bullets: [] }] }] })}>
-              <Plus className="w-3.5 h-3.5 mr-1.5" /> Dodaj firmę
-            </Button>
-            <ProfileImportMenu
-              items={experiences}
-              labelFn={e => e.company}
-              onImport={items => set({ experience: [...data.experience, ...items.map(e => ({ company: e.company, companyLink: e.company_link, roles: e.roles.map(r => ({ title: r.title, years: '', bullets: r.bullets })) }))] })}
-            />
-          </div>
+          <ProfileImportMenu
+            items={experiences}
+            labelFn={e => e.company}
+            onImport={items => set({ experience: [...data.experience, ...items.map(e => ({ company: e.company, companyLink: e.company_link, roles: e.roles.map(r => ({ title: r.title, years: '', bullets: r.bullets })) }))] })}
+            primaryLabel="Dodaj firmę"
+          />
         </>
       )}
 
@@ -788,8 +839,8 @@ export function CVEditorPage() {
       {!collapsed['education'] && (
         <>
           {data.education.map((edu, edi) => (
-            <ItemCard key={edi} onRemove={() => set({ education: removeAt(data.education, edi) })}>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-2 pr-6">
+            <CollapsibleItem key={edi} label={edu.school} onRemove={() => set({ education: removeAt(data.education, edi) })}>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
                 <div>
                   <FieldLabel>Szkoła / uczelnia</FieldLabel>
                   <TextInput value={edu.school} onChange={v => set({ education: updateAt(data.education, edi, { ...edu, school: v }) })} placeholder="UCZELNIA" />
@@ -803,18 +854,14 @@ export function CVEditorPage() {
                   <TextInput value={edu.years} onChange={v => set({ education: updateAt(data.education, edi, { ...edu, years: v }) })} placeholder="2019 – 2023" />
                 </div>
               </div>
-            </ItemCard>
+            </CollapsibleItem>
           ))}
-          <div className="flex items-center gap-3 flex-wrap">
-            <Button variant="secondary" onClick={() => set({ education: [...data.education, { school: '', degree: '', years: '' }] })}>
-              <Plus className="w-3.5 h-3.5 mr-1.5" /> Dodaj wykształcenie
-            </Button>
-            <ProfileImportMenu
-              items={profileEducation}
-              labelFn={e => `${e.school}${e.degree ? ' \u2013 ' + e.degree : ''}`}
-              onImport={items => set({ education: [...data.education, ...items.map(e => ({ school: e.school, degree: e.degree, years: e.years }))] })}
-            />
-          </div>
+          <ProfileImportMenu
+            items={profileEducation}
+            labelFn={e => `${e.school}${e.degree ? ' \u2013 ' + e.degree : ''}`}
+            onImport={items => set({ education: [...data.education, ...items.map(e => ({ school: e.school, degree: e.degree, years: e.years }))] })}
+            primaryLabel="Dodaj wykształcenie"
+          />
         </>
       )}
 
@@ -827,8 +874,8 @@ export function CVEditorPage() {
       {!collapsed['certificates'] && (
         <>
           {(data.certificates ?? []).map((cert, ci) => (
-            <ItemCard key={ci} onRemove={() => set({ certificates: removeAt(data.certificates ?? [], ci) })}>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-2 pr-6">
+            <CollapsibleItem key={ci} label={cert.name} onRemove={() => set({ certificates: removeAt(data.certificates ?? [], ci) })}>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
                 <div className="md:col-span-2">
                   <FieldLabel>Nazwa certyfikatu</FieldLabel>
                   <TextInput
@@ -854,18 +901,14 @@ export function CVEditorPage() {
                   />
                 </div>
               </div>
-            </ItemCard>
+            </CollapsibleItem>
           ))}
-          <div className="flex items-center gap-3 flex-wrap">
-            <Button variant="secondary" onClick={() => set({ certificates: [...(data.certificates ?? []), { name: '', issuer: '', year: '' }] })}>
-              <Plus className="w-3.5 h-3.5 mr-1.5" /> Dodaj certyfikat
-            </Button>
-            <ProfileImportMenu
-              items={profileCertificates}
-              labelFn={c => `${c.name}${c.issuer ? ' – ' + c.issuer : ''}${c.year ? ' (' + c.year + ')' : ''}`}
-              onImport={items => set({ certificates: [...(data.certificates ?? []), ...items.map(c => ({ name: c.name, issuer: c.issuer, year: c.year, url: c.file_url }))] })}
-            />
-          </div>
+          <ProfileImportMenu
+            items={profileCertificates}
+            labelFn={c => `${c.name}${c.issuer ? ' – ' + c.issuer : ''}${c.year ? ' (' + c.year + ')' : ''}`}
+            onImport={items => set({ certificates: [...(data.certificates ?? []), ...items.map(c => ({ name: c.name, issuer: c.issuer, year: c.year, url: c.file_url }))] })}
+            primaryLabel="Dodaj certyfikat"
+          />
         </>
       )}
 
