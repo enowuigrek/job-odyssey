@@ -54,7 +54,20 @@ export function LandingPage({ onLoginClick, onRegisterClick }: LandingPageProps)
               Tracker aplikacji rekrutacyjnych
             </p>
             <h2 className="animate-fade-in-up [animation-delay:80ms] text-3xl sm:text-4xl md:text-5xl font-bold text-slate-100 leading-tight">
-              Koniec wysyłania CV w próżnię.
+              Koniec wysyłania CV w{' '}
+              <span className="relative inline-block text-primary-400 [text-shadow:0_0_30px_rgba(6,182,212,0.45)]">
+                próżnię
+                <svg
+                  className="absolute left-0 -bottom-1.5 w-full text-primary-500/70"
+                  height="8"
+                  viewBox="0 0 200 8"
+                  preserveAspectRatio="none"
+                  fill="none"
+                  aria-hidden="true"
+                >
+                  <path d="M2 5 Q 50 1 100 5 T 198 5" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+                </svg>
+              </span>.
             </h2>
             <p className="animate-fade-in-up [animation-delay:160ms] text-slate-400 text-base md:text-lg mt-5 max-w-xl mx-auto">
               Job Odyssey generuje CV z otagowanymi linkami i pokazuje dokładnie,
@@ -91,6 +104,9 @@ export function LandingPage({ onLoginClick, onRegisterClick }: LandingPageProps)
           <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-between">
             <p className="text-xs text-slate-500">© 2026 Job Odyssey</p>
             <div className="flex items-center gap-4">
+              <Link to="/kontakt" className="text-xs text-slate-500 hover:text-primary-400 transition-colors">
+                Kontakt
+              </Link>
               <Link to="/regulamin" className="text-xs text-slate-500 hover:text-primary-400 transition-colors">
                 Regulamin
               </Link>
