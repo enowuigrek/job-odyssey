@@ -15,7 +15,7 @@ export function TermsPage() {
         </p>
         <p>
           Administratorem Aplikacji jest Łukasz Nowak, prowadzący działalność pod marką
-          lukasznowak.dev, kontakt: [UZUPEŁNIĆ: adres e-mail kontaktowy] (dalej: „Administrator").
+          lukasznowak.dev, kontakt: kontakt@lukasznowak.dev (dalej: „Administrator").
         </p>
         <p>
           Korzystanie z Aplikacji oznacza akceptację niniejszego regulaminu w całości.
@@ -105,9 +105,8 @@ export function TermsPage() {
 
       <LegalSection title="§9 Reklamacje">
         <p>
-          Reklamacje dotyczące działania Aplikacji można zgłaszać na adres:
-          [UZUPEŁNIĆ: adres e-mail kontaktowy]. Administrator rozpatrzy reklamację w terminie 14 dni
-          od jej otrzymania.
+          Reklamacje dotyczące działania Aplikacji można zgłaszać na adres: kontakt@lukasznowak.dev.
+          Administrator rozpatrzy reklamację w terminie 14 dni od jej otrzymania.
         </p>
       </LegalSection>
 

@@ -12,7 +12,7 @@ export function PrivacyPolicyPage() {
       <LegalSection title="§1 Administrator danych">
         <p>
           Administratorem danych osobowych przetwarzanych w związku z korzystaniem z Job Odyssey
-          jest Łukasz Nowak, lukasznowak.dev, kontakt: [UZUPEŁNIĆ: adres e-mail kontaktowy].
+          jest Łukasz Nowak, lukasznowak.dev, kontakt: kontakt@lukasznowak.dev.
         </p>
       </LegalSection>
 
@@ -23,7 +23,8 @@ export function PrivacyPolicyPage() {
             'dane rejestracyjne: adres e-mail, hasło (w formie zaszyfrowanej przez dostawcę usług uwierzytelniania),',
             'dane profilu kandydata: imię i nazwisko, lokalizacja, telefon, opisy zawodowe, doświadczenie, wykształcenie, technologie, certyfikaty (wraz z opcjonalnie wgranymi plikami),',
             'dane wprowadzane do aplikacji: aplikacje o pracę, rozmowy kwalifikacyjne, wersje CV, pytania rekrutacyjne i historie STAR,',
-            'dane techniczne dotyczące śledzenia CV: znacznik czasu otwarcia linku w wysłanym CV, typ przeglądarki osoby klikającej (user agent) oraz adres strony, z której nastąpiło przekierowanie (referrer) - wyłącznie w celu poinformowania użytkownika o zainteresowaniu jego aplikacją.',
+            'dane techniczne dotyczące śledzenia CV: znacznik czasu otwarcia linku w wysłanym CV, typ przeglądarki osoby klikającej (user agent) oraz adres strony, z której nastąpiło przekierowanie (referrer) - wyłącznie w celu poinformowania użytkownika o zainteresowaniu jego aplikacją,',
+            'dane analityczne (wyłącznie za Twoją zgodą): zanonimizowane statystyki odwiedzin zbierane przez Google Analytics - patrz Polityka cookies.',
           ]}
         />
       </LegalSection>
@@ -40,6 +41,10 @@ export function PrivacyPolicyPage() {
               administratora oraz użytkownika w uzyskaniu informacji zwrotnej o wysłanej aplikacji).
             </>,
             <>
+              Analiza ruchu na stronie (Google Analytics) - art. 6 ust. 1 lit. a RODO (Twoja zgoda
+              wyrażona w banerze cookies). Możesz ją cofnąć w dowolnym momencie.
+            </>,
+            <>
               Kontakt w sprawach reklamacji i wsparcia - art. 6 ust. 1 lit. f RODO (prawnie
               uzasadniony interes w postaci obsługi zgłoszeń).
             </>,
@@ -51,6 +56,11 @@ export function PrivacyPolicyPage() {
         <p>
           Dane przechowywane są w infrastrukturze dostawcy Supabase (baza danych, uwierzytelnianie,
           przechowywanie plików), który działa jako podmiot przetwarzający na zlecenie Administratora.
+        </p>
+        <p>
+          Jeśli wyrazisz zgodę na cookies analityczne, zanonimizowane dane o ruchu na stronie trafiają
+          też do Google LLC (Google Analytics), co może wiązać się z przekazaniem danych poza
+          Europejski Obszar Gospodarczy. Szczegóły w Polityce cookies.
         </p>
         <p>
           Dane nie są sprzedawane ani udostępniane podmiotom trzecim w celach marketingowych.

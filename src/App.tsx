@@ -4,12 +4,14 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { AppProvider } from './contexts/AppContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { Layout } from './components/layout/Layout';
+import { CookieConsentBanner } from './components/layout/CookieConsentBanner';
 import { LoginPage } from './pages/LoginPage';
 import { LandingPage } from './pages/LandingPage';
 import { CVPrintPage } from './pages/CVPrintPage';
 import { TermsPage } from './pages/TermsPage';
 import { PrivacyPolicyPage } from './pages/PrivacyPolicyPage';
 import { CookiePolicyPage } from './pages/CookiePolicyPage';
+import { ContactPage } from './pages/ContactPage';
 import {
   DashboardPage,
   ApplicationsPage,
@@ -70,6 +72,7 @@ function AppRoutes() {
         <Route path="regulamin" element={<TermsPage />} />
         <Route path="polityka-prywatnosci" element={<PrivacyPolicyPage />} />
         <Route path="polityka-cookies" element={<CookiePolicyPage />} />
+        <Route path="kontakt" element={<ContactPage />} />
 
         <Route
           path="/*"
@@ -87,6 +90,7 @@ function AppRoutes() {
           }
         />
       </Routes>
+      <CookieConsentBanner />
     </HashRouter>
   );
 }

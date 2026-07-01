@@ -41,6 +41,7 @@ supabase/
 ```
 VITE_SUPABASE_URL
 VITE_SUPABASE_ANON_KEY
+VITE_GA_MEASUREMENT_ID   # opcjonalne — Google Analytics, ładowany dopiero po zgodzie w banerze cookies
 ```
 
 Plik `.env` w katalogu głównym (nie commitowany).
