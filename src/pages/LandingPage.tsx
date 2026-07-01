@@ -87,7 +87,7 @@ export function LandingPage({ onLoginClick, onRegisterClick }: LandingPageProps)
             {FEATURES.map(({ icon: Icon, title, description }) => (
               <div
                 key={title}
-                className="bg-dark-800 p-6 transition-all hover:bg-dark-700 hover:shadow-[0_0_20px_rgba(6,182,212,0.15)]"
+                className="bg-dark-800 p-6 rounded-tr-2xl rounded-bl-2xl transition-all hover:rounded-none hover:bg-dark-700 hover:shadow-[0_0_20px_rgba(6,182,212,0.15)]"
               >
                 <Icon className="w-6 h-6 text-primary-400 mb-4" />
                 <h3 className="text-sm font-semibold text-slate-100 uppercase tracking-wide mb-2">
