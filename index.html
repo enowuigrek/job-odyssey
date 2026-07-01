@@ -2,9 +2,43 @@
 <html lang="pl">
     <head>
         <meta charset="UTF-8" />
-        <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+        <link rel="icon" type="image/svg+xml" href="/icon.svg" />
+        <link rel="icon" type="image/png" sizes="256x256" href="/icon.png" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Job Odyssey</title>
+
+        <title>Job Odyssey — koniec wysyłania CV w próżnię</title>
+        <meta
+            name="description"
+            content="Job Odyssey generuje CV z otagowanymi linkami i pokazuje dokładnie, kto je otworzył, kiedy i co kliknął. Darmowy tracker aplikacji rekrutacyjnych."
+        />
+        <meta name="robots" content="index, follow" />
+
+        <!-- Open Graph -->
+        <meta property="og:type" content="website" />
+        <meta property="og:title" content="Job Odyssey — koniec wysyłania CV w próżnię" />
+        <meta
+            property="og:description"
+            content="Generuj CV z otagowanymi linkami i zobacz dokładnie, kto je otworzył, kiedy i co kliknął."
+        />
+        <meta property="og:locale" content="pl_PL" />
+        <meta property="og:image" content="/icon-1024.png" />
+        <!--
+          TODO po wykupieniu domeny:
+          - og:image i canonical wymagają pełnych, bezwzględnych URL-i (np. https://jobodyssey.pl/...)
+            żeby poprawnie działały w podglądach social media (obecne ścieżki są względne)
+          - dodać og:url z docelowym adresem
+          - warto zamienić og:image na dedykowaną grafikę 1200x630 zamiast kwadratowej ikony
+        -->
+        <link rel="canonical" href="/" />
+
+        <!-- Twitter -->
+        <meta name="twitter:card" content="summary" />
+        <meta name="twitter:title" content="Job Odyssey — koniec wysyłania CV w próżnię" />
+        <meta
+            name="twitter:description"
+            content="Generuj CV z otagowanymi linkami i zobacz dokładnie, kto je otworzył, kiedy i co kliknął."
+        />
+
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
         <link

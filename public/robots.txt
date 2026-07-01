@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+
+# Uwaga: to SPA używa routingu po hashu (#/...), więc reguł Disallow
+# na konkretne "podstrony" appki (aplikacje, CV, profil itd.) nie da się
+# tu sensownie wymusić — serwer i tak zawsze zwraca ten sam index.html,
+# a te widoki są dodatkowo schowane za logowaniem.
+
+Sitemap: /sitemap.xml

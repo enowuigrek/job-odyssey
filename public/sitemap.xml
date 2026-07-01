@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  TODO: uzupełnić <loc> pełnym adresem po wykupieniu domeny
+  (np. https://jobodyssey.pl/).
+
+  Uwaga: appka używa routingu po hashu (#/regulamin itd.), a wyszukiwarki
+  nie indeksują osobno adresów za "#" tak jak zwykłych podstron — dlatego
+  w sitemapie jest tylko strona główna. Żeby realnie zyskać SEO na
+  stronach takich jak Regulamin czy Polityka prywatności, docelowo warto
+  rozważyć przejście z HashRouter na BrowserRouter (wymaga konfiguracji
+  przekierowań po stronie hostingu).
+-->
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>/</loc>
+    <changefreq>monthly</changefreq>
+    <priority>1.0</priority>
+  </url>
+</urlset>
