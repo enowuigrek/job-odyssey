@@ -829,7 +829,8 @@ export function CVEditorPage() {
 
       {/* ── Certyfikaty ───────────────────────────────────────────────── */}
       <SectionHeading
-        title="Certyfikaty"
+        title={data.certificatesTitle || 'Certyfikaty'}
+        onRename={v => set({ certificatesTitle: v })}
         enabled={data.showCertificates !== false}
         onToggleEnabled={() => set({ showCertificates: !data.showCertificates })}
         collapsed={collapsed['certificates']}

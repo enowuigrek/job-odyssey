@@ -463,7 +463,7 @@ export function CVTemplate({ data }: CVTemplateProps) {
         {/* ── CERTYFIKATY ─────────────────────────────────────────── */}
         {data.showCertificates !== false && data.certificates && data.certificates.length > 0 && (
           <>
-            <SectionHeader title="CERTYFIKATY" />
+            <SectionHeader title={(data.certificatesTitle || 'Certyfikaty').toUpperCase()} />
             {data.certificates.map((cert, i) => (
               <View key={i} style={s.certRow}>
                 {cert.url ? (

@@ -80,6 +80,8 @@ export interface CVData {
   education: CVEducation[];
   interests: string;
   rodo: string;
+  /** Editable header for certificates section */
+  certificatesTitle?: string;
   certificates?: CVCertificate[];
   showCertificates?: boolean;
   customSections?: CVCustomSection[];

@@ -184,7 +184,7 @@ export function CVHtml({ data, preview = false }: Props) {
       {data.showCertificates !== false && data.certificates && data.certificates.length > 0 && (
         <>
           <div className="cv-section-header">
-            <h2 className="cv-section-title">CERTYFIKATY</h2>
+            <h2 className="cv-section-title">{(data.certificatesTitle || 'Certyfikaty').toUpperCase()}</h2>
           </div>
           {data.certificates.map((cert, i) => (
             <div key={i} className="cv-cert-row">
