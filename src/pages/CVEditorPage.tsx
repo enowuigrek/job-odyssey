@@ -870,7 +870,10 @@ export function CVEditorPage() {
           <ProfileImportMenu
             items={profileCertificates}
             labelFn={c => `${c.name}${c.issuer ? ' – ' + c.issuer : ''}${c.year ? ' (' + c.year + ')' : ''}`}
-            onImport={items => set({ certificates: [...(data.certificates ?? []), ...items.map(c => ({ name: c.name, issuer: c.issuer, year: c.year, url: c.file_url }))] })}
+            onImport={items => set({
+              certificates: [...(data.certificates ?? []), ...items.map(c => ({ name: c.name, issuer: c.issuer, year: c.year, url: c.file_url }))],
+              showCertificates: true,
+            })}
             primaryLabel="Dodaj certyfikat"
           />
         </>
