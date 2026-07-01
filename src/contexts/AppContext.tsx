@@ -199,7 +199,6 @@ interface AppContextValue {
   state: AppState;
   dispatch: Dispatch<Action>;
   isLoading: boolean;
-  isElectronApp: boolean;
   getApplicationById: (id: string) => JobApplication | undefined;
   getInterviewsByApplicationId: (applicationId: string) => Interview[];
   getCVById: (id: string) => CV | undefined;
@@ -227,9 +226,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const prevStateRef = useRef<AppState>(emptyState);
   const syncReadyRef = useRef(false);
-
-  // Electron jest dostępny tylko gdy electronAPI istnieje
-  const isElectronApp = !!(window as Window & { electronAPI?: unknown }).electronAPI;
 
   // ============================================================
   // Ładowanie danych z Supabase przy logowaniu
@@ -338,14 +334,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
       state,
       dispatch,
       isLoading,
-      isElectronApp,
       getApplicationById,
       getInterviewsByApplicationId,
       getCVById,
       getQuestionById,
       getStoryById,
     }),
-    [state, dispatch, isLoading, isElectronApp, getApplicationById, getInterviewsByApplicationId, getCVById, getQuestionById, getStoryById]
+    [state, dispatch, isLoading, getApplicationById, getInterviewsByApplicationId, getCVById, getQuestionById, getStoryById]
   );
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

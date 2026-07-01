@@ -13,7 +13,7 @@ Właściciel: Łukasz Nowak (lukasznowak.dev)
 - **Dane:** Supabase (profil, CV, aplikacje) + localStorage (linki, powiadomienia, draft CV)
 - **Inne:** `date-fns`, `lucide-react`, `uuid`
 
-> Uwaga: w repozytorium mogą być pozostałości kodu Electron (`electron/`, `src/types/electron.d.ts`, `src/utils/storage.ts`). To nieaktywne legacy — aplikacja działa wyłącznie w przeglądarce.
+> Aplikacja działa wyłącznie w przeglądarce. Kod Electron (`electron/`, `src/types/electron.d.ts`, `src/utils/storage.ts`) został usunięty 2026-07-01 wraz z zależnościami `electron`/`electron-builder`/`concurrently`/`wait-on` — jeśli widzisz gdzieś jeszcze ślady po nim, to znaczy że coś przetrwało czystkę i warto to zgłosić/usunąć.
 
 ## Struktura folderów
 
@@ -21,16 +21,17 @@ Właściciel: Łukasz Nowak (lukasznowak.dev)
 src/
   components/
     cv/          # komponenty widoku i edytora CV
-    layout/      # shell aplikacji, nawigacja
+    forms/       # FormPrimitives.tsx — współdzielone pola formularzy (CVEditorPage + ProfilePage)
+    layout/      # shell aplikacji, nawigacja, LegalPageLayout, CookieConsentBanner
     tracking/    # widoki śledzenia kliknięć w linki
-    ui/          # wspólne prymitywy UI (Badge, Button itp.)
+    ui/          # wspólne prymitywy UI (Badge, Button, CollapsibleItem itp.)
   contexts/      # AppContext.tsx — główny stan aplikacji
-  hooks/         # useProfile, useUserLinks, useCVLinkMappings, useClickNotifications
-  lib/           # db.ts, supabase.ts, generateCV.ts, pdfTagging.ts, profileDb.ts
-  pages/         # strony: Dashboard, Applications, Interviews, CV*, Profile, Links...
-  templates/     # szablony CV
+  hooks/         # useProfile, useUserLinks, useCVLinkMappings, useClickNotifications, useCookieConsent
+  lib/           # db.ts, supabase.ts, generateCV.ts, pdfTagging.ts, profileDb.ts, analytics.ts, adminDb.ts, contactDb.ts
+  pages/         # strony aplikacji + publiczne: LandingPage, LoginPage, ContactPage, TermsPage, PrivacyPolicyPage, CookiePolicyPage, AdminPage
+  templates/     # szablony CV (CVTemplate.tsx=PDF, CVHtml.tsx=podgląd, CVDocx.ts=Word) — colors.ts ma współdzielone tokeny kolorów dla PDF/DOCX
   types/         # index.ts — wszystkie typy (ApplicationStatus, InterviewStatus itp.)
-  utils/         # storage.ts (legacy Electron detection — nieużywane)
+  utils/         # array.ts — updateAt/removeAt (współdzielone helpery tablicowe)
 supabase/
   functions/     # Edge Functions
   migrations/    # SQL migracje bazy danych
@@ -83,13 +84,25 @@ Plik z tokenami designu i wytycznymi wizualnymi:
 
 Plik: `~/Documents/nowy-kontekst/content/job-odyssey.md`
 
-- Zawiera gotowe teksty do wszystkich sekcji strony: Hero, Problem, Rozwiazanie, Jak to dziala, Dla kogo, CTA.
+- Zawiera gotowe teksty do wszystkich sekcji aplikacji (wewnątrz auth) oraz stron publicznych (LandingPage, LoginPage, ContactPage, strony prawne).
 - **Czytaj przed kazda zmiana tekstow w komponentach.** Plik jest zrodlem prawdy dla copywritingu.
 - Workflow: Cowork edytuje tresc w pliku → Lukasz zleca synchronizacje → Claude Code aktualizuje komponenty React.
 - Zmiany w kodzie NIE wyprzedzaja zmian w pliku — najpierw plik, potem kod.
 
+### Landing page — osobny plik roboczy
+
+Plik: `~/Documents/nowy-kontekst/content/job-odyssey-landing.md`
+
+- Dedykowany WYŁĄCZNIE dla `src/pages/LandingPage.tsx` i SEO meta tagów w `index.html` — tu pracuje agent od copywritingu/SEO niezależnie od reszty appki.
+- Zawiera też kontekst (grupa docelowa, ton, insighty), ograniczenia designu (asymetryczne rogi przycisków/kart, wyróżnione słowo w nagłówku) i otwarte pytania SEO.
+- Po wdrożeniu zmian z tego pliku do kodu — zaktualizuj też odpowiadający fragment w `job-odyssey.md`, żeby oba pliki nie rozjechały się treściowo.
+
 ## Log zmian (najnowsze na górze)
 
+- Usunięcie kodu Electron (nieaktywny od dawna), wydzielenie wspólnych helperów formularzy (CVEditorPage/ProfilePage) i tokenów kolorów CV (PDF/DOCX) do wspólnych modułów
+- Panel administratora `/admin` — agregaty o userach bez wglądu w treść danych
+- Regulamin, Polityka prywatności, Polityka cookies, ContactPage, baner zgody na cookies, wstępne SEO
+- Landing page (`LandingPage.tsx`) — pierwsza publiczna strona appki, wcześniej niezalogowani trafiali bezpośrednio na LoginPage
 - `f8e7197` Add "import from profile" functionality to CV editor
 - `af74a34` Increase card vertical padding to py-2.5
 - `9362f61` Unify card hover and add interview deep-link

@@ -1,9 +1,8 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, FileText, Star, Trash2, Edit, Tag, Download, PenLine, FolderOpen, Eye } from 'lucide-react';
+import { Plus, FileText, Star, Trash2, Edit, Tag, Download, PenLine, Eye } from 'lucide-react';
 
 import { useApp } from '../contexts/AppContext';
-import { useAuth } from '../contexts/AuthContext';
 import { getCVDataById } from '../lib/generateCV';
 import {
   Button,
@@ -21,12 +20,10 @@ import {
 import { CV } from '../types';
 import { format, parseISO } from 'date-fns';
 import { pl } from 'date-fns/locale';
-import { openDataFolder } from '../utils/storage';
 import { getCVFileUrl, deleteCVFileFromStorage } from '../lib/db';
 import { CVHtml } from '../templates/cv/CVHtml';
 export function CVPage() {
-  const { state, dispatch, isElectronApp } = useApp();
-  const { user } = useAuth();
+  const { state, dispatch } = useApp();
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -124,7 +121,7 @@ export function CVPage() {
       variant: 'danger',
     });
     if (!ok) return;
-    if (cv?.fileName && !isElectronApp) {
+    if (cv?.fileName) {
       await deleteCVFileFromStorage(cv.fileName);
     }
     dispatch({ type: 'DELETE_CV', payload: id });
@@ -136,35 +133,18 @@ export function CVPage() {
       return;
     }
 
-    if (isElectronApp) {
-      // Electron: stare zachowanie
-      const { loadCVFile } = await import('../utils/storage');
-      const result = await loadCVFile(cv.fileName);
-      if (!result.success || !result.data) {
-        console.error(`Błąd przy pobieraniu pliku: ${result.error}`);
-        return;
-      }
-      const link = document.createElement('a');
-      link.href = result.data;
-      link.download = cv.fileName.split('/').pop() ?? cv.fileName;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    } else {
-      // Web: Supabase Storage signed URL
-      const url = await getCVFileUrl(cv.fileName);
-      if (!url) {
-        console.error('Nie można pobrać pliku.');
-        return;
-      }
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = cv.fileName.split('/').pop() ?? cv.fileName;
-      link.target = '_blank';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+    const url = await getCVFileUrl(cv.fileName);
+    if (!url) {
+      console.error('Nie można pobrać pliku.');
+      return;
     }
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = cv.fileName.split('/').pop() ?? cv.fileName;
+    link.target = '_blank';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   const handleSetDefault = (cv: CV) => {
@@ -180,8 +160,6 @@ export function CVPage() {
     return state.applications.filter((app) => app.cvId === cvId).length;
   };
 
-  const hasFileSupport = isElectronApp || !!user;
-
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -190,20 +168,12 @@ export function CVPage() {
         title="Baza CV"
         description="Zarządzaj wersjami CV dostosowanymi do różnych stanowisk"
         actions={
-          <>
-            {isElectronApp && (
-              <Button variant="secondary" onClick={() => openDataFolder()}>
-                <FolderOpen className="w-4 h-4 mr-2" />
-                Otwórz folder
-              </Button>
-            )}
-            <div className="hidden md:block">
-              <Button onClick={() => navigate('/cv-editor')}>
-                <Plus className="w-4 h-4 mr-2" />
-                Nowe CV
-              </Button>
-            </div>
-          </>
+          <div className="hidden md:block">
+            <Button onClick={() => navigate('/cv-editor')}>
+              <Plus className="w-4 h-4 mr-2" />
+              Nowe CV
+            </Button>
+          </div>
         }
       />
 
