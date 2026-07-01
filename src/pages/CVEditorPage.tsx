@@ -64,7 +64,10 @@ function SectionHeading({
   };
 
   return (
-    <div className="border-b border-primary-500/40 pb-1.5 mb-4 mt-8 flex items-center gap-2">
+    <div
+      className={`border-b border-primary-500/40 pb-1.5 mb-4 mt-8 flex items-center gap-2${onToggleCollapse ? ' cursor-pointer select-none' : ''}`}
+      onClick={editing ? undefined : onToggleCollapse}
+    >
       {editing ? (
         <>
           <input
@@ -74,8 +77,9 @@ function SectionHeading({
             onKeyDown={e => e.key === 'Enter' && commit()}
             autoFocus
             className="flex-1 bg-transparent text-xs font-medium text-primary-400 uppercase tracking-widest focus:outline-none border-b border-primary-500"
+            onClick={e => e.stopPropagation()}
           />
-          <button type="button" onClick={commit} className="p-1 text-primary-400 cursor-pointer">
+          <button type="button" onClick={e => { e.stopPropagation(); commit(); }} className="p-1 text-primary-400 cursor-pointer">
             <Check className="w-3.5 h-3.5" />
           </button>
         </>
@@ -87,7 +91,7 @@ function SectionHeading({
           {onRename && (
             <button
               type="button"
-              onClick={() => { setDraft(title); setEditing(true); }}
+              onClick={e => { e.stopPropagation(); setDraft(title); setEditing(true); }}
               className="p-0.5 text-slate-500 hover:text-primary-400 transition-colors cursor-pointer flex-shrink-0"
               title="Zmień nazwę"
             >
@@ -98,7 +102,7 @@ function SectionHeading({
       )}
       <div className="flex-1" />
       {onToggleEnabled !== undefined && enabled !== undefined && (
-        <label className="flex items-center gap-1 cursor-pointer flex-shrink-0 mr-1" title={enabled ? 'Wyłącz sekcję' : 'Włącz sekcję'}>
+        <label className="flex items-center gap-1 cursor-pointer flex-shrink-0 mr-1" title={enabled ? 'Wyłącz sekcję' : 'Włącz sekcję'} onClick={e => e.stopPropagation()}>
           <input
             type="checkbox"
             checked={enabled}
@@ -108,13 +112,9 @@ function SectionHeading({
         </label>
       )}
       {onToggleCollapse && (
-        <button
-          type="button"
-          onClick={onToggleCollapse}
-          className="p-1 text-slate-500 hover:text-slate-300 transition-colors cursor-pointer flex-shrink-0"
-        >
+        <span className="p-1 text-slate-500 flex-shrink-0">
           {collapsed ? <ChevronRight className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-        </button>
+        </span>
       )}
     </div>
   );
