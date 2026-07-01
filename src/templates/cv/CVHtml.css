@@ -336,6 +336,32 @@
   margin: 0;
 }
 
+/* ── Certificates ───────────────────────────────────────────────── */
+.cv-cert-row {
+  display: flex;
+  align-items: baseline;
+  margin-bottom: 6pt;
+}
+
+.cv-cert-name {
+  font-size: 9.5pt;
+  font-weight: 700;
+  color: var(--teal);
+  text-decoration: none;
+  margin-right: 6pt;
+}
+
+.cv-cert-name-plain {
+  color: var(--black);
+}
+
+.cv-cert-meta {
+  font-weight: 300;
+  font-style: italic;
+  font-size: 8.5pt;
+  color: var(--gray);
+}
+
 /* ── Interests / RODO ───────────────────────────────────────────── */
 .cv-interests {
   font-size: 9pt;

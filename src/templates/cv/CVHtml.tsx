@@ -180,6 +180,29 @@ export function CVHtml({ data, preview = false }: Props) {
         </div>
       ))}
 
+      {/* ── CERTYFIKATY ──────────────────────────────────────────── */}
+      {data.showCertificates !== false && data.certificates && data.certificates.length > 0 && (
+        <>
+          <div className="cv-section-header">
+            <h2 className="cv-section-title">CERTYFIKATY</h2>
+          </div>
+          {data.certificates.map((cert, i) => (
+            <div key={i} className="cv-cert-row">
+              {cert.url ? (
+                <a href={cert.trackedUrl ?? cert.url} className="cv-cert-name" target="_blank" rel="noreferrer">
+                  {cert.name}
+                </a>
+              ) : (
+                <span className="cv-cert-name cv-cert-name-plain">{cert.name}</span>
+              )}
+              <span className="cv-cert-meta">
+                {cert.issuer}{cert.issuer && cert.year ? ' · ' : ''}{cert.year}
+              </span>
+            </div>
+          ))}
+        </>
+      )}
+
       {/* ── ZAINTERESOWANIA ─────────────────────────────────────── */}
       <div className="cv-section-header">
         <h2 className="cv-section-title">ZAINTERESOWANIA</h2>
