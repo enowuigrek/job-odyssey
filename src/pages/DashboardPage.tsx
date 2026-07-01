@@ -150,7 +150,6 @@ export function DashboardPage() {
   }, [state.interviews]);
 
   const maxApplicationCount = Math.max(...applicationsByStatus.map(s => s.count), 1);
-  const maxInterviewCount = Math.max(...interviewsByStatus.map(s => s.count), 1);
 
   return (
     <div className="space-y-8">

@@ -607,13 +607,11 @@ export async function tagPdfLinks(
   // ── Krok 2: jeśli brak adnotacji — szukaj URL w tekście strony ──────────
   if (replacedCount === 0) {
     const urlsToFind = mappings.map(m => m.originalUrl);
-    console.log('[tagPdfLinks] Brak adnotacji — szukam URL w tekście:', urlsToFind);
 
     for (let pi = 0; pi < pages.length; pi++) {
       try {
         const positions = await findPlaceholderPositionsFast(pages[pi], ctx, urlsToFind);
         if (positions.length > 0) {
-          console.log(`[tagPdfLinks] Strona ${pi + 1}: znaleziono`, positions);
           replacedCount += addOverlayAnnotations(pdfDoc, pages[pi], positions, mappings);
         }
       } catch (err) {
@@ -676,7 +674,7 @@ export async function extractPdfLinks(pdfBytes: ArrayBuffer | Uint8Array): Promi
 export async function extractTextUrls(pdfBytes: ArrayBuffer | Uint8Array): Promise<string[]> {
   const pdfDoc = await PDFDocument.load(pdfBytes);
   const pages = pdfDoc.getPages();
-  const urlRegex = /(https?:\/\/|www\.)[^\s\)>"]+/gi;
+  const urlRegex = /(https?:\/\/|www\.)[^\s)>"]+/gi;
   // Also match bare domain-style URLs common in CVs
   const bareUrlRegex = /(?:linkedin\.com|github\.com|[a-z0-9-]+\.[a-z]{2,})\S*/gi;
   const found: string[] = [];
@@ -699,7 +697,7 @@ export async function extractTextUrls(pdfBytes: ArrayBuffer | Uint8Array): Promi
         regex.lastIndex = 0;
         let match;
         while ((match = regex.exec(fullText)) !== null) {
-          const cleanUrl = match[0].replace(/[)\]>\"']+$/, '').trim();
+          const cleanUrl = match[0].replace(/[)\]>"']+$/, '').trim();
           if (cleanUrl.toLowerCase().includes('supabase')) continue;
           if (cleanUrl.length < 8) continue;
           // For bare URLs, check they look real
@@ -786,7 +784,6 @@ export async function replacePlaceholderLinks(
   // ── Krok 2 (fallback): szukaj placeholderów w tekście strony ──────────────
   if (replacedCount === 0) {
     const placeholderUrls = replacements.map(r => r.placeholder);
-    console.log('[replacePlaceholderLinks] Brak adnotacji, szukam w tekście:', placeholderUrls);
 
     // Pre-build mappings once
     const mappings: LinkMapping[] = replacements.map(r => ({
@@ -799,7 +796,6 @@ export async function replacePlaceholderLinks(
       try {
         const positions = await findPlaceholderPositionsFast(pages[pi], ctx, placeholderUrls);
         if (positions.length > 0) {
-          console.log(`[replacePlaceholderLinks] Strona ${pi + 1}: znaleziono`, positions);
           replacedCount += addOverlayAnnotations(pdfDoc, pages[pi], positions, mappings);
         }
       } catch (err) {

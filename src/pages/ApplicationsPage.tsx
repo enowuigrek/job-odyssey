@@ -40,7 +40,6 @@ import {
   Button,
   Input,
   Card,
-  CardBody,
   Badge,
   Modal,
   EmptyState,
