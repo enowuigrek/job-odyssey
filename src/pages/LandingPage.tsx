@@ -60,11 +60,10 @@ export function LandingPage({ onLoginClick, onRegisterClick }: LandingPageProps)
               Job Odyssey generuje CV z otagowanymi linkami i pokazuje dokładnie,
               kto je otworzył, kiedy i co kliknął. Żadnych domysłów - tylko dane.
             </p>
-            <div className="animate-fade-in-up [animation-delay:240ms] mt-8 flex flex-col items-center gap-3">
+            <div className="animate-fade-in-up [animation-delay:240ms] mt-8">
               <Button variant="primary" size="lg" onClick={onRegisterClick}>
-                Załóż darmowe konto
+                Załóż konto
               </Button>
-              <p className="text-xs text-slate-500">Zajmie mniej niż minutę.</p>
             </div>
           </div>
         </section>
