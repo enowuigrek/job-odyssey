@@ -24,6 +24,7 @@ import {
   CVGeneratorPage,
   CVEditorPage,
   ProfilePage,
+  AdminPage,
 } from './pages';
 
 function AuthenticatedApp() {
@@ -45,6 +46,7 @@ function AuthenticatedApp() {
           <Route path="questions" element={<QuestionsPage />} />
           <Route path="stories" element={<StoriesPage />} />
           <Route path="settings" element={<SettingsPage />} />
+          <Route path="admin" element={<AdminPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
       </Routes>

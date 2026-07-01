@@ -42,6 +42,7 @@ supabase/
 VITE_SUPABASE_URL
 VITE_SUPABASE_ANON_KEY
 VITE_GA_MEASUREMENT_ID   # opcjonalne — Google Analytics, ładowany dopiero po zgodzie w banerze cookies
+VITE_ADMIN_EMAIL         # e-mail właściciela, odblokowuje /admin (realna kontrola jest w funkcji SQL admin_get_users_overview)
 ```
 
 Plik `.env` w katalogu głównym (nie commitowany).

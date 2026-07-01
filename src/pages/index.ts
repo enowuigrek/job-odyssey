@@ -10,3 +10,4 @@ export { LinksPage } from './LinksPage';
 export { CVGeneratorPage } from './CVGeneratorPage';
 export { CVEditorPage } from './CVEditorPage';
 export { ProfilePage } from './ProfilePage';
+export { AdminPage } from './AdminPage';
