@@ -38,6 +38,13 @@ function updateAt<T>(arr: T[], i: number, val: T): T[] {
 function removeAt<T>(arr: T[], i: number): T[] {
   return arr.filter((_, idx) => idx !== i);
 }
+function moveAt<T>(arr: T[], from: number, to: number): T[] {
+  if (to < 0 || to >= arr.length) return arr;
+  const next = [...arr];
+  const [item] = next.splice(from, 1);
+  next.splice(to, 0, item);
+  return next;
+}
 
 // ── Sub-components ────────────────────────────────────────────────────────────
 
@@ -617,6 +624,8 @@ export function CVEditorPage() {
               key={ti}
               label={tech.category}
               onRemove={() => set({ technologies: removeAt(data.technologies, ti) })}
+              onMoveUp={ti > 0 ? () => set({ technologies: moveAt(data.technologies, ti, ti - 1) }) : undefined}
+              onMoveDown={ti < data.technologies.length - 1 ? () => set({ technologies: moveAt(data.technologies, ti, ti + 1) }) : undefined}
             >
               <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
                 <div>
@@ -662,6 +671,8 @@ export function CVEditorPage() {
               key={pi}
               label={proj.name}
               onRemove={() => set({ projects: removeAt(data.projects, pi) })}
+              onMoveUp={pi > 0 ? () => set({ projects: moveAt(data.projects, pi, pi - 1) }) : undefined}
+              onMoveDown={pi < data.projects.length - 1 ? () => set({ projects: moveAt(data.projects, pi, pi + 1) }) : undefined}
             >
               <div className="space-y-3">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -715,6 +726,8 @@ export function CVEditorPage() {
               key={ei}
               label={exp.company}
               onRemove={() => set({ experience: removeAt(data.experience, ei) })}
+              onMoveUp={ei > 0 ? () => set({ experience: moveAt(data.experience, ei, ei - 1) }) : undefined}
+              onMoveDown={ei < data.experience.length - 1 ? () => set({ experience: moveAt(data.experience, ei, ei + 1) }) : undefined}
             >
               <div className="space-y-3">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -801,7 +814,13 @@ export function CVEditorPage() {
       {!collapsed['education'] && (
         <>
           {data.education.map((edu, edi) => (
-            <CollapsibleItem key={edi} label={edu.school} onRemove={() => set({ education: removeAt(data.education, edi) })}>
+            <CollapsibleItem
+              key={edi}
+              label={edu.school}
+              onRemove={() => set({ education: removeAt(data.education, edi) })}
+              onMoveUp={edi > 0 ? () => set({ education: moveAt(data.education, edi, edi - 1) }) : undefined}
+              onMoveDown={edi < data.education.length - 1 ? () => set({ education: moveAt(data.education, edi, edi + 1) }) : undefined}
+            >
               <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
                 <div>
                   <FieldLabel>Szkoła / uczelnia</FieldLabel>
@@ -839,7 +858,13 @@ export function CVEditorPage() {
       {!collapsed['certificates'] && (
         <>
           {(data.certificates ?? []).map((cert, ci) => (
-            <CollapsibleItem key={ci} label={cert.name} onRemove={() => set({ certificates: removeAt(data.certificates ?? [], ci) })}>
+            <CollapsibleItem
+              key={ci}
+              label={cert.name}
+              onRemove={() => set({ certificates: removeAt(data.certificates ?? [], ci) })}
+              onMoveUp={ci > 0 ? () => set({ certificates: moveAt(data.certificates ?? [], ci, ci - 1) }) : undefined}
+              onMoveDown={ci < (data.certificates ?? []).length - 1 ? () => set({ certificates: moveAt(data.certificates ?? [], ci, ci + 1) }) : undefined}
+            >
               <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
                 <div className="md:col-span-2">
                   <FieldLabel>Nazwa certyfikatu</FieldLabel>

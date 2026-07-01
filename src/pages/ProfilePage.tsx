@@ -34,6 +34,28 @@ function removeAt<T>(arr: T[], i: number): T[] {
   return arr.filter((_, idx) => idx !== i);
 }
 
+/** Swaps sort_order between two adjacent items and persists both, with an optimistic local update */
+async function moveItem<T extends { id: string; sort_order: number }>(
+  list: T[],
+  index: number,
+  direction: -1 | 1,
+  setLocal: (updater: (prev: T[] | null) => T[]) => void,
+  updateFn: (id: string, patch: Partial<T>) => Promise<void>
+) {
+  const j = index + direction;
+  if (j < 0 || j >= list.length) return;
+  const a = list[index];
+  const b = list[j];
+  setLocal(prev => {
+    const arr = [...(prev ?? list)];
+    arr[index] = { ...b, sort_order: a.sort_order };
+    arr[j] = { ...a, sort_order: b.sort_order };
+    return arr;
+  });
+  await updateFn(a.id, { sort_order: b.sort_order } as Partial<T>);
+  await updateFn(b.id, { sort_order: a.sort_order } as Partial<T>);
+}
+
 // ── Small UI building blocks ───────────────────────────────────────────────────
 
 function FieldLabel({ children }: { children: React.ReactNode }) {
@@ -472,7 +494,7 @@ export function ProfilePage() {
           <p className="text-xs text-slate-500 font-light">
             Nazwane opisy do różnych pozycji — np. "Frontend Dev", "AI Dev". Wybierane przy generowaniu CV.
           </p>
-          {descs.map(desc => (
+          {descs.map((desc, di) => (
             <CollapsibleItem
               key={desc.id}
               label={desc.name || 'Nowy opis'}
@@ -480,6 +502,8 @@ export function ProfilePage() {
                 setLocalDescriptions(prev => (prev ?? descs).filter(d => d.id !== desc.id));
                 await removeDescription(desc.id);
               }}
+              onMoveUp={di > 0 ? () => moveItem(descs, di, -1, setLocalDescriptions, updateDescription) : undefined}
+              onMoveDown={di < descs.length - 1 ? () => moveItem(descs, di, 1, setLocalDescriptions, updateDescription) : undefined}
             >
               <div className="space-y-2">
                 <div>
@@ -529,7 +553,7 @@ export function ProfilePage() {
       {/* ── DOŚWIADCZENIE ZAWODOWE ───────────────────────────────────────────── */}
       {section === 'doswiadczenie' && (
         <div className="space-y-3">
-          {exps.map(exp => (
+          {exps.map((exp, expi) => (
             <CollapsibleItem
               key={exp.id}
               label={exp.company}
@@ -537,6 +561,8 @@ export function ProfilePage() {
                 setLocalExperiences(prev => (prev ?? exps).filter(e => e.id !== exp.id));
                 await removeExperience(exp.id);
               }}
+              onMoveUp={expi > 0 ? () => moveItem(exps, expi, -1, setLocalExperiences, updateExperience) : undefined}
+              onMoveDown={expi < exps.length - 1 ? () => moveItem(exps, expi, 1, setLocalExperiences, updateExperience) : undefined}
             >
               <div className="space-y-3">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -666,7 +692,7 @@ export function ProfilePage() {
       {/* ── PROJEKTY ────────────────────────────────────────────────────────── */}
       {section === 'projekty' && (
         <div className="space-y-3">
-          {projs.map(proj => (
+          {projs.map((proj, proji) => (
             <CollapsibleItem
               key={proj.id}
               label={proj.name}
@@ -674,6 +700,8 @@ export function ProfilePage() {
                 setLocalProjects(prev => (prev ?? projs).filter(p => p.id !== proj.id));
                 await removeProject(proj.id);
               }}
+              onMoveUp={proji > 0 ? () => moveItem(projs, proji, -1, setLocalProjects, updateProject) : undefined}
+              onMoveDown={proji < projs.length - 1 ? () => moveItem(projs, proji, 1, setLocalProjects, updateProject) : undefined}
             >
               <div className="space-y-3">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -763,7 +791,7 @@ export function ProfilePage() {
       {/* ── TECHNOLOGIE I NARZĘDZIA ──────────────────────────────────────────── */}
       {section === 'technologie' && (
         <div className="space-y-3">
-          {tech.map(t => (
+          {tech.map((t, ti) => (
             <CollapsibleItem
               key={t.id}
               label={t.category}
@@ -771,6 +799,8 @@ export function ProfilePage() {
                 setLocalTech(prev => (prev ?? tech).filter(x => x.id !== t.id));
                 await removeTechCategory(t.id);
               }}
+              onMoveUp={ti > 0 ? () => moveItem(tech, ti, -1, setLocalTech, updateTechCategory) : undefined}
+              onMoveDown={ti < tech.length - 1 ? () => moveItem(tech, ti, 1, setLocalTech, updateTechCategory) : undefined}
             >
               <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
                 <div>
@@ -819,7 +849,7 @@ export function ProfilePage() {
       {/* ── WYKSZTAŁCENIE ────────────────────────────────────────────────────── */}
       {section === 'wyksztalcenie' && (
         <div className="space-y-3">
-          {edu.map(e => (
+          {edu.map((e, edi) => (
             <CollapsibleItem
               key={e.id}
               label={e.school}
@@ -827,6 +857,8 @@ export function ProfilePage() {
                 setLocalEducation(prev => (prev ?? edu).filter(x => x.id !== e.id));
                 await removeEducation(e.id);
               }}
+              onMoveUp={edi > 0 ? () => moveItem(edu, edi, -1, setLocalEducation, updateEducation) : undefined}
+              onMoveDown={edi < edu.length - 1 ? () => moveItem(edu, edi, 1, setLocalEducation, updateEducation) : undefined}
             >
               <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
                 <div>
@@ -900,7 +932,7 @@ export function ProfilePage() {
               e.target.value = '';
             }}
           />
-          {certs.map(cert => (
+          {certs.map((cert, certi) => (
             <CollapsibleItem
               key={cert.id}
               label={cert.name}
@@ -908,6 +940,8 @@ export function ProfilePage() {
                 setLocalCertificates(prev => (prev ?? certs).filter(c => c.id !== cert.id));
                 await removeCertificate(cert.id);
               }}
+              onMoveUp={certi > 0 ? () => moveItem(certs, certi, -1, setLocalCertificates, updateCertificate) : undefined}
+              onMoveDown={certi < certs.length - 1 ? () => moveItem(certs, certi, 1, setLocalCertificates, updateCertificate) : undefined}
             >
               <div className="space-y-3">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
