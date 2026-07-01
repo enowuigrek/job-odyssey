@@ -9,7 +9,7 @@ import {
   Upload,
   ExternalLink,
 } from 'lucide-react';
-import { PageHeader } from '../components/ui';
+import { PageHeader, CollapsibleItem } from '../components/ui';
 import { useProfile } from '../hooks/useProfile';
 import { useUserLinks } from '../hooks/useUserLinks';
 import { uploadCertificateFile } from '../lib/profileDb';
@@ -80,21 +80,6 @@ function TextArea({
       rows={rows}
       className="w-full px-3 py-2 bg-dark-700 text-slate-100 text-sm font-light placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-primary-500 resize-y"
     />
-  );
-}
-
-function ItemCard({ children, onRemove }: { children: React.ReactNode; onRemove: () => void }) {
-  return (
-    <div className="bg-dark-800 border border-dark-600 p-4 mb-3 relative">
-      <button
-        type="button"
-        onClick={onRemove}
-        className="absolute top-3 right-3 p-1 text-slate-600 hover:text-danger-400 transition-colors cursor-pointer"
-      >
-        <Trash2 className="w-3.5 h-3.5" />
-      </button>
-      {children}
-    </div>
   );
 }
 
@@ -488,14 +473,15 @@ export function ProfilePage() {
             Nazwane opisy do różnych pozycji — np. "Frontend Dev", "AI Dev". Wybierane przy generowaniu CV.
           </p>
           {descs.map(desc => (
-            <ItemCard
+            <CollapsibleItem
               key={desc.id}
+              label={desc.name || 'Nowy opis'}
               onRemove={async () => {
                 setLocalDescriptions(prev => (prev ?? descs).filter(d => d.id !== desc.id));
                 await removeDescription(desc.id);
               }}
             >
-              <div className="space-y-2 pr-6">
+              <div className="space-y-2">
                 <div>
                   <FieldLabel>Nazwa opisu</FieldLabel>
                   <TextInput
@@ -525,7 +511,7 @@ export function ProfilePage() {
                   />
                 </div>
               </div>
-            </ItemCard>
+            </CollapsibleItem>
           ))}
           <button
             type="button"
@@ -544,14 +530,15 @@ export function ProfilePage() {
       {section === 'doswiadczenie' && (
         <div className="space-y-3">
           {exps.map(exp => (
-            <ItemCard
+            <CollapsibleItem
               key={exp.id}
+              label={exp.company}
               onRemove={async () => {
                 setLocalExperiences(prev => (prev ?? exps).filter(e => e.id !== exp.id));
                 await removeExperience(exp.id);
               }}
             >
-              <div className="space-y-3 pr-6">
+              <div className="space-y-3">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <div>
                     <FieldLabel>Firma</FieldLabel>
@@ -661,7 +648,7 @@ export function ProfilePage() {
                   />
                 </div>
               </div>
-            </ItemCard>
+            </CollapsibleItem>
           ))}
           <button
             type="button"
@@ -680,14 +667,15 @@ export function ProfilePage() {
       {section === 'projekty' && (
         <div className="space-y-3">
           {projs.map(proj => (
-            <ItemCard
+            <CollapsibleItem
               key={proj.id}
+              label={proj.name}
               onRemove={async () => {
                 setLocalProjects(prev => (prev ?? projs).filter(p => p.id !== proj.id));
                 await removeProject(proj.id);
               }}
             >
-              <div className="space-y-3 pr-6">
+              <div className="space-y-3">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <div>
                     <FieldLabel>Nazwa projektu</FieldLabel>
@@ -757,7 +745,7 @@ export function ProfilePage() {
                   />
                 </div>
               </div>
-            </ItemCard>
+            </CollapsibleItem>
           ))}
           <button
             type="button"
@@ -776,14 +764,15 @@ export function ProfilePage() {
       {section === 'technologie' && (
         <div className="space-y-3">
           {tech.map(t => (
-            <ItemCard
+            <CollapsibleItem
               key={t.id}
+              label={t.category}
               onRemove={async () => {
                 setLocalTech(prev => (prev ?? tech).filter(x => x.id !== t.id));
                 await removeTechCategory(t.id);
               }}
             >
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-2 pr-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
                 <div>
                   <FieldLabel>Kategoria</FieldLabel>
                   <TextInput
@@ -812,7 +801,7 @@ export function ProfilePage() {
                   saved={!!savedMap[t.id]}
                 />
               </div>
-            </ItemCard>
+            </CollapsibleItem>
           ))}
           <button
             type="button"
@@ -831,14 +820,15 @@ export function ProfilePage() {
       {section === 'wyksztalcenie' && (
         <div className="space-y-3">
           {edu.map(e => (
-            <ItemCard
+            <CollapsibleItem
               key={e.id}
+              label={e.school}
               onRemove={async () => {
                 setLocalEducation(prev => (prev ?? edu).filter(x => x.id !== e.id));
                 await removeEducation(e.id);
               }}
             >
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-2 pr-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
                 <div>
                   <FieldLabel>Szkoła / uczelnia</FieldLabel>
                   <TextInput
@@ -877,7 +867,7 @@ export function ProfilePage() {
                   saved={!!savedMap[e.id]}
                 />
               </div>
-            </ItemCard>
+            </CollapsibleItem>
           ))}
           <button
             type="button"
@@ -911,14 +901,15 @@ export function ProfilePage() {
             }}
           />
           {certs.map(cert => (
-            <ItemCard
+            <CollapsibleItem
               key={cert.id}
+              label={cert.name}
               onRemove={async () => {
                 setLocalCertificates(prev => (prev ?? certs).filter(c => c.id !== cert.id));
                 await removeCertificate(cert.id);
               }}
             >
-              <div className="space-y-3 pr-6">
+              <div className="space-y-3">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
                   <div className="md:col-span-2">
                     <FieldLabel>Nazwa certyfikatu</FieldLabel>
@@ -989,7 +980,7 @@ export function ProfilePage() {
                   />
                 </div>
               </div>
-            </ItemCard>
+            </CollapsibleItem>
           ))}
           <button
             type="button"
