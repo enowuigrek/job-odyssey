@@ -406,7 +406,7 @@ export function CVEditorPage() {
           : d.contact.links,
       },
     }));
-  }, [profile, profileLoading, user, editCvId]);
+  }, [profile, profileLoading, user, editCvId, DRAFT_KEY]);
 
   const set = (patch: Partial<CVData>) => setData(d => ({ ...d, ...patch }));
 
@@ -830,6 +830,8 @@ export function CVEditorPage() {
       {/* ── Certyfikaty ───────────────────────────────────────────────── */}
       <SectionHeading
         title="Certyfikaty"
+        enabled={data.showCertificates !== false}
+        onToggleEnabled={() => set({ showCertificates: !data.showCertificates })}
         collapsed={collapsed['certificates']}
         onToggleCollapse={() => toggle('certificates')}
       />
