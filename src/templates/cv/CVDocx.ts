@@ -8,13 +8,11 @@ import {
   TabStopType,
 } from 'docx';
 import type { CVData, CVLink } from './types';
+import { TEAL_HEX as TEAL, TEAL_LIGHT_HEX as TEAL_LIGHT, GRAY_HEX as GRAY } from './colors';
 
 // ---------------------------------------------------------------------------
-// Design tokens (mirroring CVTemplate.tsx)
+// Design tokens
 // ---------------------------------------------------------------------------
-const TEAL = '2D7D7D';
-const TEAL_LIGHT = '4a9a9a';
-const GRAY = '606060';
 const FONT = 'Calibri';
 
 // Page margins in twips (1 pt = 20 twips) — matching PDF padding

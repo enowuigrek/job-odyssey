@@ -8,7 +8,8 @@ import {
   StyleSheet,
   Font,
 } from '@react-pdf/renderer';
-import { CVData, CVLink, CVCertificate } from './types';
+import { CVData, CVLink } from './types';
+import { TEAL, TEAL_LIGHT, BLACK, GRAY } from './colors';
 
 // ---------------------------------------------------------------------------
 // Font registration
@@ -31,9 +32,6 @@ Font.registerHyphenationCallback(word => [word]);
 // ---------------------------------------------------------------------------
 // Design tokens
 // ---------------------------------------------------------------------------
-const TEAL = '#2D7D7D';
-const BLACK = '#1C1C1C';
-const GRAY = '#606060';
 const PAGE_H_PADDING = 44;
 
 // ---------------------------------------------------------------------------
@@ -59,7 +57,7 @@ const s = StyleSheet.create({
   },
   subtitle: {
     fontSize: 10.5,
-    color: '#4a9a9a',
+    color: TEAL_LIGHT,
     fontStyle: 'italic',
     fontWeight: 300,
     marginBottom: 16,
@@ -471,7 +469,7 @@ export function CVTemplate({ data }: CVTemplateProps) {
                     {cert.name}
                   </Link>
                 ) : (
-                  <Text style={{ ...s.certName, color: '#1C1C1C' }}>{cert.name}</Text>
+                  <Text style={{ ...s.certName, color: BLACK }}>{cert.name}</Text>
                 )}
                 <Text style={s.certMeta}>
                   {cert.issuer}{cert.issuer && cert.year ? ' · ' : ''}{cert.year}
