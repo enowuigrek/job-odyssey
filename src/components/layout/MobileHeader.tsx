@@ -13,7 +13,6 @@ import {
   MousePointerClick,
   Clock,
   Trash2,
-  Link as LinkIcon,
   FileOutput,
 } from 'lucide-react';
 import { CountBadge } from '../ui/CountBadge';
@@ -29,7 +28,6 @@ const menuItems = [
   { to: '/interviews', icon: MessageSquare, label: 'Rozmowy' },
   { to: '/cv', icon: FileText, label: 'Baza CV' },
   { to: '/cv-generator', icon: FileOutput, label: 'Generator CV' },
-  { to: '/links', icon: LinkIcon, label: 'Moje linki' },
   { to: '/settings', icon: Settings, label: 'Ustawienia' },
 ];
 

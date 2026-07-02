@@ -194,7 +194,7 @@ export function SettingsPage() {
 
           {/* Delete account */}
           <div className="pt-2 border-t border-dark-600">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
               <div>
                 <p className="text-sm font-medium text-slate-300">Usuń konto</p>
                 <p className="text-xs text-slate-500 mt-0.5">Trwale usuwa konto i wszystkie dane</p>
@@ -203,6 +203,7 @@ export function SettingsPage() {
                 variant="danger"
                 size="sm"
                 onClick={handleDeleteAccount}
+                className="self-start sm:self-auto"
               >
                 <Trash2 className="w-4 h-4" />
                 Usuń konto
