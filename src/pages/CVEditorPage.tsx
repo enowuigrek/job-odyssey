@@ -63,9 +63,16 @@ function SectionHeading({
 
   return (
     <div
-      className={`border-b border-primary-500/40 pb-1.5 mb-4 mt-8 flex items-center gap-2${onToggleCollapse ? ' cursor-pointer select-none' : ''}`}
+      className={`bg-dark-800 mb-2 mt-6 flex items-center gap-2 px-3 py-2.5 transition-colors select-none${
+        onToggleCollapse ? ' cursor-pointer hover:bg-dark-700' : ''
+      }`}
       onClick={editing ? undefined : onToggleCollapse}
     >
+      {onToggleCollapse && (
+        collapsed
+          ? <ChevronRight className="w-3.5 h-3.5 text-slate-500 flex-shrink-0" />
+          : <ChevronDown className="w-3.5 h-3.5 text-slate-500 flex-shrink-0" />
+      )}
       {editing ? (
         <>
           <input
@@ -74,44 +81,38 @@ function SectionHeading({
             onBlur={commit}
             onKeyDown={e => e.key === 'Enter' && commit()}
             autoFocus
-            className="flex-1 bg-transparent text-xs font-medium text-primary-400 uppercase tracking-widest focus:outline-none border-b border-primary-500"
+            className="flex-1 bg-transparent text-sm font-semibold text-white focus:outline-none border-b border-primary-500"
             onClick={e => e.stopPropagation()}
           />
-          <button type="button" onClick={e => { e.stopPropagation(); commit(); }} className="p-1 text-primary-400 cursor-pointer">
+          <button type="button" onClick={e => { e.stopPropagation(); commit(); }} className="p-1 text-primary-400 cursor-pointer flex-shrink-0">
             <Check className="w-3.5 h-3.5" />
           </button>
         </>
       ) : (
         <>
-          <h2 className="text-xs font-medium text-primary-400 uppercase tracking-widest">
+          <span className="text-sm font-semibold text-white flex-1 truncate">
             {title}
-          </h2>
+          </span>
           {onRename && (
             <button
               type="button"
               onClick={e => { e.stopPropagation(); setDraft(title); setEditing(true); }}
-              className="p-0.5 text-slate-500 hover:text-primary-400 transition-colors cursor-pointer flex-shrink-0"
+              className="p-1 text-slate-500 hover:text-primary-400 transition-colors cursor-pointer flex-shrink-0"
               title="Zmień nazwę"
             >
-              <Pencil className="w-3 h-3" />
+              <Pencil className="w-3.5 h-3.5" />
             </button>
           )}
         </>
       )}
-      <div className="flex-1" />
       {onToggleEnabled !== undefined && enabled !== undefined && (
-        <div className="flex-shrink-0 mr-1" onClick={e => e.stopPropagation()}>
+        <div className="flex-shrink-0" onClick={e => e.stopPropagation()}>
           <Checkbox
             checked={enabled}
             onChange={onToggleEnabled}
             title={enabled ? 'Wyłącz sekcję' : 'Włącz sekcję'}
           />
         </div>
-      )}
-      {onToggleCollapse && (
-        <span className="p-1 text-slate-500 flex-shrink-0">
-          {collapsed ? <ChevronRight className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-        </span>
       )}
     </div>
   );
