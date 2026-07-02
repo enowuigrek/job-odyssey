@@ -27,13 +27,13 @@ const FEATURES = [
 
 export function LandingPage({ onLoginClick, onRegisterClick }: LandingPageProps) {
   return (
-    <div className="min-h-screen bg-dark-900 relative overflow-hidden">
+    <div className="min-h-screen bg-dark-900 relative overflow-hidden flex flex-col">
       {/* ── Delikatny glow w tle ────────────────────────────────────────── */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-[-10%] left-1/2 -translate-x-1/2 w-[700px] h-[700px] bg-primary-500/10 blur-[140px]" />
       </div>
 
-      <div className="relative">
+      <div className="relative flex flex-col flex-1">
         {/* ── Top bar ───────────────────────────────────────────────────── */}
         <header className="flex items-center justify-between px-4 py-5 md:px-8">
           <h1 className="text-xl font-bold text-white tracking-wide uppercase">Job Odyssey</h1>
@@ -100,7 +100,7 @@ export function LandingPage({ onLoginClick, onRegisterClick }: LandingPageProps)
         </section>
 
         {/* ── Footer ────────────────────────────────────────────────────── */}
-        <footer className="px-4 py-6 md:px-8 border-t border-dark-700">
+        <footer className="mt-auto px-4 py-6 md:px-8 border-t border-dark-700">
           <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-between">
             <p className="text-xs text-slate-500">© 2026 Job Odyssey</p>
             <div className="flex items-center gap-4">
