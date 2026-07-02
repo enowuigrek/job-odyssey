@@ -1,6 +1,7 @@
 import { ReactNode } from 'react';
 import { Plus, Trash2 } from 'lucide-react';
 import { updateAt, removeAt } from '../../utils/array';
+import { useAutoResizeTextarea } from '../../hooks/useAutoResizeTextarea';
 
 /**
  * Shared editor building blocks used by CVEditorPage and ProfilePage.
@@ -52,13 +53,16 @@ export function TextArea({
   rows?: number;
   light?: boolean;
 }) {
+  const ref = useAutoResizeTextarea(value);
+
   return (
     <textarea
+      ref={ref}
       value={value}
       onChange={e => onChange(e.target.value)}
       placeholder={placeholder}
       rows={rows}
-      className={`w-full px-3 py-2 bg-dark-700 text-slate-100 text-sm${light ? ' font-light' : ''} placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-primary-500 resize-y`}
+      className={`w-full px-3 py-2 bg-dark-700 text-slate-100 text-sm${light ? ' font-light' : ''} placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-primary-500 resize-none overflow-hidden`}
     />
   );
 }
@@ -113,6 +117,41 @@ export function LinksEditor<T extends LabelUrl>({
   );
 }
 
+function BulletRow({
+  bullet,
+  onChange,
+  onRemove,
+  light,
+}: {
+  bullet: string;
+  onChange: (v: string) => void;
+  onRemove: () => void;
+  light: boolean;
+}) {
+  const ref = useAutoResizeTextarea(bullet);
+
+  return (
+    <div className="flex gap-2 items-start mb-2">
+      <span className="text-slate-400 text-sm mt-1.5 flex-shrink-0 w-4">•</span>
+      <textarea
+        ref={ref}
+        value={bullet}
+        onChange={e => onChange(e.target.value)}
+        rows={2}
+        placeholder="Opis..."
+        className={`flex-1 px-2 py-1.5 bg-dark-700 text-slate-100 text-sm${light ? ' font-light' : ''} placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-primary-500 resize-none overflow-hidden min-w-0`}
+      />
+      <button
+        type="button"
+        onClick={onRemove}
+        className="mt-1.5 p-1 text-slate-600 hover:text-danger-400 transition-colors cursor-pointer flex-shrink-0"
+      >
+        <Trash2 className="w-3.5 h-3.5" />
+      </button>
+    </div>
+  );
+}
+
 export function BulletsEditor({
   bullets,
   onChange,
@@ -125,23 +164,13 @@ export function BulletsEditor({
   return (
     <div>
       {bullets.map((bullet, i) => (
-        <div key={i} className="flex gap-2 items-start mb-2">
-          <span className="text-slate-400 text-sm mt-1.5 flex-shrink-0 w-4">•</span>
-          <textarea
-            value={bullet}
-            onChange={e => onChange(updateAt(bullets, i, e.target.value))}
-            rows={2}
-            placeholder="Opis..."
-            className={`flex-1 px-2 py-1.5 bg-dark-700 text-slate-100 text-sm${light ? ' font-light' : ''} placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-primary-500 resize-y min-w-0`}
-          />
-          <button
-            type="button"
-            onClick={() => onChange(removeAt(bullets, i))}
-            className="mt-1.5 p-1 text-slate-600 hover:text-danger-400 transition-colors cursor-pointer flex-shrink-0"
-          >
-            <Trash2 className="w-3.5 h-3.5" />
-          </button>
-        </div>
+        <BulletRow
+          key={i}
+          bullet={bullet}
+          onChange={v => onChange(updateAt(bullets, i, v))}
+          onRemove={() => onChange(removeAt(bullets, i))}
+          light={light}
+        />
       ))}
       <button
         type="button"
