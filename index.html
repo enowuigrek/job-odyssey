@@ -24,12 +24,12 @@
         <meta property="og:image" content="/icon-1024.png" />
         <!--
           TODO po wykupieniu domeny:
-          - og:image i canonical wymagają pełnych, bezwzględnych URL-i (np. https://jobodyssey.pl/...)
-            żeby poprawnie działały w podglądach social media (obecne ścieżki są względne)
-          - dodać og:url z docelowym adresem
-          - warto zamienić og:image na dedykowaną grafikę 1200x630 zamiast kwadratowej ikony
+          - og:image wymaga pełnego, bezwzględnego URL-a (np. https://jobodyssey.pl/icon-1024.png)
+            żeby poprawnie działał w podglądach social media (obecna ścieżka jest względna)
+          - dodać og:url i <link rel="canonical" href="https://..."> z docelowym adresem —
+            canonical z samym "/" psuje "vite build" (EISDIR, Vite próbuje czytać "/" jako plik),
+            dlatego na razie usunięty zamiast wskazywać na błędny względny adres
         -->
-        <link rel="canonical" href="/" />
 
         <!-- Twitter -->
         <meta name="twitter:card" content="summary" />
