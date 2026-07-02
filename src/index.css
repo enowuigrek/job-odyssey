@@ -408,11 +408,21 @@ button, a, [role="button"], .cursor-pointer {
    Zastosowane globalnie na każdym <button> w projekcie.
    ============================================ */
 button {
-  border-top-right-radius: 0.5rem;
+  border-top-right-radius: 1rem;
   transition: border-radius 200ms;
 }
 
 button:hover {
+  border-top-right-radius: 0;
+}
+
+/* Ten sam motyw na polach formularzy — prostuje się przy focusie zamiast hover */
+input, textarea {
+  border-top-right-radius: 1rem;
+  transition: border-radius 200ms;
+}
+
+input:focus, textarea:focus {
   border-top-right-radius: 0;
 }
 
