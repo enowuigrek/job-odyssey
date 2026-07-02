@@ -855,7 +855,7 @@ export function ProfilePage() {
                       ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
                       : <Upload className="w-3.5 h-3.5" />
                     }
-                    {cert.file_url ? 'Zmień plik' : 'Wgraj plik'}
+                    {cert.file_url ? 'Zmień plik' : 'Dodaj plik'}
                   </button>
                   {cert.file_url && (
                     <a

@@ -402,6 +402,20 @@ button, a, [role="button"], .cursor-pointer {
   cursor: pointer;
 }
 
+/* ============================================
+   Sygnaturowy róg przycisków — złożony róg kartki (jak CV)
+   Prawy górny róg zawinięty, prostuje się na hover.
+   Zastosowane globalnie na każdym <button> w projekcie.
+   ============================================ */
+button {
+  border-top-right-radius: 0.5rem;
+  transition: border-radius 200ms;
+}
+
+button:hover {
+  border-top-right-radius: 0;
+}
+
 /* Style dla inputów typu date i time - jasniejsza ikona kalendarza */
 input[type="date"]::-webkit-calendar-picker-indicator,
 input[type="time"]::-webkit-calendar-picker-indicator,
