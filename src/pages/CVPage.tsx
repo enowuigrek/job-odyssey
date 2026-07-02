@@ -210,13 +210,13 @@ export function CVPage() {
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {filteredCVs.map((cv) => (
-            <Card key={cv.id} className="hover:shadow-md transition-shadow">
+            <Card key={cv.id} className="min-w-0 hover:shadow-md transition-shadow">
               <CardBody>
-                <div className="flex items-start justify-between mb-3">
-                  <div>
-                    <h3 className="font-semibold text-slate-100">{cv.name}</h3>
+                <div className="flex items-start justify-between gap-2 mb-3">
+                  <div className="min-w-0 flex-1">
+                    <h3 className="font-semibold text-slate-100 truncate">{cv.name}</h3>
                     {cv.targetPosition && (
-                      <p className="text-sm text-slate-400">{cv.targetPosition}</p>
+                      <p className="text-sm text-slate-400 truncate">{cv.targetPosition}</p>
                     )}
                   </div>
                   {cv.isDefault && (

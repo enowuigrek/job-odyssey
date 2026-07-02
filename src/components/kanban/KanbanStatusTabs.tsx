@@ -1,3 +1,5 @@
+import type { LucideIcon } from 'lucide-react';
+
 type BadgeVariant = 'default' | 'success' | 'warning' | 'danger' | 'info';
 
 const VARIANT_ACTIVE_BG: Record<BadgeVariant, string> = {
@@ -9,8 +11,9 @@ const VARIANT_ACTIVE_BG: Record<BadgeVariant, string> = {
 };
 
 /**
- * Mobile-only horizontal strip of status tabs above a Kanban carousel —
- * tap to jump to a column, active tab tracks whichever column is in view.
+ * Mobile-only strip of icon-only status tabs above a Kanban carousel —
+ * evenly fills the width (no horizontal scroll), tap to jump to a column,
+ * active tab tracks whichever column is in view.
  */
 export function KanbanStatusTabs<T extends string>({
   columns,
@@ -18,29 +21,31 @@ export function KanbanStatusTabs<T extends string>({
   onSelect,
   getLabel,
   getVariant,
-  getCount,
+  getIcon,
 }: {
   columns: T[];
   activeStatus: T | null;
   onSelect: (status: T) => void;
   getLabel: (status: T) => string;
   getVariant: (status: T) => BadgeVariant;
-  getCount: (status: T) => number;
+  getIcon: (status: T) => LucideIcon;
 }) {
   return (
-    <div className="flex md:hidden gap-2 overflow-x-auto kanban-scroll -mx-4 px-4 pb-2 mb-2">
+    <div className="flex md:hidden gap-1 mb-2">
       {columns.map((status) => {
         const isActive = activeStatus === status;
+        const Icon = getIcon(status);
         return (
           <button
             key={status}
             type="button"
             onClick={() => onSelect(status)}
-            className={`flex-shrink-0 px-3 py-1.5 text-xs font-medium tracking-wide whitespace-nowrap transition-colors ${
-              isActive ? VARIANT_ACTIVE_BG[getVariant(status)] : 'bg-dark-800 text-slate-400'
+            title={getLabel(status)}
+            className={`flex-1 flex items-center justify-center py-2.5 transition-colors ${
+              isActive ? VARIANT_ACTIVE_BG[getVariant(status)] : 'bg-dark-800 text-slate-500'
             }`}
           >
-            {getLabel(status)} ({getCount(status)})
+            <Icon className="w-4 h-4" />
           </button>
         );
       })}

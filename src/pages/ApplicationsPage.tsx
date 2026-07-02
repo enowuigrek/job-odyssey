@@ -49,6 +49,7 @@ import {
   Textarea,
   getStatusBadgeVariant,
   getStatusLabel,
+  getStatusIcon,
   PageHeader,
   useConfirm,
 } from '../components/ui';
@@ -846,18 +847,18 @@ export function ApplicationsPage() {
               onSelect={kanbanCarousel.scrollToStatus}
               getLabel={getStatusLabel}
               getVariant={getStatusBadgeVariant}
-              getCount={(status) => applicationsByStatus[status].length}
+              getIcon={getStatusIcon}
             />
             <div
               ref={kanbanCarousel.containerRef}
-              className="flex-1 overflow-x-auto overflow-y-hidden kanban-scroll snap-x snap-mandatory md:snap-none -mx-4 px-4 md:-mx-8 md:px-8 -mb-10"
+              className="flex-1 overflow-x-auto overflow-y-hidden kanban-scroll snap-x snap-mandatory md:snap-none -mx-4 md:-mx-8 md:px-8 -mb-10"
             >
-            <div className="flex gap-3 h-full pb-4" style={{ minWidth: 'max-content' }}>
+            <div className="flex gap-3 h-full pb-4">
               {visibleColumns.map((status) => (
                 <div
                   key={status}
                   data-kanban-status={status}
-                  className="w-[calc(100vw-2rem)] md:w-80 flex-shrink-0 flex flex-col h-full snap-start"
+                  className="w-full md:w-80 flex-shrink-0 flex flex-col h-full snap-start px-4 md:px-0"
                   onDragOver={(e) => handleDragOver(e, status)}
                   onDragLeave={handleDragLeave}
                   onDrop={(e) => handleDrop(e, status)}

@@ -1,4 +1,19 @@
 import { ReactNode } from 'react';
+import {
+  Bookmark,
+  Send,
+  Eye,
+  Mail,
+  Clock,
+  X,
+  UserX,
+  ThumbsDown,
+  ThumbsUp,
+  Undo2,
+  Trophy,
+  Calendar,
+  type LucideIcon,
+} from 'lucide-react';
 import { ApplicationStatus, InterviewStatus } from '../../types';
 
 interface BadgeProps {
@@ -65,6 +80,22 @@ export function getStatusLabel(status: ApplicationStatus): string {
   return labels[status];
 }
 
+export function getStatusIcon(status: ApplicationStatus): LucideIcon {
+  const map: Record<ApplicationStatus, LucideIcon> = {
+    saved: Bookmark,
+    applied: Send,
+    cv_viewed: Eye,
+    interview: Mail,
+    pending: Clock,
+    rejected_no_interview: X,
+    rejected_after_interview: UserX,
+    offer_declined: ThumbsDown,
+    withdrawn: Undo2,
+    success: Trophy,
+  };
+  return map[status];
+}
+
 // Helper do mapowania statusów rozmów na badge
 export function getInterviewStatusBadgeVariant(
   status: InterviewStatus
@@ -86,4 +117,14 @@ export function getInterviewStatusLabel(status: InterviewStatus): string {
     negative: 'Negatywna',
   };
   return labels[status];
+}
+
+export function getInterviewStatusIcon(status: InterviewStatus): LucideIcon {
+  const map: Record<InterviewStatus, LucideIcon> = {
+    scheduled: Calendar,
+    waiting: Clock,
+    positive: ThumbsUp,
+    negative: ThumbsDown,
+  };
+  return map[status];
 }

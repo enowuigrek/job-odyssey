@@ -18,6 +18,7 @@ import { uploadCVFile } from '../lib/db';
 import { useProfile } from '../hooks/useProfile';
 import { useAuth } from '../contexts/AuthContext';
 import { useApp } from '../contexts/AppContext';
+import { useDragReorder } from '../hooks/useDragReorder';
 import { updateAt, removeAt } from '../utils/array';
 
 function draftKey(userId?: string) {
@@ -32,14 +33,6 @@ function emptyData(): CVData {
 
 function uid() {
   return crypto.randomUUID?.() ?? Math.random().toString(36).slice(2);
-}
-
-function moveAt<T>(arr: T[], from: number, to: number): T[] {
-  if (to < 0 || to >= arr.length) return arr;
-  const next = [...arr];
-  const [item] = next.splice(from, 1);
-  next.splice(to, 0, item);
-  return next;
 }
 
 // ── Sub-components ────────────────────────────────────────────────────────────
@@ -299,6 +292,12 @@ export function CVEditorPage() {
 
   const set = (patch: Partial<CVData>) => setData(d => ({ ...d, ...patch }));
 
+  const technologiesDrag = useDragReorder(data.technologies, next => set({ technologies: next }));
+  const projectsDrag = useDragReorder(data.projects, next => set({ projects: next }));
+  const experienceDrag = useDragReorder(data.experience, next => set({ experience: next }));
+  const educationDrag = useDragReorder(data.education, next => set({ education: next }));
+  const certificatesDrag = useDragReorder(data.certificates ?? [], next => set({ certificates: next }));
+
   /** Save draft to localStorage — no PDF, no Supabase */
   const handleDraftSave = () => {
     if (editCvId) {
@@ -489,8 +488,7 @@ export function CVEditorPage() {
               key={ti}
               label={tech.category}
               onRemove={() => set({ technologies: removeAt(data.technologies, ti) })}
-              onMoveUp={ti > 0 ? () => set({ technologies: moveAt(data.technologies, ti, ti - 1) }) : undefined}
-              onMoveDown={ti < data.technologies.length - 1 ? () => set({ technologies: moveAt(data.technologies, ti, ti + 1) }) : undefined}
+              {...technologiesDrag.getItemProps(ti)}
             >
               <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
                 <div>
@@ -536,8 +534,7 @@ export function CVEditorPage() {
               key={pi}
               label={proj.name}
               onRemove={() => set({ projects: removeAt(data.projects, pi) })}
-              onMoveUp={pi > 0 ? () => set({ projects: moveAt(data.projects, pi, pi - 1) }) : undefined}
-              onMoveDown={pi < data.projects.length - 1 ? () => set({ projects: moveAt(data.projects, pi, pi + 1) }) : undefined}
+              {...projectsDrag.getItemProps(pi)}
             >
               <div className="space-y-3">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -591,8 +588,7 @@ export function CVEditorPage() {
               key={ei}
               label={exp.company}
               onRemove={() => set({ experience: removeAt(data.experience, ei) })}
-              onMoveUp={ei > 0 ? () => set({ experience: moveAt(data.experience, ei, ei - 1) }) : undefined}
-              onMoveDown={ei < data.experience.length - 1 ? () => set({ experience: moveAt(data.experience, ei, ei + 1) }) : undefined}
+              {...experienceDrag.getItemProps(ei)}
             >
               <div className="space-y-3">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -683,8 +679,7 @@ export function CVEditorPage() {
               key={edi}
               label={edu.school}
               onRemove={() => set({ education: removeAt(data.education, edi) })}
-              onMoveUp={edi > 0 ? () => set({ education: moveAt(data.education, edi, edi - 1) }) : undefined}
-              onMoveDown={edi < data.education.length - 1 ? () => set({ education: moveAt(data.education, edi, edi + 1) }) : undefined}
+              {...educationDrag.getItemProps(edi)}
             >
               <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
                 <div>
@@ -727,8 +722,7 @@ export function CVEditorPage() {
               key={ci}
               label={cert.name}
               onRemove={() => set({ certificates: removeAt(data.certificates ?? [], ci) })}
-              onMoveUp={ci > 0 ? () => set({ certificates: moveAt(data.certificates ?? [], ci, ci - 1) }) : undefined}
-              onMoveDown={ci < (data.certificates ?? []).length - 1 ? () => set({ certificates: moveAt(data.certificates ?? [], ci, ci + 1) }) : undefined}
+              {...certificatesDrag.getItemProps(ci)}
             >
               <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
                 <div className="md:col-span-2">
