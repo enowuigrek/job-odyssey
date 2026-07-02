@@ -27,6 +27,8 @@ import type { DocumentProps } from '@react-pdf/renderer';
 import { useApp } from '../contexts/AppContext';
 import { useAuth } from '../contexts/AuthContext';
 import { TrackingLinksModal } from '../components/tracking/TrackingLinksModal';
+import { KanbanStatusTabs } from '../components/kanban/KanbanStatusTabs';
+import { useKanbanCarousel } from '../hooks/useKanbanCarousel';
 import { useUserLinks } from '../hooks/useUserLinks';
 import {
   createTrackingLinks,
@@ -288,6 +290,16 @@ export function ApplicationsPage() {
     });
     return grouped;
   }, [filteredApplications]);
+
+  // Ukryj puste kolumny tylko gdy aktywne filtry (widok Kanban)
+  const visibleKanbanColumns = useMemo(() => {
+    const hasFilters = statusFilters.length > 0 || searchQuery.length > 0;
+    return hasFilters
+      ? kanbanColumns.filter(s => applicationsByStatus[s].length > 0)
+      : kanbanColumns;
+  }, [statusFilters, searchQuery, applicationsByStatus]);
+
+  const kanbanCarousel = useKanbanCarousel(visibleKanbanColumns);
 
   const openModal = (application?: JobApplication, defaultStatus?: ApplicationStatus) => {
     if (application) {
@@ -824,19 +836,28 @@ export function ApplicationsPage() {
 
       {/* Widok Kanban - rozciąga się na całą pozostałą wysokość */}
       {viewMode === 'kanban' && (() => {
-        // When filters active, hide empty columns
-        const hasFilters = statusFilters.length > 0 || searchQuery.length > 0;
-        const visibleColumns = hasFilters
-          ? kanbanColumns.filter(s => applicationsByStatus[s].length > 0)
-          : kanbanColumns;
+        const visibleColumns = visibleKanbanColumns;
 
         return (
-          <div className="flex-1 overflow-x-auto overflow-y-hidden kanban-scroll -mx-4 px-4 md:-mx-8 md:px-8 -mb-10">
+          <>
+            <KanbanStatusTabs
+              columns={visibleColumns}
+              activeStatus={kanbanCarousel.activeStatus}
+              onSelect={kanbanCarousel.scrollToStatus}
+              getLabel={getStatusLabel}
+              getVariant={getStatusBadgeVariant}
+              getCount={(status) => applicationsByStatus[status].length}
+            />
+            <div
+              ref={kanbanCarousel.containerRef}
+              className="flex-1 overflow-x-auto overflow-y-hidden kanban-scroll snap-x snap-mandatory md:snap-none -mx-4 px-4 md:-mx-8 md:px-8 -mb-10"
+            >
             <div className="flex gap-3 h-full pb-4" style={{ minWidth: 'max-content' }}>
               {visibleColumns.map((status) => (
                 <div
                   key={status}
-                  className="w-[calc(100vw-2rem)] md:w-80 flex-shrink-0 flex flex-col h-full"
+                  data-kanban-status={status}
+                  className="w-[calc(100vw-2rem)] md:w-80 flex-shrink-0 flex flex-col h-full snap-start"
                   onDragOver={(e) => handleDragOver(e, status)}
                   onDragLeave={handleDragLeave}
                   onDrop={(e) => handleDrop(e, status)}
@@ -887,7 +908,8 @@ export function ApplicationsPage() {
                 </div>
               ))}
             </div>
-          </div>
+            </div>
+          </>
         );
       })()}
 

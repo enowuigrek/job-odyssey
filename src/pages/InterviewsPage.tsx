@@ -17,6 +17,8 @@ import {
   MessageSquare,
 } from 'lucide-react';
 import { useApp } from '../contexts/AppContext';
+import { KanbanStatusTabs } from '../components/kanban/KanbanStatusTabs';
+import { useKanbanCarousel } from '../hooks/useKanbanCarousel';
 import {
   Button,
   Input,
@@ -144,6 +146,16 @@ export function InterviewsPage() {
     });
     return grouped;
   }, [filteredInterviews]);
+
+  // Ukryj puste kolumny tylko gdy aktywne filtry (widok Kanban)
+  const visibleKanbanColumns = useMemo(() => {
+    const hasFilters = statusFilters.length > 0 || searchQuery.length > 0;
+    return hasFilters
+      ? kanbanColumns.filter(s => interviewsByStatus[s].length > 0)
+      : kanbanColumns;
+  }, [statusFilters, searchQuery, interviewsByStatus]);
+
+  const kanbanCarousel = useKanbanCarousel(visibleKanbanColumns);
 
   const openModal = (interview?: Interview) => {
     if (interview) {
@@ -657,18 +669,28 @@ export function InterviewsPage() {
 
       {/* Widok Kanban - rozciąga się na całą pozostałą wysokość */}
       {viewMode === 'kanban' && (() => {
-        const hasFilters = statusFilters.length > 0 || searchQuery.length > 0;
-        const visibleColumns = hasFilters
-          ? kanbanColumns.filter(s => interviewsByStatus[s].length > 0)
-          : kanbanColumns;
+        const visibleColumns = visibleKanbanColumns;
 
         return (
-          <div className="flex-1 overflow-x-auto overflow-y-hidden kanban-scroll -mx-4 px-4 md:-mx-8 md:px-8 -mb-10">
+          <>
+            <KanbanStatusTabs
+              columns={visibleColumns}
+              activeStatus={kanbanCarousel.activeStatus}
+              onSelect={kanbanCarousel.scrollToStatus}
+              getLabel={getInterviewStatusLabel}
+              getVariant={getInterviewStatusBadgeVariant}
+              getCount={(status) => interviewsByStatus[status].length}
+            />
+            <div
+              ref={kanbanCarousel.containerRef}
+              className="flex-1 overflow-x-auto overflow-y-hidden kanban-scroll snap-x snap-mandatory md:snap-none -mx-4 px-4 md:-mx-8 md:px-8 -mb-10"
+            >
             <div className="flex gap-3 h-full pb-4" style={{ minWidth: 'max-content' }}>
               {visibleColumns.map((status) => (
                 <div
                   key={status}
-                  className="w-[calc(100vw-2rem)] md:w-80 flex-shrink-0 flex flex-col h-full"
+                  data-kanban-status={status}
+                  className="w-[calc(100vw-2rem)] md:w-80 flex-shrink-0 flex flex-col h-full snap-start"
                   onDragOver={(e) => handleDragOver(e, status)}
                   onDragLeave={handleDragLeave}
                   onDrop={(e) => handleDrop(e, status)}
@@ -721,7 +743,8 @@ export function InterviewsPage() {
                 </div>
               ))}
             </div>
-          </div>
+            </div>
+          </>
         );
       })()}
 
