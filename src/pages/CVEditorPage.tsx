@@ -19,7 +19,7 @@ import { useProfile } from '../hooks/useProfile';
 import { useAuth } from '../contexts/AuthContext';
 import { useApp } from '../contexts/AppContext';
 import { useDragReorder } from '../hooks/useDragReorder';
-import { updateAt, removeAt } from '../utils/array';
+import { updateAt, removeAt, moveAt } from '../utils/array';
 
 function draftKey(userId?: string) {
   return userId ? `jo-cv-editor-draft-${userId}` : 'jo-cv-editor-draft';
@@ -292,11 +292,11 @@ export function CVEditorPage() {
 
   const set = (patch: Partial<CVData>) => setData(d => ({ ...d, ...patch }));
 
-  const technologiesDrag = useDragReorder(data.technologies, next => set({ technologies: next }));
-  const projectsDrag = useDragReorder(data.projects, next => set({ projects: next }));
-  const experienceDrag = useDragReorder(data.experience, next => set({ experience: next }));
-  const educationDrag = useDragReorder(data.education, next => set({ education: next }));
-  const certificatesDrag = useDragReorder(data.certificates ?? [], next => set({ certificates: next }));
+  const technologiesDrag = useDragReorder((from, to) => set({ technologies: moveAt(data.technologies, from, to) }));
+  const projectsDrag = useDragReorder((from, to) => set({ projects: moveAt(data.projects, from, to) }));
+  const experienceDrag = useDragReorder((from, to) => set({ experience: moveAt(data.experience, from, to) }));
+  const educationDrag = useDragReorder((from, to) => set({ education: moveAt(data.education, from, to) }));
+  const certificatesDrag = useDragReorder((from, to) => set({ certificates: moveAt(data.certificates ?? [], from, to) }));
 
   /** Save draft to localStorage — no PDF, no Supabase */
   const handleDraftSave = () => {

@@ -13,6 +13,7 @@ import { PageHeader, CollapsibleItem } from '../components/ui';
 import { FieldLabel, TextInput, TextArea, LinksEditor, BulletsEditor } from '../components/forms/FormPrimitives';
 import { useProfile } from '../hooks/useProfile';
 import { useUserLinks } from '../hooks/useUserLinks';
+import { useDragReorder } from '../hooks/useDragReorder';
 import { uploadCertificateFile } from '../lib/profileDb';
 import { useAuth } from '../contexts/AuthContext';
 import { updateAt, removeAt } from '../utils/array';
@@ -28,26 +29,36 @@ import type {
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
-/** Swaps sort_order between two adjacent items and persists both, with an optimistic local update */
-async function moveItem<T extends { id: string; sort_order: number }>(
+/**
+ * Moves an item from `from` to `to`, reassigning sort_order among only the
+ * items in between (keeping the existing set of sort_order values, just
+ * handing them to whichever item now occupies that slot), with an
+ * optimistic local update and persistence for each shifted item.
+ */
+async function reorderItems<T extends { id: string; sort_order: number }>(
   list: T[],
-  index: number,
-  direction: -1 | 1,
+  from: number,
+  to: number,
   setLocal: (updater: (prev: T[] | null) => T[]) => void,
   updateFn: (id: string, patch: Partial<T>) => Promise<void>
 ) {
-  const j = index + direction;
-  if (j < 0 || j >= list.length) return;
-  const a = list[index];
-  const b = list[j];
-  setLocal(prev => {
-    const arr = [...(prev ?? list)];
-    arr[index] = { ...b, sort_order: a.sort_order };
-    arr[j] = { ...a, sort_order: b.sort_order };
-    return arr;
-  });
-  await updateFn(a.id, { sort_order: b.sort_order } as Partial<T>);
-  await updateFn(b.id, { sort_order: a.sort_order } as Partial<T>);
+  if (from === to) return;
+  const start = Math.min(from, to);
+  const end = Math.max(from, to);
+  const slotOrders = list.slice(start, end + 1).map(item => item.sort_order);
+
+  const reordered = [...list];
+  const [moved] = reordered.splice(from, 1);
+  reordered.splice(to, 0, moved);
+
+  const updated = reordered.map((item, idx) =>
+    idx >= start && idx <= end ? { ...item, sort_order: slotOrders[idx - start] } : item
+  );
+
+  setLocal(() => updated);
+  await Promise.all(
+    updated.slice(start, end + 1).map(item => updateFn(item.id, { sort_order: item.sort_order } as Partial<T>))
+  );
 }
 
 // ── Small UI building blocks ───────────────────────────────────────────────────
@@ -186,6 +197,13 @@ export function ProfilePage() {
   const tech = localTech ?? techCategories;
   const edu = localEducation ?? education;
   const certs = localCertificates ?? certificates;
+
+  const descriptionsDrag = useDragReorder((from, to) => reorderItems(descs, from, to, setLocalDescriptions, updateDescription));
+  const experiencesDrag = useDragReorder((from, to) => reorderItems(exps, from, to, setLocalExperiences, updateExperience));
+  const projectsDrag = useDragReorder((from, to) => reorderItems(projs, from, to, setLocalProjects, updateProject));
+  const techDrag = useDragReorder((from, to) => reorderItems(tech, from, to, setLocalTech, updateTechCategory));
+  const educationDrag = useDragReorder((from, to) => reorderItems(edu, from, to, setLocalEducation, updateEducation));
+  const certificatesDrag = useDragReorder((from, to) => reorderItems(certs, from, to, setLocalCertificates, updateCertificate));
 
   // ── Save handlers ────────────────────────────────────────────────────────────
 
@@ -367,8 +385,7 @@ export function ProfilePage() {
                 setLocalDescriptions(prev => (prev ?? descs).filter(d => d.id !== desc.id));
                 await removeDescription(desc.id);
               }}
-              onMoveUp={di > 0 ? () => moveItem(descs, di, -1, setLocalDescriptions, updateDescription) : undefined}
-              onMoveDown={di < descs.length - 1 ? () => moveItem(descs, di, 1, setLocalDescriptions, updateDescription) : undefined}
+              {...descriptionsDrag.getItemProps(di)}
             >
               <div className="space-y-2">
                 <div>
@@ -426,8 +443,7 @@ export function ProfilePage() {
                 setLocalExperiences(prev => (prev ?? exps).filter(e => e.id !== exp.id));
                 await removeExperience(exp.id);
               }}
-              onMoveUp={expi > 0 ? () => moveItem(exps, expi, -1, setLocalExperiences, updateExperience) : undefined}
-              onMoveDown={expi < exps.length - 1 ? () => moveItem(exps, expi, 1, setLocalExperiences, updateExperience) : undefined}
+              {...experiencesDrag.getItemProps(expi)}
             >
               <div className="space-y-3">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -565,8 +581,7 @@ export function ProfilePage() {
                 setLocalProjects(prev => (prev ?? projs).filter(p => p.id !== proj.id));
                 await removeProject(proj.id);
               }}
-              onMoveUp={proji > 0 ? () => moveItem(projs, proji, -1, setLocalProjects, updateProject) : undefined}
-              onMoveDown={proji < projs.length - 1 ? () => moveItem(projs, proji, 1, setLocalProjects, updateProject) : undefined}
+              {...projectsDrag.getItemProps(proji)}
             >
               <div className="space-y-3">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -664,8 +679,7 @@ export function ProfilePage() {
                 setLocalTech(prev => (prev ?? tech).filter(x => x.id !== t.id));
                 await removeTechCategory(t.id);
               }}
-              onMoveUp={ti > 0 ? () => moveItem(tech, ti, -1, setLocalTech, updateTechCategory) : undefined}
-              onMoveDown={ti < tech.length - 1 ? () => moveItem(tech, ti, 1, setLocalTech, updateTechCategory) : undefined}
+              {...techDrag.getItemProps(ti)}
             >
               <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
                 <div>
@@ -722,8 +736,7 @@ export function ProfilePage() {
                 setLocalEducation(prev => (prev ?? edu).filter(x => x.id !== e.id));
                 await removeEducation(e.id);
               }}
-              onMoveUp={edi > 0 ? () => moveItem(edu, edi, -1, setLocalEducation, updateEducation) : undefined}
-              onMoveDown={edi < edu.length - 1 ? () => moveItem(edu, edi, 1, setLocalEducation, updateEducation) : undefined}
+              {...educationDrag.getItemProps(edi)}
             >
               <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
                 <div>
@@ -805,8 +818,7 @@ export function ProfilePage() {
                 setLocalCertificates(prev => (prev ?? certs).filter(c => c.id !== cert.id));
                 await removeCertificate(cert.id);
               }}
-              onMoveUp={certi > 0 ? () => moveItem(certs, certi, -1, setLocalCertificates, updateCertificate) : undefined}
-              onMoveDown={certi < certs.length - 1 ? () => moveItem(certs, certi, 1, setLocalCertificates, updateCertificate) : undefined}
+              {...certificatesDrag.getItemProps(certi)}
             >
               <div className="space-y-3">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
