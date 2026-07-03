@@ -83,6 +83,6 @@ export const defaultCVData: CVData = {
   ],
   certificates: [],
   showCertificates: false,
-  interests: 'Tutaj wpisz swoje zainteresowania — krótko, kilka słów oddzielonych kropką',
+  interests: ['Tutaj wpisz swoje zainteresowanie'],
   rodo: 'Wyrażam zgodę na przetwarzanie moich danych osobowych dla potrzeb niezbędnych do realizacji procesu rekrutacji.',
 };

@@ -2,6 +2,7 @@ import { ReactNode } from 'react';
 import { Plus, Trash2 } from 'lucide-react';
 import { updateAt, removeAt } from '../../utils/array';
 import { useAutoResizeTextarea } from '../../hooks/useAutoResizeTextarea';
+import { Button } from '../ui/Button';
 
 /**
  * Shared editor building blocks used by CVEditorPage and ProfilePage.
@@ -158,13 +159,9 @@ export function LinksEditor<T extends LabelUrl>({
           </button>
         </div>
       ))}
-      <button
-        type="button"
-        onClick={() => onChange([...links, { label: '', url: '' } as T])}
-        className="flex items-center gap-1.5 text-xs text-primary-400 hover:text-primary-300 transition-colors cursor-pointer mt-1"
-      >
-        <Plus className="w-3.5 h-3.5" /> Dodaj link
-      </button>
+      <Button variant="primary" size="sm" type="button" onClick={() => onChange([...links, { label: '', url: '' } as T])} className="mt-1">
+        <Plus className="w-3.5 h-3.5 mr-1.5" /> Dodaj link
+      </Button>
     </div>
   );
 }
@@ -224,13 +221,49 @@ export function BulletsEditor({
           light={light}
         />
       ))}
-      <button
-        type="button"
-        onClick={() => onChange([...bullets, ''])}
-        className="flex items-center gap-1.5 text-xs text-primary-400 hover:text-primary-300 transition-colors cursor-pointer mt-1"
-      >
-        <Plus className="w-3.5 h-3.5" /> Dodaj punkt
-      </button>
+      <Button variant="primary" size="sm" type="button" onClick={() => onChange([...bullets, ''])} className="mt-1">
+        <Plus className="w-3.5 h-3.5 mr-1.5" /> Dodaj punkt
+      </Button>
+    </div>
+  );
+}
+
+/** Single-line tag list — one input per item, add/remove instead of one blob string. */
+export function TagListEditor({
+  items,
+  onChange,
+  addLabel,
+  placeholder,
+  light = false,
+}: {
+  items: string[];
+  onChange: (items: string[]) => void;
+  addLabel: string;
+  placeholder?: string;
+  light?: boolean;
+}) {
+  return (
+    <div className="space-y-2">
+      {items.map((item, i) => (
+        <div key={i} className="flex gap-2 items-center">
+          <input
+            value={item}
+            onChange={e => onChange(updateAt(items, i, e.target.value))}
+            placeholder={placeholder}
+            className={`flex-1 px-2 py-1.5 bg-dark-700 text-white text-sm${light ? ' font-light' : ''} placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-primary-500 min-w-0`}
+          />
+          <button
+            type="button"
+            onClick={() => onChange(removeAt(items, i))}
+            className="p-1 text-slate-600 hover:text-danger-400 transition-colors cursor-pointer flex-shrink-0"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      ))}
+      <Button variant="primary" size="sm" type="button" onClick={() => onChange([...items, ''])}>
+        <Plus className="w-3.5 h-3.5 mr-1.5" /> {addLabel}
+      </Button>
     </div>
   );
 }

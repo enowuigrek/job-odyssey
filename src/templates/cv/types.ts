@@ -72,13 +72,15 @@ export interface CVData {
   approachTitle?: string;
   showApproach?: boolean;
   approach: string;
+  /** Editable header for technologies section */
+  technologiesTitle?: string;
   showTechnologies?: boolean;
   showProjects?: boolean;
   technologies: CVTechCategory[];
   projects: CVProject[];
   experience: CVExperience[];
   education: CVEducation[];
-  interests: string;
+  interests: string[];
   rodo: string;
   /** Editable header for certificates section */
   certificatesTitle?: string;

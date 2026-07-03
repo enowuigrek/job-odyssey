@@ -1,7 +1,7 @@
 import { ReactElement } from 'react';
 import './CVHtml.css';
 import { CVData, CVLink } from './types';
-import { formatRoleLabel } from './formatRole';
+import { formatRoleLabel, formatTechCategory, formatInterests } from './format';
 
 interface Props {
   data: CVData;
@@ -98,11 +98,11 @@ export function CVHtml({ data, preview = false }: Props) {
       {data.showTechnologies !== false && (
         <>
           <div className="cv-section-header">
-            <h2 className="cv-section-title">TECHNOLOGIE I NARZĘDZIA</h2>
+            <h2 className="cv-section-title">{(data.technologiesTitle || 'TECHNOLOGIE I NARZĘDZIA').toUpperCase()}</h2>
           </div>
           {data.technologies.map(tech => (
             <div key={tech.category} className="cv-tech-row">
-              <span className="cv-tech-label">{tech.category}</span>
+              <span className="cv-tech-label">{formatTechCategory(tech.category)}</span>
               <span className="cv-tech-value">{tech.items}</span>
             </div>
           ))}
@@ -208,7 +208,7 @@ export function CVHtml({ data, preview = false }: Props) {
       <div className="cv-section-header">
         <h2 className="cv-section-title">ZAINTERESOWANIA</h2>
       </div>
-      <p className="cv-interests">{data.interests}</p>
+      <p className="cv-interests">{formatInterests(data.interests)}</p>
 
       {/* ── RODO — always pinned to page bottom ─────────────────── */}
       <div className="cv-rodo-spacer" />

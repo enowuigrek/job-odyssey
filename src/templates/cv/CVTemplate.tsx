@@ -10,7 +10,7 @@ import {
 } from '@react-pdf/renderer';
 import { CVData, CVLink } from './types';
 import { TEAL, TEAL_LIGHT, BLACK, GRAY } from './colors';
-import { formatRoleLabel } from './formatRole';
+import { formatRoleLabel, formatTechCategory, formatInterests } from './format';
 
 // ---------------------------------------------------------------------------
 // Font registration
@@ -365,10 +365,10 @@ export function CVTemplate({ data }: CVTemplateProps) {
         {/* ── TECHNOLOGIE I NARZĘDZIA ─────────────────────────────── */}
         {data.showTechnologies !== false && (
           <>
-            <SectionHeader title="TECHNOLOGIE I NARZĘDZIA" />
+            <SectionHeader title={(data.technologiesTitle || 'TECHNOLOGIE I NARZĘDZIA').toUpperCase()} />
             {data.technologies.map(tech => (
               <View key={tech.category} style={s.techRow}>
-                <Text style={s.techLabel}>{tech.category}</Text>
+                <Text style={s.techLabel}>{formatTechCategory(tech.category)}</Text>
                 <Text style={s.techValue}>{tech.items}</Text>
               </View>
             ))}
@@ -482,7 +482,7 @@ export function CVTemplate({ data }: CVTemplateProps) {
 
         {/* ── ZAINTERESOWANIA ─────────────────────────────────────── */}
         <SectionHeader title="ZAINTERESOWANIA" />
-        <Text style={s.interests}>{data.interests}</Text>
+        <Text style={s.interests}>{formatInterests(data.interests)}</Text>
 
         {/* ── RODO — spacer pushes it to page bottom ──────────────── */}
         <View style={{ flexGrow: 1 }} />

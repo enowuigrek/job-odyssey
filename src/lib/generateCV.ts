@@ -1,5 +1,6 @@
 import { CVData, CVLink } from '../templates/cv/types';
 import { defaultCVData } from '../templates/cv/defaultCVData';
+import { normalizeCVData } from '../templates/cv/format';
 import type { TrackingLink } from './db';
 
 function cvEditorStorageKey(userId?: string) {
@@ -13,7 +14,7 @@ function cvPrintStorageKey(userId?: string) {
 export function getCVEditorData(userId?: string): CVData {
   const raw = localStorage.getItem(cvEditorStorageKey(userId));
   if (raw) {
-    try { return JSON.parse(raw) as CVData; } catch { /* ignore */ }
+    try { return normalizeCVData(JSON.parse(raw) as CVData); } catch { /* ignore */ }
   }
   return defaultCVData;
 }
@@ -25,7 +26,7 @@ export function saveCVEditorData(data: CVData, userId?: string): void {
 export function getCVPrintData(userId?: string): CVData | null {
   const raw = localStorage.getItem(cvPrintStorageKey(userId));
   if (raw) {
-    try { return JSON.parse(raw) as CVData; } catch { /* ignore */ }
+    try { return normalizeCVData(JSON.parse(raw) as CVData); } catch { /* ignore */ }
   }
   return null;
 }
@@ -37,7 +38,7 @@ export function clearCVPrintData(userId?: string): void {
 export function getCVDataById(cvId: string): CVData | null {
   const raw = localStorage.getItem(`jo-cv-data-${cvId}`);
   if (raw) {
-    try { return JSON.parse(raw) as CVData; } catch { /* ignore */ }
+    try { return normalizeCVData(JSON.parse(raw) as CVData); } catch { /* ignore */ }
   }
   return null;
 }

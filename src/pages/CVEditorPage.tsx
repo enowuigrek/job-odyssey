@@ -5,7 +5,7 @@ import { Plus, Trash2, Save, Eye, EyeOff, ArrowLeft, FileEdit, Pencil, Check, Lo
 import { pdf } from '@react-pdf/renderer';
 import type { DocumentProps } from '@react-pdf/renderer';
 import { Button, PageHeader, CollapsibleItem, Checkbox } from '../components/ui';
-import { FieldLabel, TextInput, TextArea, LinksEditor, BulletsEditor, YearRangePicker } from '../components/forms/FormPrimitives';
+import { FieldLabel, TextInput, TextArea, LinksEditor, BulletsEditor, YearRangePicker, TagListEditor } from '../components/forms/FormPrimitives';
 import type { CVData } from '../templates/cv/types';
 import { defaultCVData } from '../templates/cv/defaultCVData';
 import { CVTemplate } from '../templates/cv/CVTemplate';
@@ -172,14 +172,15 @@ function ProfileImportMenu<T>({
 
   return (
     <div className="relative inline-block">
-      <button
+      <Button
         type="button"
+        size="sm"
+        variant={primaryLabel ? 'primary' : 'secondary'}
         onClick={() => setOpen(v => !v)}
-        className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-dark-700 text-slate-300 hover:bg-dark-600 hover:text-white transition-colors cursor-pointer"
       >
-        {primaryLabel ? <Plus className="w-3.5 h-3.5" /> : <Database className="w-3.5 h-3.5" />}
+        {primaryLabel ? <Plus className="w-3.5 h-3.5 mr-1.5" /> : <Database className="w-3.5 h-3.5 mr-1.5" />}
         {primaryLabel ?? 'Wybierz z profilu'}
-      </button>
+      </Button>
       {open && (
         <div className="absolute z-20 bottom-full mb-1 left-0 bg-dark-800 border border-dark-600 p-3 w-64 shadow-xl">
           {items.length === 0 ? (
@@ -262,7 +263,7 @@ export function CVEditorPage() {
 
   const nameRef = useRef<HTMLDivElement>(null);
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({
-    header: true, contact: true, profile: true, approach: true,
+    header: true, contact: true, profile: true,
     tech: true, projects: true, experience: true, education: true,
     certificates: true, custom: true, interests: true, rodo: true,
   });
@@ -461,22 +462,10 @@ export function CVEditorPage() {
         </div>
       )}
 
-      {/* ── Podejście do pracy (opcjonalne) ──────────────────────────── */}
-      <SectionHeading
-        title={data.approachTitle || 'Podejście do pracy'}
-        onRename={v => set({ approachTitle: v })}
-        enabled={data.showApproach !== false}
-        onToggleEnabled={() => set({ showApproach: !data.showApproach })}
-        collapsed={collapsed['approach']}
-        onToggleCollapse={() => toggle('approach')}
-      />
-      {!collapsed['approach'] && (
-        <TextArea value={data.approach} onChange={v => set({ approach: v })} rows={4} placeholder="Jak pracujesz..." />
-      )}
-
       {/* ── Technologie ──────────────────────────────────────────────── */}
       <SectionHeading
-        title="Technologie i narzędzia"
+        title={data.technologiesTitle || 'Technologie i narzędzia'}
+        onRename={v => set({ technologiesTitle: v })}
         enabled={data.showTechnologies !== false}
         onToggleEnabled={() => set({ showTechnologies: !data.showTechnologies })}
         collapsed={collapsed['tech']}
@@ -497,11 +486,11 @@ export function CVEditorPage() {
                   <TextInput
                     value={tech.category}
                     onChange={v => set({ technologies: updateAt(data.technologies, ti, { ...tech, category: v }) })}
-                    placeholder="Frontend:"
+                    placeholder="Frontend"
                   />
                 </div>
                 <div className="md:col-span-2">
-                  <FieldLabel>Technologie</FieldLabel>
+                  <FieldLabel>Pozycje</FieldLabel>
                   <TextInput
                     value={tech.items}
                     onChange={v => set({ technologies: updateAt(data.technologies, ti, { ...tech, items: v }) })}
@@ -657,13 +646,13 @@ export function CVEditorPage() {
                     />
                   </div>
                 ))}
-                <button
+                <Button
                   type="button"
+                  size="sm"
                   onClick={() => set({ experience: updateAt(data.experience, ei, { ...exp, roles: [...exp.roles, { title: '', years: '', bullets: [] }] }) })}
-                  className="flex items-center gap-1.5 text-xs text-primary-400 hover:text-primary-300 transition-colors cursor-pointer"
                 >
-                  <Plus className="w-3.5 h-3.5" /> Dodaj stanowisko
-                </button>
+                  <Plus className="w-3.5 h-3.5 mr-1.5" /> Dodaj stanowisko
+                </Button>
               </div>
             </CollapsibleItem>
           ))}
@@ -782,7 +771,7 @@ export function CVEditorPage() {
       />
       {!collapsed['custom'] && (
         <>
-          <p className="text-xs text-slate-500 -mt-2 mb-3">Dowolne sekcje z własnym nagłówkiem — np. Certyfikaty, Języki, Wolontariat.</p>
+          <p className="text-xs text-slate-500 -mt-2 mb-3">Dowolne sekcje z własnym nagłówkiem — np. Języki, Wolontariat, Osiągnięcia.</p>
           {(data.customSections ?? []).map((sec, si) => (
             <ItemCard key={sec.id} onRemove={() => set({ customSections: removeAt(data.customSections ?? [], si) })}>
               <div className="space-y-2 pr-6">
@@ -791,7 +780,7 @@ export function CVEditorPage() {
                   <TextInput
                     value={sec.title}
                     onChange={v => set({ customSections: updateAt(data.customSections ?? [], si, { ...sec, title: v }) })}
-                    placeholder="np. Certyfikaty"
+                    placeholder="np. Języki"
                   />
                 </div>
                 <div>
@@ -805,7 +794,7 @@ export function CVEditorPage() {
               </div>
             </ItemCard>
           ))}
-          <Button variant="secondary" onClick={() => set({ customSections: [...(data.customSections ?? []), { id: uid(), title: '', content: '' }] })}>
+          <Button variant="primary" onClick={() => set({ customSections: [...(data.customSections ?? []), { id: uid(), title: '', content: '' }] })}>
             <Plus className="w-3.5 h-3.5 mr-1.5" /> Dodaj sekcję
           </Button>
         </>
@@ -818,7 +807,12 @@ export function CVEditorPage() {
         onToggleCollapse={() => toggle('interests')}
       />
       {!collapsed['interests'] && (
-        <TextInput value={data.interests} onChange={v => set({ interests: v })} placeholder="Kawa • Muzyka • Sport…" />
+        <TagListEditor
+          items={data.interests}
+          onChange={v => set({ interests: v })}
+          addLabel="Dodaj zainteresowanie"
+          placeholder="np. Muzyka"
+        />
       )}
 
       {/* ── RODO ──────────────────────────────────────────────────────── */}

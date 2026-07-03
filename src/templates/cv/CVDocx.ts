@@ -9,7 +9,7 @@ import {
 } from 'docx';
 import type { CVData, CVLink } from './types';
 import { TEAL_HEX as TEAL, TEAL_LIGHT_HEX as TEAL_LIGHT, GRAY_HEX as GRAY } from './colors';
-import { formatRoleLabel } from './formatRole';
+import { formatRoleLabel, formatTechCategory, formatInterests } from './format';
 
 // ---------------------------------------------------------------------------
 // Design tokens
@@ -143,12 +143,12 @@ export async function buildCVDocx(data: CVData): Promise<Blob> {
   }
 
   // ── TECHNOLOGIE I NARZĘDZIA ─────────────────────────────────────────
-  children.push(sectionHeader('TECHNOLOGIE I NARZĘDZIA'));
+  children.push(sectionHeader((data.technologiesTitle || 'TECHNOLOGIE I NARZĘDZIA').toUpperCase()));
   for (const tech of data.technologies) {
     children.push(new Paragraph({
       tabStops: [{ type: TabStopType.LEFT, position: TECH_TAB }],
       children: [
-        run(tech.category, { italics: true, color: TEAL, size: 18 }),
+        run(formatTechCategory(tech.category), { italics: true, color: TEAL, size: 18 }),
         new TextRun({ text: '\t', font: FONT, size: 18 }),
         run(tech.items, { size: 18 }),
       ],
@@ -256,7 +256,7 @@ export async function buildCVDocx(data: CVData): Promise<Blob> {
   // ── ZAINTERESOWANIA ─────────────────────────────────────────────────
   children.push(sectionHeader('ZAINTERESOWANIA'));
   children.push(new Paragraph({
-    children: [run(data.interests, { size: 18 })],
+    children: [run(formatInterests(data.interests), { size: 18 })],
     spacing: { after: 100 },
   }));
 

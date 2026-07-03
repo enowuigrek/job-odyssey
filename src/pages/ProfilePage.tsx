@@ -9,7 +9,7 @@ import {
   Upload,
   ExternalLink,
 } from 'lucide-react';
-import { PageHeader, CollapsibleItem } from '../components/ui';
+import { PageHeader, CollapsibleItem, Button } from '../components/ui';
 import { FieldLabel, TextInput, TextArea, LinksEditor, BulletsEditor, YearRangePicker } from '../components/forms/FormPrimitives';
 import { useProfile } from '../hooks/useProfile';
 import { useUserLinks } from '../hooks/useUserLinks';
@@ -419,16 +419,16 @@ export function ProfilePage() {
               </div>
             </CollapsibleItem>
           ))}
-          <button
+          <Button
             type="button"
+            size="sm"
             onClick={async () => {
               await addDescription({ name: '', content: '' });
               setLocalDescriptions(null);
             }}
-            className="flex items-center gap-1.5 text-sm text-primary-400 hover:text-primary-300 transition-colors cursor-pointer"
           >
-            <Plus className="w-4 h-4" /> Dodaj opis
-          </button>
+            <Plus className="w-4 h-4 mr-1.5" /> Dodaj opis
+          </Button>
         </div>
       )}
 
@@ -548,18 +548,18 @@ export function ProfilePage() {
                   </div>
                 ))}
 
-                <button
+                <Button
                   type="button"
+                  size="sm"
                   onClick={() => setLocalExperiences(prev =>
                     (prev ?? exps).map(ex => ex.id === exp.id
                       ? { ...ex, roles: [...ex.roles, { title: '', years: '', bullets: [] }] }
                       : ex
                     )
                   )}
-                  className="flex items-center gap-1.5 text-xs text-primary-400 hover:text-primary-300 transition-colors cursor-pointer"
                 >
-                  <Plus className="w-3.5 h-3.5" /> Dodaj stanowisko
-                </button>
+                  <Plus className="w-3.5 h-3.5 mr-1.5" /> Dodaj stanowisko
+                </Button>
 
                 <div className="flex justify-end">
                   <SaveButton
@@ -571,16 +571,16 @@ export function ProfilePage() {
               </div>
             </CollapsibleItem>
           ))}
-          <button
+          <Button
             type="button"
+            size="sm"
             onClick={async () => {
               await addExperience({ company: '', roles: [{ title: '', years: '', bullets: [] }] });
               setLocalExperiences(null);
             }}
-            className="flex items-center gap-1.5 text-sm text-primary-400 hover:text-primary-300 transition-colors cursor-pointer"
           >
-            <Plus className="w-4 h-4" /> Dodaj firmę
-          </button>
+            <Plus className="w-4 h-4 mr-1.5" /> Dodaj firmę
+          </Button>
         </div>
       )}
 
@@ -669,16 +669,16 @@ export function ProfilePage() {
               </div>
             </CollapsibleItem>
           ))}
-          <button
+          <Button
             type="button"
+            size="sm"
             onClick={async () => {
               await addProject({ name: '' });
               setLocalProjects(null);
             }}
-            className="flex items-center gap-1.5 text-sm text-primary-400 hover:text-primary-300 transition-colors cursor-pointer"
           >
-            <Plus className="w-4 h-4" /> Dodaj projekt
-          </button>
+            <Plus className="w-4 h-4 mr-1.5" /> Dodaj projekt
+          </Button>
         </div>
       )}
 
@@ -703,7 +703,7 @@ export function ProfilePage() {
                     onChange={v => setLocalTech(prev =>
                       (prev ?? tech).map(x => x.id === t.id ? { ...x, category: v } : x)
                     )}
-                    placeholder="Frontend:"
+                    placeholder="Frontend"
                   />
                 </div>
                 <div className="md:col-span-2">
@@ -726,16 +726,16 @@ export function ProfilePage() {
               </div>
             </CollapsibleItem>
           ))}
-          <button
+          <Button
             type="button"
+            size="sm"
             onClick={async () => {
               await addTechCategory({ category: '', items: '' });
               setLocalTech(null);
             }}
-            className="flex items-center gap-1.5 text-sm text-primary-400 hover:text-primary-300 transition-colors cursor-pointer"
           >
-            <Plus className="w-4 h-4" /> Dodaj kategorię
-          </button>
+            <Plus className="w-4 h-4 mr-1.5" /> Dodaj kategorię
+          </Button>
         </div>
       )}
 
@@ -792,16 +792,16 @@ export function ProfilePage() {
               </div>
             </CollapsibleItem>
           ))}
-          <button
+          <Button
             type="button"
+            size="sm"
             onClick={async () => {
               await addEducation({ school: '', degree: '', years: '' });
               setLocalEducation(null);
             }}
-            className="flex items-center gap-1.5 text-sm text-primary-400 hover:text-primary-300 transition-colors cursor-pointer"
           >
-            <Plus className="w-4 h-4" /> Dodaj wykształcenie
-          </button>
+            <Plus className="w-4 h-4 mr-1.5" /> Dodaj wykształcenie
+          </Button>
         </div>
       )}
 
@@ -906,16 +906,16 @@ export function ProfilePage() {
               </div>
             </CollapsibleItem>
           ))}
-          <button
+          <Button
             type="button"
+            size="sm"
             onClick={async () => {
               await addCertificate({ name: '', issuer: '', year: '' });
               setLocalCertificates(null);
             }}
-            className="flex items-center gap-1.5 text-sm text-primary-400 hover:text-primary-300 transition-colors cursor-pointer"
           >
-            <Plus className="w-4 h-4" /> Dodaj certyfikat
-          </button>
+            <Plus className="w-4 h-4 mr-1.5" /> Dodaj certyfikat
+          </Button>
         </div>
       )}
 
