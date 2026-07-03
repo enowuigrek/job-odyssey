@@ -77,7 +77,7 @@ function SaveButton({
       type="button"
       onClick={onClick}
       disabled={saving}
-      className={`flex items-center gap-1.5 px-4 py-2 text-sm font-medium transition-colors cursor-pointer disabled:opacity-60 ${
+      className={`fold-btn flex items-center gap-1.5 px-4 py-2 text-sm font-medium transition-colors cursor-pointer disabled:opacity-60 ${
         saved
           ? 'bg-success-500/20 text-success-400'
           : 'bg-primary-500 hover:bg-primary-400 text-slate-900'

@@ -717,7 +717,7 @@ export function InterviewsPage() {
                         <button
                           onClick={() => state.applications.length > 0 ? openModal() : undefined}
                           disabled={state.applications.length === 0}
-                          className="w-full py-2 flex items-center justify-center bg-primary-500 text-slate-900 hover:bg-primary-400 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                          className="fold-btn w-full py-2 flex items-center justify-center bg-primary-500 text-slate-900 hover:bg-primary-400 disabled:cursor-not-allowed transition-colors cursor-pointer"
                         >
                           <Plus className="w-4 h-4" />
                         </button>
@@ -734,7 +734,7 @@ export function InterviewsPage() {
                         <button
                           onClick={() => state.applications.length > 0 ? openModal() : undefined}
                           disabled={state.applications.length === 0}
-                          className="w-full mt-1 py-2 flex items-center justify-center bg-primary-500 text-slate-900 hover:bg-primary-400 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                          className="fold-btn w-full mt-1 py-2 flex items-center justify-center bg-primary-500 text-slate-900 hover:bg-primary-400 disabled:cursor-not-allowed transition-colors cursor-pointer"
                         >
                           <Plus className="w-4 h-4" />
                         </button>

@@ -434,7 +434,7 @@ textarea {
     -24px calc(100% + 24px)
   );
   /* Klapka — jaśniejszy trójkąt, jak prześwitujący spód kartki */
-  background-image: linear-gradient(225deg, transparent 50%, rgba(255, 255, 255, 0.22) 50%);
+  background-image: linear-gradient(225deg, transparent 50%, rgba(255, 255, 255, 0.3) 50%);
   background-repeat: no-repeat;
   background-position: top right;
   background-size: var(--fold) var(--fold);

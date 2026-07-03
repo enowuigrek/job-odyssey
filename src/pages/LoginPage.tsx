@@ -1,6 +1,7 @@
 import { useState, FormEvent } from 'react';
 import { ArrowLeft } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { Button } from '../components/ui';
 
 interface LoginPageProps {
   initialMode?: 'login' | 'register';
@@ -106,13 +107,9 @@ export function LoginPage({ initialMode = 'login', onBack }: LoginPageProps) {
               <p className="text-sm text-success-400 bg-success-500/10 px-3 py-2">{info}</p>
             )}
 
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="w-full py-2 bg-primary-600 hover:bg-primary-500 disabled:opacity-50 text-white font-medium transition-colors"
-            >
+            <Button type="submit" disabled={isSubmitting} className="w-full">
               {isSubmitting ? 'Proszę czekać...' : mode === 'login' ? 'Zaloguj się' : 'Zarejestruj się'}
-            </button>
+            </Button>
           </form>
         </div>
       </div>
