@@ -353,10 +353,8 @@ export function CVTemplate({ data }: CVTemplateProps) {
         </View>
 
         {/* ── Content sections, in user-defined order ─────────────── */}
-        {sectionOrder.map((key, i) => (
+        {sectionOrder.map((key) => (
           <React.Fragment key={key}>
-            {/* Spacer before whichever section ends up last — pins it to the page bottom */}
-            {i === sectionOrder.length - 1 && <View style={{ flexGrow: 1 }} />}
             {key === 'profile' && (
               <>
                 <SectionHeader title={(data.profileTitle || 'PROFIL').toUpperCase()} />
@@ -497,9 +495,12 @@ export function CVTemplate({ data }: CVTemplateProps) {
               </>
             )}
 
-            {key === 'rodo' && <Text style={s.rodo}>{data.rodo}</Text>}
           </React.Fragment>
         ))}
+
+        {/* ── RODO — always last, spacer pins it to the page bottom ── */}
+        <View style={{ flexGrow: 1 }} />
+        <Text style={s.rodo}>{data.rodo}</Text>
 
         {/* ── Page numbers ────────────────────────────────────────── */}
         <Text

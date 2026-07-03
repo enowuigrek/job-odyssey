@@ -8,8 +8,7 @@ export type SectionKey =
   | 'education'
   | 'certificates'
   | 'custom'
-  | 'interests'
-  | 'rodo';
+  | 'interests';
 
 export const DEFAULT_SECTION_ORDER: SectionKey[] = [
   'profile',
@@ -20,14 +19,15 @@ export const DEFAULT_SECTION_ORDER: SectionKey[] = [
   'certificates',
   'custom',
   'interests',
-  'rodo',
 ];
 
 /**
- * Resolves the final render order for content sections (Nagłówek/Kontakt
- * always stay first and aren't part of this). Honors data.sectionOrder for
- * any keys that still exist, then appends anything missing (e.g. a CV
- * saved before sectionOrder existed) at its default spot.
+ * Resolves the final render order for content sections. Nagłówek/Kontakt
+ * always stay first and Klauzula RODO always stays last (a trailing legal
+ * clause, not a "section" someone reorders) — neither is part of this.
+ * Honors data.sectionOrder for any keys that still exist, then appends
+ * anything missing (e.g. a CV saved before sectionOrder existed) at its
+ * default spot.
  */
 export function getSectionOrder(data: CVData): SectionKey[] {
   const stored = (data.sectionOrder ?? []) as SectionKey[];

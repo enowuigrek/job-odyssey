@@ -1,9 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { getRecentClicksForUser } from '../lib/db';
+import { getRecentClicksForUser, markAllClicksRead, dismissClick, dismissAllClicks } from '../lib/db';
 
-const LAST_SEEN_KEY_BASE = 'job-odyssey-last-seen-click';
-const DISMISSED_KEY_BASE = 'job-odyssey-dismissed-clicks';
 const POLL_INTERVAL = 30_000; // 30 sekund
 
 export interface ClickNotification {
@@ -12,38 +10,31 @@ export interface ClickNotification {
   label: string;
   applicationId: string;
   token: string;
+  readAt: string | null;
 }
 
 export function useClickNotifications(onNewClicks?: (applicationIds: string[]) => void) {
   const { user } = useAuth();
-  const lastSeenKey = `${LAST_SEEN_KEY_BASE}-${user?.id ?? 'anon'}`;
-  const dismissedKey = `${DISMISSED_KEY_BASE}-${user?.id ?? 'anon'}`;
   const [notifications, setNotifications] = useState<ClickNotification[]>([]);
-  const [unreadCount, setUnreadCount] = useState(0);
-  const [lastSeenAt, setLastSeenAt] = useState<string>(() => {
-    return localStorage.getItem(lastSeenKey) ?? new Date(0).toISOString();
-  });
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const prevNotifIdsRef = useRef<Set<string>>(new Set());
 
   const fetchClicks = useCallback(async () => {
     if (!user) return;
     const recent = await getRecentClicksForUser(user.id, 20);
-    setNotifications(recent);
-
-    const unread = recent.filter(n => n.clickedAt > lastSeenAt).length;
-    setUnreadCount(unread);
+    const mapped = recent.map(n => ({ ...n, readAt: n.readAt ?? null }));
+    setNotifications(mapped);
 
     // Wykryj nowe kliknięcia (których nie było przy poprzednim fetch)
     if (onNewClicks) {
-      const newClicks = recent.filter(n => !prevNotifIdsRef.current.has(n.id));
+      const newClicks = mapped.filter(n => !prevNotifIdsRef.current.has(n.id));
       if (newClicks.length > 0) {
         const appIds = [...new Set(newClicks.map(n => n.applicationId).filter(Boolean))];
         onNewClicks(appIds);
       }
     }
-    prevNotifIdsRef.current = new Set(recent.map(n => n.id));
-  }, [user, lastSeenAt, onNewClicks]);
+    prevNotifIdsRef.current = new Set(mapped.map(n => n.id));
+  }, [user, onNewClicks]);
 
   useEffect(() => {
     fetchClicks();
@@ -53,40 +44,24 @@ export function useClickNotifications(onNewClicks?: (applicationIds: string[]) =
     };
   }, [fetchClicks]);
 
-  const [dismissed, setDismissed] = useState<Set<string>>(() => {
-    try {
-      const raw = localStorage.getItem(dismissedKey);
-      return new Set(raw ? JSON.parse(raw) : []);
-    } catch { return new Set(); }
-  });
-
-  const visibleNotifications = notifications.filter(n => !dismissed.has(n.id));
+  const unreadCount = notifications.filter(n => !n.readAt).length;
 
   const markAllRead = useCallback(() => {
-    const now = new Date().toISOString();
-    localStorage.setItem(lastSeenKey, now);
-    setLastSeenAt(now);
-    setUnreadCount(0);
-  }, [lastSeenKey]);
+    if (!user) return;
+    setNotifications(prev => prev.map(n => (n.readAt ? n : { ...n, readAt: new Date().toISOString() })));
+    markAllClicksRead(user.id);
+  }, [user]);
 
   const dismissOne = useCallback((id: string) => {
-    setDismissed(prev => {
-      const next = new Set(prev);
-      next.add(id);
-      localStorage.setItem(dismissedKey, JSON.stringify([...next]));
-      return next;
-    });
-  }, [dismissedKey]);
+    setNotifications(prev => prev.filter(n => n.id !== id));
+    dismissClick(id);
+  }, []);
 
   const dismissAll = useCallback(() => {
-    const ids = notifications.map(n => n.id);
-    setDismissed(prev => {
-      const next = new Set([...prev, ...ids]);
-      localStorage.setItem(dismissedKey, JSON.stringify([...next]));
-      return next;
-    });
-    markAllRead();
-  }, [notifications, markAllRead, dismissedKey]);
+    if (!user) return;
+    setNotifications([]);
+    dismissAllClicks(user.id);
+  }, [user]);
 
-  return { notifications: visibleNotifications, unreadCount, markAllRead, dismissOne, dismissAll, refetch: fetchClicks };
+  return { notifications, unreadCount, markAllRead, dismissOne, dismissAll, refetch: fetchClicks };
 }

@@ -51,7 +51,6 @@ export function LoginPage({ initialMode = 'login', onBack }: LoginPageProps) {
         )}
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-slate-100">Job Odyssey</h1>
-          <p className="text-slate-400 mt-2">Twój osobisty CRM do rekrutacji</p>
         </div>
 
         <div className="bg-dark-800 p-6 border border-dark-700">

@@ -156,7 +156,7 @@ function DraggableSection({
 
 function ItemCard({ children, onRemove }: { children: React.ReactNode; onRemove: () => void }) {
   return (
-    <div className="bg-dark-800 border border-dark-600 p-4 mb-3 relative">
+    <div className="bg-dark-800 p-4 mb-3 relative">
       <button
         type="button"
         onClick={onRemove}
@@ -435,7 +435,7 @@ export function CVEditorPage() {
 
       {!showPreview && (<>
       {/* CV name — required */}
-      <div className="bg-dark-800 border border-dark-600 p-4">
+      <div className="bg-dark-800 p-4">
         <FieldLabel>Nazwa CV (widoczna w Bazie CV) *</FieldLabel>
         <TextInput
           value={cvName}
@@ -888,18 +888,17 @@ export function CVEditorPage() {
       )}
       </DraggableSection>
 
-      {/* ── RODO ──────────────────────────────────────────────────────── */}
-      <DraggableSection order={orderOf('rodo')} dragProps={sectionDrag.getItemProps(orderOf('rodo'))}>
-      <SectionHeading
-        title="Klauzula RODO"
-        collapsed={collapsed['rodo']}
-        onToggleCollapse={() => toggle('rodo')}
-        draggable
-      />
-      {!collapsed['rodo'] && (
-        <TextArea value={data.rodo} onChange={v => set({ rodo: v })} rows={2} placeholder="Wyrażam zgodę na przetwarzanie…" />
-      )}
-      </DraggableSection>
+      {/* ── RODO — zawsze na końcu, nieprzesuwalna ──────────────────────── */}
+      <div style={{ order: 999 }}>
+        <SectionHeading
+          title="Klauzula RODO"
+          collapsed={collapsed['rodo']}
+          onToggleCollapse={() => toggle('rodo')}
+        />
+        {!collapsed['rodo'] && (
+          <TextArea value={data.rodo} onChange={v => set({ rodo: v })} rows={2} placeholder="Wyrażam zgodę na przetwarzanie…" />
+        )}
+      </div>
 
       </>)}
 

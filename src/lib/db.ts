@@ -339,6 +339,7 @@ export interface TrackingClick {
   clickedAt: string;
   userAgent?: string;
   referrer?: string;
+  readAt?: string | null;
 }
 
 export async function createTrackingLinks(
@@ -422,6 +423,7 @@ export async function getRecentClicksForUser(userId: string, limit = 20): Promis
     .from('cv_clicks')
     .select('*')
     .in('token', tokens)
+    .is('dismissed_at', null)
     .order('clicked_at', { ascending: false })
     .limit(limit);
 
@@ -435,10 +437,48 @@ export async function getRecentClicksForUser(userId: string, limit = 20): Promis
       clickedAt: r.clicked_at,
       userAgent: r.user_agent ?? undefined,
       referrer: r.referrer ?? undefined,
+      readAt: r.read_at ?? null,
       label: link?.label ?? 'Nieznany link',
       applicationId: link?.application_id ?? '',
     };
   });
+}
+
+export async function markAllClicksRead(userId: string): Promise<void> {
+  const { data: links } = await supabase
+    .from('cv_tracking_links')
+    .select('token')
+    .eq('user_id', userId);
+  if (!links || links.length === 0) return;
+
+  const tokens = links.map(l => l.token);
+  await supabase
+    .from('cv_clicks')
+    .update({ read_at: new Date().toISOString() })
+    .in('token', tokens)
+    .is('read_at', null);
+}
+
+export async function dismissClick(clickId: string): Promise<void> {
+  await supabase
+    .from('cv_clicks')
+    .update({ dismissed_at: new Date().toISOString() })
+    .eq('id', clickId);
+}
+
+export async function dismissAllClicks(userId: string): Promise<void> {
+  const { data: links } = await supabase
+    .from('cv_tracking_links')
+    .select('token')
+    .eq('user_id', userId);
+  if (!links || links.length === 0) return;
+
+  const tokens = links.map(l => l.token);
+  await supabase
+    .from('cv_clicks')
+    .update({ dismissed_at: new Date().toISOString() })
+    .in('token', tokens)
+    .is('dismissed_at', null);
 }
 
 export async function getDistinctTrackingLinksForUser(

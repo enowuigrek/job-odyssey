@@ -272,15 +272,14 @@ export async function buildCVDocx(data: CVData): Promise<Blob> {
           spacing: { after: 100 },
         }));
         break;
-
-      case 'rodo':
-        children.push(new Paragraph({
-          children: [run(data.rodo, { italics: true, size: 15, color: GRAY })],
-          spacing: { before: 400, after: 0 },
-        }));
-        break;
     }
   }
+
+  // ── RODO — always last ─────────────────────────────────────────────
+  children.push(new Paragraph({
+    children: [run(data.rodo, { italics: true, size: 15, color: GRAY })],
+    spacing: { before: 400, after: 0 },
+  }));
 
   // ---------------------------------------------------------------------------
   // Build document

@@ -81,10 +81,8 @@ export function CVHtml({ data, preview = false }: Props) {
       </div>
 
       {/* ── Content sections, in user-defined order ─────────────── */}
-      {sectionOrder.map((key, i) => (
+      {sectionOrder.map((key) => (
         <Fragment key={key}>
-          {/* Spacer before whichever section ends up last — pins it to the page bottom */}
-          {i === sectionOrder.length - 1 && <div className="cv-rodo-spacer" />}
           {key === 'profile' && (
             <>
               <div className="cv-section-header">
@@ -223,9 +221,12 @@ export function CVHtml({ data, preview = false }: Props) {
             </>
           )}
 
-          {key === 'rodo' && <p className="cv-rodo">{data.rodo}</p>}
         </Fragment>
       ))}
+
+      {/* ── RODO — always last, spacer pins it to the page bottom ── */}
+      <div className="cv-rodo-spacer" />
+      <p className="cv-rodo">{data.rodo}</p>
     </div>
   );
 
