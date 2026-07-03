@@ -566,7 +566,7 @@ export function InterviewsPage() {
           placeholder="Szukaj po firmie lub stanowisku..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full px-4 py-2 bg-dark-700 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-primary-500"
+          className="w-full px-4 py-2 bg-dark-700 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-primary-500"
         />
 
         {/* Mobile: toggle button */}
@@ -620,7 +620,7 @@ export function InterviewsPage() {
               className={`px-3 py-1 text-xs transition-colors cursor-pointer ${
                 statusFilters.includes(opt.value as InterviewStatus)
                   ? 'bg-primary-500 text-slate-900'
-                  : 'bg-dark-700 text-slate-400 hover:text-slate-100 hover:bg-dark-600'
+                  : 'bg-dark-700 text-slate-400 hover:text-white hover:bg-dark-600'
               }`}
             >
               {opt.label}

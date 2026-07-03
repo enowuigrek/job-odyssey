@@ -20,7 +20,7 @@ export function Textarea({ label, error, className = '', value, ...props }: Text
         ref={ref}
         value={value}
         className={`
-          w-full px-4 py-3 bg-dark-700 text-slate-100 placeholder-slate-500 resize-none overflow-hidden min-h-[120px]
+          w-full px-4 py-3 bg-dark-700 text-white placeholder-slate-500 resize-none overflow-hidden min-h-[120px]
           focus:outline-none focus:ring-2 focus:ring-primary-500
           disabled:bg-dark-900 disabled:cursor-not-allowed disabled:text-slate-600
           transition-all

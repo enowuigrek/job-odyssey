@@ -10,7 +10,7 @@ import {
   ExternalLink,
 } from 'lucide-react';
 import { PageHeader, CollapsibleItem } from '../components/ui';
-import { FieldLabel, TextInput, TextArea, LinksEditor, BulletsEditor } from '../components/forms/FormPrimitives';
+import { FieldLabel, TextInput, TextArea, LinksEditor, BulletsEditor, YearRangePicker } from '../components/forms/FormPrimitives';
 import { useProfile } from '../hooks/useProfile';
 import { useUserLinks } from '../hooks/useUserLinks';
 import { useDragReorder } from '../hooks/useDragReorder';
@@ -473,7 +473,7 @@ export function ProfilePage() {
                           );
                         }}
                         placeholder="Etykieta"
-                        className="w-24 px-2 py-1.5 bg-dark-700 text-slate-100 text-sm font-light placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-primary-500 flex-shrink-0"
+                        className="w-24 px-2 py-1.5 bg-dark-700 text-white text-sm font-light placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-primary-500 flex-shrink-0"
                       />
                       <input
                         value={exp.company_link?.url ?? ''}
@@ -488,7 +488,7 @@ export function ProfilePage() {
                           );
                         }}
                         placeholder="https://…"
-                        className="flex-1 px-2 py-1.5 bg-dark-700 text-slate-100 text-sm font-light placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-primary-500 min-w-0"
+                        className="flex-1 px-2 py-1.5 bg-dark-700 text-white text-sm font-light placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-primary-500 min-w-0"
                       />
                     </div>
                   </div>
@@ -508,18 +508,32 @@ export function ProfilePage() {
                     >
                       <Trash2 className="w-3 h-3" />
                     </button>
-                    <div className="pr-6 mb-3">
-                      <FieldLabel light>Stanowisko | lata</FieldLabel>
-                      <TextInput light
-                        value={role.title}
-                        onChange={v => setLocalExperiences(prev =>
-                          (prev ?? exps).map(ex => ex.id === exp.id
-                            ? { ...ex, roles: updateAt(ex.roles, ri, { ...role, title: v }) }
-                            : ex
-                          )
-                        )}
-                        placeholder="Senior Developer | 2023 – obecnie"
-                      />
+                    <div className="pr-6 mb-3 grid grid-cols-1 md:grid-cols-2 gap-2">
+                      <div>
+                        <FieldLabel light>Stanowisko</FieldLabel>
+                        <TextInput light
+                          value={role.title}
+                          onChange={v => setLocalExperiences(prev =>
+                            (prev ?? exps).map(ex => ex.id === exp.id
+                              ? { ...ex, roles: updateAt(ex.roles, ri, { ...role, title: v }) }
+                              : ex
+                            )
+                          )}
+                          placeholder="Senior Developer"
+                        />
+                      </div>
+                      <div>
+                        <FieldLabel light>Lata</FieldLabel>
+                        <YearRangePicker light
+                          value={role.years ?? ''}
+                          onChange={v => setLocalExperiences(prev =>
+                            (prev ?? exps).map(ex => ex.id === exp.id
+                              ? { ...ex, roles: updateAt(ex.roles, ri, { ...role, years: v }) }
+                              : ex
+                            )
+                          )}
+                        />
+                      </div>
                     </div>
                     <FieldLabel light>Punkty</FieldLabel>
                     <BulletsEditor light
@@ -538,7 +552,7 @@ export function ProfilePage() {
                   type="button"
                   onClick={() => setLocalExperiences(prev =>
                     (prev ?? exps).map(ex => ex.id === exp.id
-                      ? { ...ex, roles: [...ex.roles, { title: '', bullets: [] }] }
+                      ? { ...ex, roles: [...ex.roles, { title: '', years: '', bullets: [] }] }
                       : ex
                     )
                   )}
@@ -560,7 +574,7 @@ export function ProfilePage() {
           <button
             type="button"
             onClick={async () => {
-              await addExperience({ company: '', roles: [{ title: '', bullets: [] }] });
+              await addExperience({ company: '', roles: [{ title: '', years: '', bullets: [] }] });
               setLocalExperiences(null);
             }}
             className="flex items-center gap-1.5 text-sm text-primary-400 hover:text-primary-300 transition-colors cursor-pointer"
@@ -761,12 +775,11 @@ export function ProfilePage() {
                 </div>
                 <div>
                   <FieldLabel light>Lata</FieldLabel>
-                  <TextInput light
+                  <YearRangePicker light
                     value={e.years}
                     onChange={v => setLocalEducation(prev =>
                       (prev ?? edu).map(x => x.id === e.id ? { ...x, years: v } : x)
                     )}
-                    placeholder="2019 – 2023"
                   />
                 </div>
               </div>

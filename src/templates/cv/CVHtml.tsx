@@ -1,6 +1,7 @@
 import { ReactElement } from 'react';
 import './CVHtml.css';
 import { CVData, CVLink } from './types';
+import { formatRoleLabel } from './formatRole';
 
 interface Props {
   data: CVData;
@@ -145,7 +146,7 @@ export function CVHtml({ data, preview = false }: Props) {
           </div>
           {exp.roles.map(role => (
             <div key={role.title} className="cv-exp-role-block">
-              <div className="cv-exp-role">{role.title}</div>
+              <div className="cv-exp-role">{formatRoleLabel(role)}</div>
               {role.bullets.map((bullet, bi) => (
                 <div key={bi} className="cv-bullet">
                   <span className="cv-bullet-dot">•</span>

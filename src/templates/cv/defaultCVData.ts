@@ -50,8 +50,8 @@ export const defaultCVData: CVData = {
       company: 'NAZWA FIRMY',
       roles: [
         {
-          title: 'Stanowisko | 2022 – obecnie',
-          years: '',
+          title: 'Stanowisko',
+          years: '2022 – obecnie',
           bullets: [
             'Opisz swoje główne obowiązki i osiągnięcia — używaj liczb i konkretów tam gdzie możesz.',
             'Kolejny punkt — co zbudowałeś, co usprawniłeś, jaki miałeś wpływ na projekt lub firmę.',
@@ -64,8 +64,8 @@ export const defaultCVData: CVData = {
       company: 'POPRZEDNIA FIRMA',
       roles: [
         {
-          title: 'Stanowisko | 2019 – 2022',
-          years: '',
+          title: 'Stanowisko',
+          years: '2019 – 2022',
           bullets: [
             'Opis doświadczenia z poprzedniej pracy.',
             'Kluczowe osiągnięcia i odpowiedzialności.',

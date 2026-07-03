@@ -5,7 +5,7 @@ import { Plus, Trash2, Save, Eye, EyeOff, ArrowLeft, FileEdit, Pencil, Check, Lo
 import { pdf } from '@react-pdf/renderer';
 import type { DocumentProps } from '@react-pdf/renderer';
 import { Button, PageHeader, CollapsibleItem, Checkbox } from '../components/ui';
-import { FieldLabel, TextInput, TextArea, LinksEditor, BulletsEditor } from '../components/forms/FormPrimitives';
+import { FieldLabel, TextInput, TextArea, LinksEditor, BulletsEditor, YearRangePicker } from '../components/forms/FormPrimitives';
 import type { CVData } from '../templates/cv/types';
 import { defaultCVData } from '../templates/cv/defaultCVData';
 import { CVTemplate } from '../templates/cv/CVTemplate';
@@ -608,7 +608,7 @@ export function CVEditorPage() {
                           set({ experience: updateAt(data.experience, ei, { ...exp, companyLink: label || url ? { label, url } : undefined }) });
                         }}
                         placeholder="Etykieta"
-                        className="w-24 px-2 py-1.5 bg-dark-700 text-slate-100 text-sm placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-primary-500 flex-shrink-0"
+                        className="w-24 px-2 py-1.5 bg-dark-700 text-white text-sm placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-primary-500 flex-shrink-0"
                       />
                       <input
                         value={exp.companyLink?.url ?? ''}
@@ -618,7 +618,7 @@ export function CVEditorPage() {
                           set({ experience: updateAt(data.experience, ei, { ...exp, companyLink: label || url ? { label, url } : undefined }) });
                         }}
                         placeholder="https://…"
-                        className="flex-1 px-2 py-1.5 bg-dark-700 text-slate-100 text-sm placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-primary-500 min-w-0"
+                        className="flex-1 px-2 py-1.5 bg-dark-700 text-white text-sm placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-primary-500 min-w-0"
                       />
                     </div>
                   </div>
@@ -633,13 +633,22 @@ export function CVEditorPage() {
                     >
                       <Trash2 className="w-3 h-3" />
                     </button>
-                    <div className="pr-6 mb-3">
-                      <FieldLabel>Stanowisko | lata</FieldLabel>
-                      <TextInput
-                        value={role.title}
-                        onChange={v => set({ experience: updateAt(data.experience, ei, { ...exp, roles: updateAt(exp.roles, ri, { ...role, title: v }) }) })}
-                        placeholder="Senior Developer | 2023 – obecnie"
-                      />
+                    <div className="pr-6 mb-3 grid grid-cols-1 md:grid-cols-2 gap-2">
+                      <div>
+                        <FieldLabel>Stanowisko</FieldLabel>
+                        <TextInput
+                          value={role.title}
+                          onChange={v => set({ experience: updateAt(data.experience, ei, { ...exp, roles: updateAt(exp.roles, ri, { ...role, title: v }) }) })}
+                          placeholder="Senior Developer"
+                        />
+                      </div>
+                      <div>
+                        <FieldLabel>Lata</FieldLabel>
+                        <YearRangePicker
+                          value={role.years}
+                          onChange={v => set({ experience: updateAt(data.experience, ei, { ...exp, roles: updateAt(exp.roles, ri, { ...role, years: v }) }) })}
+                        />
+                      </div>
                     </div>
                     <FieldLabel>Punkty</FieldLabel>
                     <BulletsEditor
@@ -661,7 +670,7 @@ export function CVEditorPage() {
           <ProfileImportMenu
             items={experiences}
             labelFn={e => e.company}
-            onImport={items => set({ experience: [...data.experience, ...items.map(e => ({ company: e.company, companyLink: e.company_link, roles: e.roles.map(r => ({ title: r.title, years: '', bullets: r.bullets })) }))] })}
+            onImport={items => set({ experience: [...data.experience, ...items.map(e => ({ company: e.company, companyLink: e.company_link, roles: e.roles.map(r => ({ title: r.title, years: r.years ?? '', bullets: r.bullets })) }))] })}
             primaryLabel="Dodaj firmę"
           />
         </>
@@ -693,7 +702,7 @@ export function CVEditorPage() {
                 </div>
                 <div>
                   <FieldLabel>Lata</FieldLabel>
-                  <TextInput value={edu.years} onChange={v => set({ education: updateAt(data.education, edi, { ...edu, years: v }) })} placeholder="2019 – 2023" />
+                  <YearRangePicker value={edu.years} onChange={v => set({ education: updateAt(data.education, edi, { ...edu, years: v }) })} />
                 </div>
               </div>
             </CollapsibleItem>

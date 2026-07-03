@@ -35,8 +35,60 @@ export function TextInput({
       value={value}
       onChange={e => onChange(e.target.value)}
       placeholder={placeholder}
-      className={`w-full px-3 py-1.5 bg-dark-700 text-slate-100 text-sm${light ? ' font-light' : ''} placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-primary-500 ${className}`}
+      className={`w-full px-3 py-1.5 bg-dark-700 text-white text-sm${light ? ' font-light' : ''} placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-primary-500 ${className}`}
     />
+  );
+}
+
+const CURRENT_YEAR = new Date().getFullYear();
+const YEAR_OPTIONS = Array.from({ length: CURRENT_YEAR - 1970 + 2 }, (_, i) => String(CURRENT_YEAR + 1 - i));
+
+function parseYearRange(value: string): { from: string; to: string } {
+  const [from = '', to = ''] = value.split('–').map(s => s.trim());
+  return { from, to };
+}
+
+function formatYearRange(from: string, to: string): string {
+  if (!from && !to) return '';
+  if (from && !to) return from;
+  if (!from && to) return to;
+  return `${from} – ${to}`;
+}
+
+/** Two dropdowns ("Od" / "Do", "Do" also offers "Obecnie") composing a "YYYY – YYYY" / "YYYY – obecnie" string. */
+export function YearRangePicker({
+  value,
+  onChange,
+  light = false,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  light?: boolean;
+}) {
+  const { from, to } = parseYearRange(value);
+  const selectClass = `px-2 py-1.5 bg-dark-700 text-white text-sm${light ? ' font-light' : ''} focus:outline-none focus:ring-1 focus:ring-primary-500 cursor-pointer`;
+
+  return (
+    <div className="flex items-center gap-2">
+      <select
+        value={from}
+        onChange={e => onChange(formatYearRange(e.target.value, to))}
+        className={selectClass}
+      >
+        <option value="">Od</option>
+        {YEAR_OPTIONS.map(y => <option key={y} value={y}>{y}</option>)}
+      </select>
+      <span className="text-slate-500 text-sm flex-shrink-0">–</span>
+      <select
+        value={to}
+        onChange={e => onChange(formatYearRange(from, e.target.value))}
+        className={selectClass}
+      >
+        <option value="">Do</option>
+        <option value="obecnie">Obecnie</option>
+        {YEAR_OPTIONS.map(y => <option key={y} value={y}>{y}</option>)}
+      </select>
+    </div>
   );
 }
 
@@ -62,7 +114,7 @@ export function TextArea({
       onChange={e => onChange(e.target.value)}
       placeholder={placeholder}
       rows={rows}
-      className={`w-full px-3 py-2 bg-dark-700 text-slate-100 text-sm${light ? ' font-light' : ''} placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-primary-500 resize-none overflow-hidden`}
+      className={`w-full px-3 py-2 bg-dark-700 text-white text-sm${light ? ' font-light' : ''} placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-primary-500 resize-none overflow-hidden`}
     />
   );
 }
@@ -89,13 +141,13 @@ export function LinksEditor<T extends LabelUrl>({
             value={link.label}
             onChange={e => onChange(updateAt(links, i, { ...link, label: e.target.value }))}
             placeholder="Etykieta"
-            className={`w-28 px-2 py-1.5 bg-dark-700 text-slate-100 text-sm${light ? ' font-light' : ''} placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-primary-500 flex-shrink-0`}
+            className={`w-28 px-2 py-1.5 bg-dark-700 text-white text-sm${light ? ' font-light' : ''} placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-primary-500 flex-shrink-0`}
           />
           <input
             value={link.url}
             onChange={e => onChange(updateAt(links, i, { ...link, url: e.target.value }))}
             placeholder="https://..."
-            className={`flex-1 px-2 py-1.5 bg-dark-700 text-slate-100 text-sm${light ? ' font-light' : ''} placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-primary-500 min-w-0`}
+            className={`flex-1 px-2 py-1.5 bg-dark-700 text-white text-sm${light ? ' font-light' : ''} placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-primary-500 min-w-0`}
           />
           <button
             type="button"
@@ -139,7 +191,7 @@ function BulletRow({
         onChange={e => onChange(e.target.value)}
         rows={2}
         placeholder="Opis..."
-        className={`flex-1 px-2 py-1.5 bg-dark-700 text-slate-100 text-sm${light ? ' font-light' : ''} placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-primary-500 resize-none overflow-hidden min-w-0`}
+        className={`flex-1 px-2 py-1.5 bg-dark-700 text-white text-sm${light ? ' font-light' : ''} placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-primary-500 resize-none overflow-hidden min-w-0`}
       />
       <button
         type="button"

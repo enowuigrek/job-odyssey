@@ -10,6 +10,7 @@ import {
 } from '@react-pdf/renderer';
 import { CVData, CVLink } from './types';
 import { TEAL, TEAL_LIGHT, BLACK, GRAY } from './colors';
+import { formatRoleLabel } from './formatRole';
 
 // ---------------------------------------------------------------------------
 // Font registration
@@ -420,7 +421,7 @@ export function CVTemplate({ data }: CVTemplateProps) {
               </View>
               {exp.roles[0] && (
                 <View style={s.expRoleBlock}>
-                  <Text style={s.expRole}>{exp.roles[0].title}</Text>
+                  <Text style={s.expRole}>{formatRoleLabel(exp.roles[0])}</Text>
                   {exp.roles[0].bullets.map((bullet, bi) => (
                     <Bullet key={bi} text={bullet} />
                   ))}
@@ -430,7 +431,7 @@ export function CVTemplate({ data }: CVTemplateProps) {
             {/* Remaining roles can break freely */}
             {exp.roles.slice(1).map(role => (
               <View key={role.title} style={s.expRoleBlock} wrap={false}>
-                <Text style={s.expRole}>{role.title}</Text>
+                <Text style={s.expRole}>{formatRoleLabel(role)}</Text>
                 {role.bullets.map((bullet, bi) => (
                   <Bullet key={bi} text={bullet} />
                 ))}

@@ -318,7 +318,7 @@ export function QuestionsPage() {
           placeholder="Szukaj pytań..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full px-4 py-2 bg-dark-700 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-primary-500"
+          className="w-full px-4 py-2 bg-dark-700 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-primary-500"
         />
       </div>
 

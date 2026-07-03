@@ -30,6 +30,7 @@ export interface ProfileDescription {
 
 export interface ProfileExperienceRole {
   title: string;
+  years?: string;
   bullets: string[];
 }
 

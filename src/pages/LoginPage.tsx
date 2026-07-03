@@ -82,7 +82,7 @@ export function LoginPage({ initialMode = 'login', onBack }: LoginPageProps) {
                 value={email}
                 onChange={e => setEmail(e.target.value)}
                 required
-                className="w-full px-3 py-2 bg-dark-700 text-slate-100 placeholder-slate-500 border border-dark-600 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                className="w-full px-3 py-2 bg-dark-700 text-white placeholder-slate-500 border border-dark-600 focus:outline-none focus:ring-2 focus:ring-primary-500"
                 placeholder="ty@email.com"
               />
             </div>
@@ -95,7 +95,7 @@ export function LoginPage({ initialMode = 'login', onBack }: LoginPageProps) {
                 onChange={e => setPassword(e.target.value)}
                 required
                 minLength={6}
-                className="w-full px-3 py-2 bg-dark-700 text-slate-100 placeholder-slate-500 border border-dark-600 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                className="w-full px-3 py-2 bg-dark-700 text-white placeholder-slate-500 border border-dark-600 focus:outline-none focus:ring-2 focus:ring-primary-500"
                 placeholder="min. 6 znaków"
               />
             </div>
