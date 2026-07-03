@@ -308,7 +308,7 @@ export function InterviewsPage() {
     };
 
     const cardContent = (
-      <Card className={`hover:shadow-md transition-shadow group ${isTodayInterview ? 'ring-2 ring-warning-400 bg-warning-500/10' : ''}`}>
+      <Card fold className={`group ${isTodayInterview ? 'ring-2 ring-warning-400 bg-warning-500/10' : ''}`}>
         <div className="p-0">
           {/* Główna sekcja - klikalna aby rozwinąć */}
           <div

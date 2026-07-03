@@ -97,6 +97,7 @@ function mapCV(row: Record<string, unknown>): CV {
     keywords: (row.keywords as string[]) ?? undefined,
     isDefault: row.is_default as boolean,
     notes: row.notes as string | undefined,
+    sortOrder: (row.sort_order as number | null) ?? undefined,
     createdAt: row.created_at as string,
     updatedAt: row.updated_at as string,
   };
@@ -112,6 +113,7 @@ function toDbCV(cv: CV, userId: string) {
     keywords: cv.keywords ?? null,
     is_default: cv.isDefault,
     notes: cv.notes ?? null,
+    sort_order: cv.sortOrder ?? null,
     created_at: cv.createdAt,
     updated_at: cv.updatedAt,
   };

@@ -465,7 +465,7 @@ export function ApplicationsPage() {
     };
 
     const cardContent = (
-      <Card className="transition-shadow group">
+      <Card fold className="group">
         <div className="p-0">
           {/* Główna sekcja - klikalna aby rozwinąć */}
           <div
@@ -1102,7 +1102,7 @@ export function ApplicationsPage() {
           <div className="sticky top-0 z-10 bg-dark-900 border-b border-dark-700 px-4 py-2 flex justify-end">
             <button
               onClick={() => setPreviewCvData(null)}
-              className="px-3 py-1.5 text-sm bg-dark-700 hover:bg-dark-600 text-slate-300 transition-colors cursor-pointer"
+              className="fold-btn px-3 py-1.5 text-sm bg-dark-700 hover:bg-dark-600 text-slate-300 transition-colors cursor-pointer"
             >
               Zamknij
             </button>

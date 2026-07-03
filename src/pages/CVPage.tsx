@@ -4,6 +4,8 @@ import { Plus, FileText, Star, Trash2, Edit, Tag, Download, FileOutput, Eye } fr
 
 import { useApp } from '../contexts/AppContext';
 import { getCVDataById } from '../lib/generateCV';
+import { useDragReorder } from '../hooks/useDragReorder';
+import { moveAt } from '../utils/array';
 import {
   Button,
   Input,
@@ -60,11 +62,23 @@ export function CVPage() {
         return matchesSearch;
       })
       .sort((a, b) => {
+        // Własna kolejność (drag & drop) ma pierwszeństwo; CV bez sortOrder
+        // lądują na końcu w starym porządku (domyślne pierwsze, potem najnowsze)
+        const ao = a.sortOrder ?? Number.MAX_SAFE_INTEGER;
+        const bo = b.sortOrder ?? Number.MAX_SAFE_INTEGER;
+        if (ao !== bo) return ao - bo;
         if (a.isDefault && !b.isDefault) return -1;
         if (!a.isDefault && b.isDefault) return 1;
         return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
       });
   }, [state.cvs, searchQuery]);
+
+  const cvsDrag = useDragReorder((from, to) => {
+    dispatch({
+      type: 'REORDER_CVS',
+      payload: { orderedIds: moveAt(filteredCVs.map(c => c.id), from, to) },
+    });
+  });
 
   const openModal = (cv: CV) => {
     setEditingCV(cv);
@@ -209,8 +223,15 @@ export function CVPage() {
         />
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {filteredCVs.map((cv) => (
-            <Card key={cv.id} fold className="min-w-0">
+          {filteredCVs.map((cv, cvi) => {
+            const { isDragging, isDragOver, ...dragDom } = cvsDrag.getItemProps(cvi);
+            return (
+            <div
+              key={cv.id}
+              className={`min-w-0 transition-opacity ${isDragging ? 'opacity-40' : ''} ${isDragOver ? 'ring-2 ring-primary-500/50' : ''}`}
+              {...dragDom}
+            >
+            <Card fold className="min-w-0 h-full">
               <CardBody>
                 <div className="flex items-start justify-between gap-2 mb-3">
                   <div className="min-w-0 flex-1">
@@ -314,7 +335,9 @@ export function CVPage() {
                 </div>
               </CardBody>
             </Card>
-          ))}
+            </div>
+            );
+          })}
         </div>
       )}
 
@@ -405,7 +428,7 @@ export function CVPage() {
             <div className="sticky top-0 z-10 bg-dark-900 border-b border-dark-700 px-4 py-2 flex justify-end">
               <button
                 onClick={() => setPreviewCvId(null)}
-                className="px-3 py-1.5 text-sm bg-dark-700 hover:bg-dark-600 text-slate-300 transition-colors cursor-pointer"
+                className="fold-btn px-3 py-1.5 text-sm bg-dark-700 hover:bg-dark-600 text-slate-300 transition-colors cursor-pointer"
               >
                 Zamknij
               </button>

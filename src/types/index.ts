@@ -77,6 +77,7 @@ export interface CV {
   isDefault: boolean;
   usedInApplications?: string[]; // ID aplikacji
   notes?: string;
+  sortOrder?: number; // własna kolejność kafelków w Bazie CV (drag & drop)
   createdAt: string;
   updatedAt: string;
 }

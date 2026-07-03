@@ -67,7 +67,7 @@ function SectionHeading({
 
   return (
     <div
-      className={`bg-dark-800 mb-2 mt-6 flex items-center gap-2 px-3 py-2.5 transition-colors select-none${
+      className={`flex items-center gap-2 pl-3 py-2.5 transition-colors select-none ${collapsed ? 'pr-3' : 'pr-8'}${
         onToggleCollapse ? ' cursor-pointer hover:bg-dark-700' : ''
       }`}
       onClick={editing ? undefined : onToggleCollapse}
@@ -136,17 +136,19 @@ function SectionHeading({
 function DraggableSection({
   order,
   dragProps,
+  expanded = false,
   children,
 }: {
   order: number;
   dragProps: ReturnType<ReturnType<typeof useDragReorder>['getItemProps']>;
+  expanded?: boolean;
   children: React.ReactNode;
 }) {
   const { isDragging, isDragOver, ...domDragProps } = dragProps;
   return (
     <div
       style={{ order }}
-      className={`transition-opacity ${isDragging ? 'opacity-40' : ''} ${isDragOver ? 'ring-2 ring-primary-500/50' : ''}`}
+      className={`bg-dark-800 ${expanded ? 'fold-card' : ''} transition-opacity ${isDragging ? 'opacity-40' : ''} ${isDragOver ? 'ring-2 ring-primary-500/50' : ''}`}
       {...domDragProps}
     >
       {children}
@@ -156,7 +158,7 @@ function DraggableSection({
 
 function ItemCard({ children, onRemove }: { children: React.ReactNode; onRemove: () => void }) {
   return (
-    <div className="bg-dark-800 p-4 mb-3 relative">
+    <div className="bg-dark-700/60 p-4 mb-3 relative">
       <button
         type="button"
         onClick={onRemove}
@@ -417,7 +419,7 @@ export function CVEditorPage() {
   const handlePreview = () => setShowPreview(v => !v);
 
   return (
-    <div className={showPreview ? 'pb-20' : 'flex flex-col gap-2 pb-28'}>
+    <div className={showPreview ? 'pb-20' : 'flex flex-col gap-3 pb-28'}>
       {!showPreview && (
       <PageHeader
         icon={FileEdit}
@@ -445,13 +447,14 @@ export function CVEditorPage() {
       </div>
 
       {/* ── Nagłówek ─────────────────────────────────────────────────── */}
+      <div className={`bg-dark-800 ${!collapsed['header'] ? 'fold-card' : ''}`}>
       <SectionHeading
         title="Nagłówek"
         collapsed={collapsed['header']}
         onToggleCollapse={() => toggle('header')}
       />
       {!collapsed['header'] && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div className="px-4 pb-4 grid grid-cols-1 md:grid-cols-2 gap-3">
           <div>
             <FieldLabel>Imię i nazwisko</FieldLabel>
             <TextInput value={data.name} onChange={v => set({ name: v })} placeholder="IMIĘ NAZWISKO" />
@@ -462,15 +465,17 @@ export function CVEditorPage() {
           </div>
         </div>
       )}
+      </div>
 
       {/* ── Kontakt ──────────────────────────────────────────────────── */}
+      <div className={`bg-dark-800 ${!collapsed['contact'] ? 'fold-card' : ''}`}>
       <SectionHeading
         title="Kontakt"
         collapsed={collapsed['contact']}
         onToggleCollapse={() => toggle('contact')}
       />
       {!collapsed['contact'] && (
-        <>
+        <div className="px-4 pb-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
             <div>
               <FieldLabel>Lokalizacja</FieldLabel>
@@ -490,11 +495,12 @@ export function CVEditorPage() {
             links={data.contact.links}
             onChange={links => set({ contact: { ...data.contact, links } })}
           />
-        </>
+        </div>
       )}
+      </div>
 
       {/* ── Profil ───────────────────────────────────────────────────── */}
-      <DraggableSection order={orderOf('profile')} dragProps={sectionDrag.getItemProps(orderOf('profile'))}>
+      <DraggableSection order={orderOf('profile')} dragProps={sectionDrag.getItemProps(orderOf('profile'))} expanded={!collapsed['profile']}>
         <SectionHeading
           title={data.profileTitle || 'Profil'}
           onRename={v => set({ profileTitle: v })}
@@ -503,7 +509,7 @@ export function CVEditorPage() {
           draggable
         />
         {!collapsed['profile'] && (
-          <div className="space-y-2">
+          <div className="px-4 pb-4 space-y-2">
             <TextArea value={data.profile} onChange={v => set({ profile: v })} rows={5} placeholder="Krótki opis..." />
             <ProfileImportMenu
               items={descriptions}
@@ -515,7 +521,7 @@ export function CVEditorPage() {
       </DraggableSection>
 
       {/* ── Technologie ──────────────────────────────────────────────── */}
-      <DraggableSection order={orderOf('technologies')} dragProps={sectionDrag.getItemProps(orderOf('technologies'))}>
+      <DraggableSection order={orderOf('technologies')} dragProps={sectionDrag.getItemProps(orderOf('technologies'))} expanded={!collapsed['tech']}>
       <SectionHeading
         title={data.technologiesTitle || 'Technologie i narzędzia'}
         onRename={v => set({ technologiesTitle: v })}
@@ -526,31 +532,24 @@ export function CVEditorPage() {
         draggable
       />
       {!collapsed['tech'] && (
-        <>
+        <div className="px-4 pb-4">
           {data.technologies.map((tech, ti) => (
             <CollapsibleItem
               key={ti}
+              nested
               label={tech.category}
+              labelPlaceholder="Frontend"
+              onLabelChange={v => set({ technologies: updateAt(data.technologies, ti, { ...tech, category: v }) })}
               onRemove={() => set({ technologies: removeAt(data.technologies, ti) })}
               {...technologiesDrag.getItemProps(ti)}
             >
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-                <div>
-                  <FieldLabel>Kategoria</FieldLabel>
-                  <TextInput
-                    value={tech.category}
-                    onChange={v => set({ technologies: updateAt(data.technologies, ti, { ...tech, category: v }) })}
-                    placeholder="Frontend"
-                  />
-                </div>
-                <div className="md:col-span-2">
-                  <FieldLabel>Pozycje</FieldLabel>
-                  <TextInput
-                    value={tech.items}
-                    onChange={v => set({ technologies: updateAt(data.technologies, ti, { ...tech, items: v }) })}
-                    placeholder="React, TypeScript, Tailwind…"
-                  />
-                </div>
+              <div>
+                <FieldLabel>Pozycje</FieldLabel>
+                <TextInput
+                  value={tech.items}
+                  onChange={v => set({ technologies: updateAt(data.technologies, ti, { ...tech, items: v }) })}
+                  placeholder="React, TypeScript, Tailwind…"
+                />
               </div>
             </CollapsibleItem>
           ))}
@@ -560,12 +559,12 @@ export function CVEditorPage() {
             onImport={items => set({ technologies: [...data.technologies, ...items.map(t => ({ category: t.category, items: t.items }))] })}
             primaryLabel="Dodaj kategorię"
           />
-        </>
+        </div>
       )}
       </DraggableSection>
 
       {/* ── Projekty ─────────────────────────────────────────────────── */}
-      <DraggableSection order={orderOf('projects')} dragProps={sectionDrag.getItemProps(orderOf('projects'))}>
+      <DraggableSection order={orderOf('projects')} dragProps={sectionDrag.getItemProps(orderOf('projects'))} expanded={!collapsed['projects']}>
       <SectionHeading
         title="Wybrane projekty"
         enabled={data.showProjects !== false}
@@ -575,24 +574,21 @@ export function CVEditorPage() {
         draggable
       />
       {!collapsed['projects'] && (
-        <>
+        <div className="px-4 pb-4">
           {data.projects.map((proj, pi) => (
             <CollapsibleItem
               key={pi}
+              nested
               label={proj.name}
+              labelPlaceholder="NAZWA PROJEKTU"
+              onLabelChange={v => set({ projects: updateAt(data.projects, pi, { ...proj, name: v }) })}
               onRemove={() => set({ projects: removeAt(data.projects, pi) })}
               {...projectsDrag.getItemProps(pi)}
             >
               <div className="space-y-3">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <div>
-                    <FieldLabel>Nazwa projektu</FieldLabel>
-                    <TextInput value={proj.name} onChange={v => set({ projects: updateAt(data.projects, pi, { ...proj, name: v }) })} placeholder="NAZWA PROJEKTU" />
-                  </div>
-                  <div>
-                    <FieldLabel>Tagline</FieldLabel>
-                    <TextInput value={proj.tagline} onChange={v => set({ projects: updateAt(data.projects, pi, { ...proj, tagline: v }) })} placeholder="Jedno zdanie…" />
-                  </div>
+                <div>
+                  <FieldLabel>Tagline</FieldLabel>
+                  <TextInput value={proj.tagline} onChange={v => set({ projects: updateAt(data.projects, pi, { ...proj, tagline: v }) })} placeholder="Jedno zdanie…" />
                 </div>
                 <div>
                   <FieldLabel>Opis</FieldLabel>
@@ -619,12 +615,12 @@ export function CVEditorPage() {
             onImport={items => set({ projects: [...data.projects, ...items.map(p => ({ name: p.name, tagline: p.tagline, description: p.description, stack: p.stack, note: p.note, links: p.links.map(l => ({ label: l.label, url: l.url })) }))] })}
             primaryLabel="Dodaj projekt"
           />
-        </>
+        </div>
       )}
       </DraggableSection>
 
       {/* ── Doświadczenie ─────────────────────────────────────────────── */}
-      <DraggableSection order={orderOf('experience')} dragProps={sectionDrag.getItemProps(orderOf('experience'))}>
+      <DraggableSection order={orderOf('experience')} dragProps={sectionDrag.getItemProps(orderOf('experience'))} expanded={!collapsed['experience']}>
       <SectionHeading
         title="Doświadczenie zawodowe"
         collapsed={collapsed['experience']}
@@ -632,20 +628,19 @@ export function CVEditorPage() {
         draggable
       />
       {!collapsed['experience'] && (
-        <>
+        <div className="px-4 pb-4">
           {data.experience.map((exp, ei) => (
             <CollapsibleItem
               key={ei}
+              nested
               label={exp.company}
+              labelPlaceholder="NAZWA FIRMY"
+              onLabelChange={v => set({ experience: updateAt(data.experience, ei, { ...exp, company: v }) })}
               onRemove={() => set({ experience: removeAt(data.experience, ei) })}
               {...experienceDrag.getItemProps(ei)}
             >
               <div className="space-y-3">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <div>
-                    <FieldLabel>Firma</FieldLabel>
-                    <TextInput value={exp.company} onChange={v => set({ experience: updateAt(data.experience, ei, { ...exp, company: v }) })} placeholder="NAZWA FIRMY" />
-                  </div>
+                <div className="grid grid-cols-1 gap-3">
                   <div>
                     <FieldLabel>Link firmy (opcjonalny)</FieldLabel>
                     <div className="flex gap-2">
@@ -674,7 +669,7 @@ export function CVEditorPage() {
                 </div>
 
                 {exp.roles.map((role, ri) => (
-                  <div key={ri} className="bg-dark-700/60 p-3 relative">
+                  <div key={ri} className="bg-dark-800/60 p-3 relative">
                     <button
                       type="button"
                       onClick={() => set({ experience: updateAt(data.experience, ei, { ...exp, roles: removeAt(exp.roles, ri) }) })}
@@ -722,12 +717,12 @@ export function CVEditorPage() {
             onImport={items => set({ experience: [...data.experience, ...items.map(e => ({ company: e.company, companyLink: e.company_link, roles: e.roles.map(r => ({ title: r.title, years: r.years ?? '', bullets: r.bullets })) }))] })}
             primaryLabel="Dodaj firmę"
           />
-        </>
+        </div>
       )}
       </DraggableSection>
 
       {/* ── Wykształcenie ─────────────────────────────────────────────── */}
-      <DraggableSection order={orderOf('education')} dragProps={sectionDrag.getItemProps(orderOf('education'))}>
+      <DraggableSection order={orderOf('education')} dragProps={sectionDrag.getItemProps(orderOf('education'))} expanded={!collapsed['education']}>
       <SectionHeading
         title="Wykształcenie"
         collapsed={collapsed['education']}
@@ -735,19 +730,18 @@ export function CVEditorPage() {
         draggable
       />
       {!collapsed['education'] && (
-        <>
+        <div className="px-4 pb-4">
           {data.education.map((edu, edi) => (
             <CollapsibleItem
               key={edi}
+              nested
               label={edu.school}
+              labelPlaceholder="UCZELNIA"
+              onLabelChange={v => set({ education: updateAt(data.education, edi, { ...edu, school: v }) })}
               onRemove={() => set({ education: removeAt(data.education, edi) })}
               {...educationDrag.getItemProps(edi)}
             >
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-                <div>
-                  <FieldLabel>Szkoła / uczelnia</FieldLabel>
-                  <TextInput value={edu.school} onChange={v => set({ education: updateAt(data.education, edi, { ...edu, school: v }) })} placeholder="UCZELNIA" />
-                </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                 <div>
                   <FieldLabel>Kierunek</FieldLabel>
                   <TextInput value={edu.degree} onChange={v => set({ education: updateAt(data.education, edi, { ...edu, degree: v }) })} placeholder="Informatyka" />
@@ -765,12 +759,12 @@ export function CVEditorPage() {
             onImport={items => set({ education: [...data.education, ...items.map(e => ({ school: e.school, degree: e.degree, years: e.years }))] })}
             primaryLabel="Dodaj wykształcenie"
           />
-        </>
+        </div>
       )}
       </DraggableSection>
 
       {/* ── Certyfikaty ───────────────────────────────────────────────── */}
-      <DraggableSection order={orderOf('certificates')} dragProps={sectionDrag.getItemProps(orderOf('certificates'))}>
+      <DraggableSection order={orderOf('certificates')} dragProps={sectionDrag.getItemProps(orderOf('certificates'))} expanded={!collapsed['certificates']}>
       <SectionHeading
         title={data.certificatesTitle || 'Certyfikaty'}
         onRename={v => set({ certificatesTitle: v })}
@@ -781,21 +775,24 @@ export function CVEditorPage() {
         draggable
       />
       {!collapsed['certificates'] && (
-        <>
+        <div className="px-4 pb-4">
           {(data.certificates ?? []).map((cert, ci) => (
             <CollapsibleItem
               key={ci}
+              nested
               label={cert.name}
+              labelPlaceholder="AWS Certified Developer"
+              onLabelChange={v => set({ certificates: updateAt(data.certificates ?? [], ci, { ...cert, name: v }) })}
               onRemove={() => set({ certificates: removeAt(data.certificates ?? [], ci) })}
               {...certificatesDrag.getItemProps(ci)}
             >
               <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
                 <div className="md:col-span-2">
-                  <FieldLabel>Nazwa certyfikatu</FieldLabel>
+                  <FieldLabel>Wystawca</FieldLabel>
                   <TextInput
-                    value={cert.name}
-                    onChange={v => set({ certificates: updateAt(data.certificates ?? [], ci, { ...cert, name: v }) })}
-                    placeholder="AWS Certified Developer"
+                    value={cert.issuer}
+                    onChange={v => set({ certificates: updateAt(data.certificates ?? [], ci, { ...cert, issuer: v }) })}
+                    placeholder="Amazon Web Services"
                   />
                 </div>
                 <div>
@@ -804,14 +801,6 @@ export function CVEditorPage() {
                     value={cert.year}
                     onChange={v => set({ certificates: updateAt(data.certificates ?? [], ci, { ...cert, year: v }) })}
                     placeholder="2024"
-                  />
-                </div>
-                <div className="md:col-span-3">
-                  <FieldLabel>Wystawca</FieldLabel>
-                  <TextInput
-                    value={cert.issuer}
-                    onChange={v => set({ certificates: updateAt(data.certificates ?? [], ci, { ...cert, issuer: v }) })}
-                    placeholder="Amazon Web Services"
                   />
                 </div>
               </div>
@@ -831,7 +820,7 @@ export function CVEditorPage() {
       </DraggableSection>
 
       {/* ── Sekcje własne ─────────────────────────────────────────────── */}
-      <DraggableSection order={orderOf('custom')} dragProps={sectionDrag.getItemProps(orderOf('custom'))}>
+      <DraggableSection order={orderOf('custom')} dragProps={sectionDrag.getItemProps(orderOf('custom'))} expanded={!collapsed['custom']}>
       <SectionHeading
         title="Sekcje własne"
         collapsed={collapsed['custom']}
@@ -839,8 +828,8 @@ export function CVEditorPage() {
         draggable
       />
       {!collapsed['custom'] && (
-        <>
-          <p className="text-xs text-slate-500 -mt-2 mb-3">Dowolne sekcje z własnym nagłówkiem — np. Języki, Wolontariat, Osiągnięcia.</p>
+        <div className="px-4 pb-4">
+          <p className="text-xs text-slate-500 mb-3">Dowolne sekcje z własnym nagłówkiem — np. Języki, Wolontariat, Osiągnięcia.</p>
           {(data.customSections ?? []).map((sec, si) => (
             <ItemCard key={sec.id} onRemove={() => set({ customSections: removeAt(data.customSections ?? [], si) })}>
               <div className="space-y-2 pr-6">
@@ -866,12 +855,12 @@ export function CVEditorPage() {
           <Button variant="primary" onClick={() => set({ customSections: [...(data.customSections ?? []), { id: uid(), title: '', content: '' }] })}>
             <Plus className="w-3.5 h-3.5 mr-1.5" /> Dodaj sekcję
           </Button>
-        </>
+        </div>
       )}
       </DraggableSection>
 
       {/* ── Zainteresowania ───────────────────────────────────────────── */}
-      <DraggableSection order={orderOf('interests')} dragProps={sectionDrag.getItemProps(orderOf('interests'))}>
+      <DraggableSection order={orderOf('interests')} dragProps={sectionDrag.getItemProps(orderOf('interests'))} expanded={!collapsed['interests']}>
       <SectionHeading
         title="Zainteresowania"
         collapsed={collapsed['interests']}
@@ -879,24 +868,28 @@ export function CVEditorPage() {
         draggable
       />
       {!collapsed['interests'] && (
-        <TagListEditor
-          items={data.interests}
-          onChange={v => set({ interests: v })}
-          addLabel="Dodaj zainteresowanie"
-          placeholder="np. Muzyka"
-        />
+        <div className="px-4 pb-4">
+          <TagListEditor
+            items={data.interests}
+            onChange={v => set({ interests: v })}
+            addLabel="Dodaj zainteresowanie"
+            placeholder="np. Muzyka"
+          />
+        </div>
       )}
       </DraggableSection>
 
       {/* ── RODO — zawsze na końcu, nieprzesuwalna ──────────────────────── */}
-      <div style={{ order: 999 }}>
+      <div style={{ order: 999 }} className={`bg-dark-800 ${!collapsed['rodo'] ? 'fold-card' : ''}`}>
         <SectionHeading
           title="Klauzula RODO"
           collapsed={collapsed['rodo']}
           onToggleCollapse={() => toggle('rodo')}
         />
         {!collapsed['rodo'] && (
-          <TextArea value={data.rodo} onChange={v => set({ rodo: v })} rows={2} placeholder="Wyrażam zgodę na przetwarzanie…" />
+          <div className="px-4 pb-4">
+            <TextArea value={data.rodo} onChange={v => set({ rodo: v })} rows={2} placeholder="Wyrażam zgodę na przetwarzanie…" />
+          </div>
         )}
       </div>
 
@@ -913,7 +906,7 @@ export function CVEditorPage() {
         {/* Podgląd */}
         <button
           onClick={handlePreview}
-          className="flex items-center gap-1.5 px-3 py-2 bg-dark-700 hover:bg-dark-600 text-slate-300 text-sm transition-colors cursor-pointer"
+          className="fold-btn flex items-center gap-1.5 px-3 py-2 bg-dark-700 hover:bg-dark-600 text-slate-300 text-sm transition-colors cursor-pointer"
         >
           {showPreview ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
           <span className="hidden sm:inline">{showPreview ? 'Zamknij' : 'Podgląd'}</span>
@@ -921,7 +914,7 @@ export function CVEditorPage() {
         {/* Zapisz szkic */}
         <button
           onClick={handleDraftSave}
-          className={`flex items-center gap-1.5 px-3 py-2 text-sm transition-colors cursor-pointer ${
+          className={`fold-btn flex items-center gap-1.5 px-3 py-2 text-sm transition-colors cursor-pointer ${
             draftSaved ? 'bg-success-500/20 text-success-400' : 'bg-dark-700 hover:bg-dark-600 text-slate-300'
           }`}
           title="Szybki zapis roboczy — nie tworzy ani nie aktualizuje wpisu w Bazie CV"
@@ -933,7 +926,7 @@ export function CVEditorPage() {
         <button
           onClick={handleSaveClick}
           disabled={isSaving}
-          className={`flex items-center gap-1.5 px-4 py-2 text-sm font-medium transition-colors cursor-pointer disabled:opacity-60 ${
+          className={`fold-btn flex items-center gap-1.5 px-4 py-2 text-sm font-medium transition-colors cursor-pointer disabled:opacity-60 ${
             saved ? 'bg-success-500/20 text-success-400' : 'bg-primary-500 hover:bg-primary-400 text-slate-900'
           }`}
         >

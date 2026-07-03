@@ -408,8 +408,9 @@ button, a, [role="button"], .cursor-pointer {
    prostuje się i unosi (cień pod spodem). Kliknięcie: cień
    znika — kartka odłożona na biurko.
    .fold-btn  — przyciski z tłem (Button.tsx poza ghost)
-   .fold-card — kafelki (Card z propem fold; landing, Baza CV)
-   input/textarea — prostują się przy focusie, bez cienia
+   .fold-card — kafelki i karty (Card z propem fold, kanban, sekcje)
+   Pola formularzy CELOWO bez efektu — kartką jest sekcja/karta,
+   nie każdy input z osobna (za dużo szumu, kolizje z ikonami).
    ============================================ */
 @property --fold {
   syntax: '<length>';
@@ -418,9 +419,7 @@ button, a, [role="button"], .cursor-pointer {
 }
 
 .fold-btn,
-.fold-card,
-input:where(:not([type='checkbox'], [type='radio'], [type='range'])),
-textarea {
+.fold-card {
   --fold: 12px;
   /* Wielokąt wystaje 24px poza obrys, żeby nie ucinać cienia ani
      focus ringa — realnie wycinany jest tylko zagięty róg */
@@ -452,13 +451,11 @@ textarea {
   background-image: linear-gradient(225deg, transparent 50%, rgba(255, 255, 255, 0.1) 50%);
 }
 
-/* Hover/wciśnięcie/focus: róg się prostuje */
+/* Hover/wciśnięcie: róg się prostuje */
 .fold-btn:hover:not(:disabled),
 .fold-btn:not(:disabled):active,
 .fold-card:hover,
-.fold-card:active,
-input:focus,
-textarea:focus {
+.fold-card:active {
   --fold: 0px;
 }
 
@@ -479,10 +476,23 @@ textarea:focus {
 
 /* Jasny motyw: ciemna klapka i delikatniejszy cień */
 .light-theme .fold-btn,
-.light-theme .fold-card,
-.light-theme input:where(:not([type='checkbox'], [type='radio'], [type='range'])),
-.light-theme textarea {
+.light-theme .fold-card {
   background-image: linear-gradient(225deg, transparent 50%, rgba(2, 6, 23, 0.12) 50%);
+}
+
+/* Elementy przeciągalne (useDragReorder): bez zaznaczania tekstu —
+   na dotyku długie przytrzymanie ma podnosić kartę, nie zaznaczać.
+   Pola formularzy w środku zachowują normalne zaznaczanie. */
+[data-drag-list] {
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+[data-drag-list] input,
+[data-drag-list] textarea {
+  user-select: text;
+  -webkit-user-select: text;
 }
 
 .light-theme .fold-btn:hover:not(:disabled),

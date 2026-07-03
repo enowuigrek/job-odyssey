@@ -12,7 +12,7 @@ import { Button } from '../ui/Button';
 
 export function FieldLabel({ children, light = false }: { children: ReactNode; light?: boolean }) {
   return (
-    <label className={`block text-xs text-slate-400 mb-1${light ? ' font-light' : ''}`}>
+    <label className={`block text-[13px] text-slate-300 mb-1${light ? ' font-light' : ''}`}>
       {children}
     </label>
   );

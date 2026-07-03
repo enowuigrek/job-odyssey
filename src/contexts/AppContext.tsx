@@ -48,6 +48,7 @@ type Action =
   | { type: 'DELETE_INTERVIEW'; payload: string }
   | { type: 'ADD_CV'; payload: Omit<CV, 'id' | 'createdAt' | 'updatedAt'> & { id?: string } }
   | { type: 'UPDATE_CV'; payload: CV }
+  | { type: 'REORDER_CVS'; payload: { orderedIds: string[] } }
   | { type: 'DELETE_CV'; payload: string }
   | { type: 'ADD_QUESTION'; payload: Omit<RecruitmentQuestion, 'id' | 'createdAt' | 'updatedAt'> }
   | { type: 'UPDATE_QUESTION'; payload: RecruitmentQuestion }
@@ -140,6 +141,19 @@ function reducer(state: AppState, action: Action): AppState {
           cv.id === action.payload.id ? { ...action.payload, updatedAt: now } : cv
         ),
       };
+    case 'REORDER_CVS': {
+      // Nowa kolejność kafelków — bump updatedAt tylko tam, gdzie sortOrder
+      // faktycznie się zmienił (diffAndSync wykrywa zmiany po updatedAt)
+      const orderMap = new Map(action.payload.orderedIds.map((id, i) => [id, i]));
+      return {
+        ...state,
+        cvs: state.cvs.map(cv => {
+          const sortOrder = orderMap.get(cv.id);
+          if (sortOrder === undefined || sortOrder === cv.sortOrder) return cv;
+          return { ...cv, sortOrder, updatedAt: now };
+        }),
+      };
+    }
     case 'DELETE_CV':
       return { ...state, cvs: state.cvs.filter(cv => cv.id !== action.payload) };
 

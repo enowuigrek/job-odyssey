@@ -380,7 +380,11 @@ export function ProfilePage() {
           {descs.map((desc, di) => (
             <CollapsibleItem
               key={desc.id}
-              label={desc.name || 'Nowy opis'}
+              label={desc.name}
+              labelPlaceholder="np. Frontend Dev"
+              onLabelChange={v => setLocalDescriptions(prev =>
+                (prev ?? descs).map(d => d.id === desc.id ? { ...d, name: v } : d)
+              )}
               onRemove={async () => {
                 setLocalDescriptions(prev => (prev ?? descs).filter(d => d.id !== desc.id));
                 await removeDescription(desc.id);
@@ -388,16 +392,6 @@ export function ProfilePage() {
               {...descriptionsDrag.getItemProps(di)}
             >
               <div className="space-y-2">
-                <div>
-                  <FieldLabel light>Nazwa opisu</FieldLabel>
-                  <TextInput light
-                    value={desc.name}
-                    onChange={v => setLocalDescriptions(prev =>
-                      (prev ?? descs).map(d => d.id === desc.id ? { ...d, name: v } : d)
-                    )}
-                    placeholder="np. Frontend Dev"
-                  />
-                </div>
                 <div>
                   <FieldLabel light>Treść</FieldLabel>
                   <TextArea light
@@ -439,6 +433,10 @@ export function ProfilePage() {
             <CollapsibleItem
               key={exp.id}
               label={exp.company}
+              labelPlaceholder="NAZWA FIRMY"
+              onLabelChange={v => setLocalExperiences(prev =>
+                (prev ?? exps).map(e => e.id === exp.id ? { ...e, company: v } : e)
+              )}
               onRemove={async () => {
                 setLocalExperiences(prev => (prev ?? exps).filter(e => e.id !== exp.id));
                 await removeExperience(exp.id);
@@ -446,17 +444,7 @@ export function ProfilePage() {
               {...experiencesDrag.getItemProps(expi)}
             >
               <div className="space-y-3">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <div>
-                    <FieldLabel light>Firma</FieldLabel>
-                    <TextInput light
-                      value={exp.company}
-                      onChange={v => setLocalExperiences(prev =>
-                        (prev ?? exps).map(e => e.id === exp.id ? { ...e, company: v } : e)
-                      )}
-                      placeholder="NAZWA FIRMY"
-                    />
-                  </div>
+                <div className="grid grid-cols-1 gap-3">
                   <div>
                     <FieldLabel light>Link firmy (opcjonalny)</FieldLabel>
                     <div className="flex gap-2">
@@ -591,6 +579,10 @@ export function ProfilePage() {
             <CollapsibleItem
               key={proj.id}
               label={proj.name}
+              labelPlaceholder="NAZWA PROJEKTU"
+              onLabelChange={v => setLocalProjects(prev =>
+                (prev ?? projs).map(p => p.id === proj.id ? { ...p, name: v } : p)
+              )}
               onRemove={async () => {
                 setLocalProjects(prev => (prev ?? projs).filter(p => p.id !== proj.id));
                 await removeProject(proj.id);
@@ -598,27 +590,15 @@ export function ProfilePage() {
               {...projectsDrag.getItemProps(proji)}
             >
               <div className="space-y-3">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <div>
-                    <FieldLabel light>Nazwa projektu</FieldLabel>
-                    <TextInput light
-                      value={proj.name}
-                      onChange={v => setLocalProjects(prev =>
-                        (prev ?? projs).map(p => p.id === proj.id ? { ...p, name: v } : p)
-                      )}
-                      placeholder="NAZWA PROJEKTU"
-                    />
-                  </div>
-                  <div>
-                    <FieldLabel light>Tagline</FieldLabel>
-                    <TextInput light
-                      value={proj.tagline}
-                      onChange={v => setLocalProjects(prev =>
-                        (prev ?? projs).map(p => p.id === proj.id ? { ...p, tagline: v } : p)
-                      )}
-                      placeholder="Jedno zdanie..."
-                    />
-                  </div>
+                <div>
+                  <FieldLabel light>Tagline</FieldLabel>
+                  <TextInput light
+                    value={proj.tagline}
+                    onChange={v => setLocalProjects(prev =>
+                      (prev ?? projs).map(p => p.id === proj.id ? { ...p, tagline: v } : p)
+                    )}
+                    placeholder="Jedno zdanie..."
+                  />
                 </div>
                 <div>
                   <FieldLabel light>Opis</FieldLabel>
@@ -689,33 +669,25 @@ export function ProfilePage() {
             <CollapsibleItem
               key={t.id}
               label={t.category}
+              labelPlaceholder="Frontend"
+              onLabelChange={v => setLocalTech(prev =>
+                (prev ?? tech).map(x => x.id === t.id ? { ...x, category: v } : x)
+              )}
               onRemove={async () => {
                 setLocalTech(prev => (prev ?? tech).filter(x => x.id !== t.id));
                 await removeTechCategory(t.id);
               }}
               {...techDrag.getItemProps(ti)}
             >
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-                <div>
-                  <FieldLabel light>Kategoria</FieldLabel>
-                  <TextInput light
-                    value={t.category}
-                    onChange={v => setLocalTech(prev =>
-                      (prev ?? tech).map(x => x.id === t.id ? { ...x, category: v } : x)
-                    )}
-                    placeholder="Frontend"
-                  />
-                </div>
-                <div className="md:col-span-2">
-                  <FieldLabel light>Technologie</FieldLabel>
-                  <TextInput light
-                    value={t.items}
-                    onChange={v => setLocalTech(prev =>
-                      (prev ?? tech).map(x => x.id === t.id ? { ...x, items: v } : x)
-                    )}
-                    placeholder="React, TypeScript, Tailwind…"
-                  />
-                </div>
+              <div>
+                <FieldLabel light>Technologie</FieldLabel>
+                <TextInput light
+                  value={t.items}
+                  onChange={v => setLocalTech(prev =>
+                    (prev ?? tech).map(x => x.id === t.id ? { ...x, items: v } : x)
+                  )}
+                  placeholder="React, TypeScript, Tailwind…"
+                />
               </div>
               <div className="flex justify-end mt-3">
                 <SaveButton
@@ -746,23 +718,17 @@ export function ProfilePage() {
             <CollapsibleItem
               key={e.id}
               label={e.school}
+              labelPlaceholder="UCZELNIA"
+              onLabelChange={v => setLocalEducation(prev =>
+                (prev ?? edu).map(x => x.id === e.id ? { ...x, school: v } : x)
+              )}
               onRemove={async () => {
                 setLocalEducation(prev => (prev ?? edu).filter(x => x.id !== e.id));
                 await removeEducation(e.id);
               }}
               {...educationDrag.getItemProps(edi)}
             >
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-                <div>
-                  <FieldLabel light>Szkoła / uczelnia</FieldLabel>
-                  <TextInput light
-                    value={e.school}
-                    onChange={v => setLocalEducation(prev =>
-                      (prev ?? edu).map(x => x.id === e.id ? { ...x, school: v } : x)
-                    )}
-                    placeholder="UCZELNIA"
-                  />
-                </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                 <div>
                   <FieldLabel light>Kierunek</FieldLabel>
                   <TextInput light
@@ -827,6 +793,10 @@ export function ProfilePage() {
             <CollapsibleItem
               key={cert.id}
               label={cert.name}
+              labelPlaceholder="AWS Certified Developer"
+              onLabelChange={v => setLocalCertificates(prev =>
+                (prev ?? certs).map(c => c.id === cert.id ? { ...c, name: v } : c)
+              )}
               onRemove={async () => {
                 setLocalCertificates(prev => (prev ?? certs).filter(c => c.id !== cert.id));
                 await removeCertificate(cert.id);
@@ -836,13 +806,13 @@ export function ProfilePage() {
               <div className="space-y-3">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
                   <div className="md:col-span-2">
-                    <FieldLabel light>Nazwa certyfikatu</FieldLabel>
+                    <FieldLabel light>Wystawca</FieldLabel>
                     <TextInput light
-                      value={cert.name}
+                      value={cert.issuer}
                       onChange={v => setLocalCertificates(prev =>
-                        (prev ?? certs).map(c => c.id === cert.id ? { ...c, name: v } : c)
+                        (prev ?? certs).map(c => c.id === cert.id ? { ...c, issuer: v } : c)
                       )}
-                      placeholder="AWS Certified Developer"
+                      placeholder="Amazon Web Services"
                     />
                   </div>
                   <div>
@@ -855,16 +825,6 @@ export function ProfilePage() {
                       placeholder="2024"
                     />
                   </div>
-                </div>
-                <div>
-                  <FieldLabel light>Wystawca</FieldLabel>
-                  <TextInput light
-                    value={cert.issuer}
-                    onChange={v => setLocalCertificates(prev =>
-                      (prev ?? certs).map(c => c.id === cert.id ? { ...c, issuer: v } : c)
-                    )}
-                    placeholder="Amazon Web Services"
-                  />
                 </div>
                 <div className="flex items-center gap-3">
                   <button

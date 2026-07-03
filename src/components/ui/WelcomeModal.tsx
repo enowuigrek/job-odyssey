@@ -89,7 +89,7 @@ export function WelcomeModal() {
         <div className="px-6 pb-6">
           <button
             onClick={handleStart}
-            className="w-full py-2.5 text-sm font-medium bg-primary-500 hover:bg-primary-400 text-slate-900 transition-colors cursor-pointer"
+            className="fold-btn w-full py-2.5 text-sm font-medium bg-primary-500 hover:bg-primary-400 text-slate-900 transition-colors cursor-pointer"
           >
             Zaczynamy
           </button>
