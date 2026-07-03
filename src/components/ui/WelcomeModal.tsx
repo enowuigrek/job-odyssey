@@ -71,7 +71,7 @@ export function WelcomeModal() {
             <button
               key={path}
               onClick={() => handleStep(path)}
-              className="w-full flex items-start gap-3 p-3 bg-dark-700 hover:bg-dark-600 text-left transition-colors cursor-pointer group"
+              className="w-full flex items-start gap-3 p-3 bg-dark-700 text-left transition-colors cursor-pointer group"
             >
               <div className="flex-shrink-0 mt-0.5 w-8 h-8 flex items-center justify-center bg-primary-500/10 group-hover:bg-primary-500/20 transition-colors">
                 <Icon className="w-4 h-4 text-primary-400" />
@@ -89,7 +89,7 @@ export function WelcomeModal() {
         <div className="px-6 pb-6">
           <button
             onClick={handleStart}
-            className="fold-btn w-full py-2.5 text-sm font-medium bg-primary-500 hover:bg-primary-400 text-slate-900 transition-colors cursor-pointer"
+            className="fold-btn w-full py-2.5 text-sm font-medium bg-primary-500 text-slate-900 transition-colors cursor-pointer"
           >
             Zaczynamy
           </button>

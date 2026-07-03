@@ -4,21 +4,24 @@ interface SelectProps extends SelectHTMLAttributes<HTMLSelectElement> {
   label?: string;
   error?: string;
   options: { value: string; label: string }[];
+  /** Niższy wariant do ciasnych miejsc (np. karta kanbanu) */
+  dense?: boolean;
 }
 
 export const Select = forwardRef<HTMLSelectElement, SelectProps>(
-  ({ label, error, options, className = '', ...props }, ref) => {
+  ({ label, error, options, className = '', dense = false, ...props }, ref) => {
     return (
       <div className="w-full">
         {label && (
-          <label className="block text-sm font-medium text-slate-300 mb-2 tracking-wide">
+          <label className={`block font-medium text-slate-300 tracking-wide ${dense ? 'text-xs mb-1' : 'text-sm mb-2'}`}>
             {label}
           </label>
         )}
         <select
           ref={ref}
           className={`
-            w-full pl-4 pr-10 py-3 bg-dark-700 text-white
+            w-full bg-dark-700 text-white
+            ${dense ? 'pl-3 pr-9 py-1.5 text-sm' : 'pl-4 pr-10 py-3'}
             focus:outline-none focus:ring-2 focus:ring-primary-500
             disabled:bg-dark-900 disabled:cursor-not-allowed disabled:text-slate-600
             transition-all cursor-pointer appearance-none

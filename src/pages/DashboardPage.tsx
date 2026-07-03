@@ -192,7 +192,7 @@ export function DashboardPage() {
             </div>
             <Link
               to="/interviews"
-              className="flex items-center gap-2 px-4 py-2 bg-warning-500 text-slate-900 font-medium hover:bg-warning-400 transition-colors"
+              className="flex items-center gap-2 px-4 py-2 fold-btn bg-warning-500 text-slate-900 font-medium transition-colors"
             >
               Zobacz rozmowy
               <ArrowRight className="w-4 h-4" />
@@ -226,7 +226,7 @@ export function DashboardPage() {
             </div>
             <Link
               to="/interviews"
-              className="flex items-center gap-2 px-4 py-2 bg-primary-500 text-slate-900 font-medium hover:bg-primary-400 transition-colors"
+              className="fold-btn flex items-center gap-2 px-4 py-2 bg-primary-500 text-slate-900 font-medium transition-colors"
             >
               Zobacz rozmowy
               <ArrowRight className="w-4 h-4" />
@@ -252,7 +252,7 @@ export function DashboardPage() {
             </div>
             <Link
               to="/interviews"
-              className="flex items-center gap-2 px-4 py-2 bg-dark-700 text-slate-300 font-medium hover:bg-dark-600 transition-colors"
+              className="fold-btn flex items-center gap-2 px-4 py-2 bg-dark-700 text-slate-300 font-medium transition-colors"
             >
               Przejdź do rozmów
               <ArrowRight className="w-4 h-4" />
@@ -335,7 +335,7 @@ export function DashboardPage() {
                 {recentApplications.map((app) => (
                   <li
                     key={app.id}
-                    className="px-6 py-4 hover:bg-dark-700 transition-colors cursor-pointer"
+                    className="px-6 py-4 transition-colors cursor-pointer"
                     onClick={() => navigate('/applications', { state: { openFor: app.id } })}
                   >
                     <div className="flex items-center justify-between">
@@ -377,7 +377,7 @@ export function DashboardPage() {
                     (a) => a.id === interview.applicationId
                   );
                   return (
-                    <li key={interview.id} className="px-6 py-4 hover:bg-dark-700 transition-colors">
+                    <li key={interview.id} className="px-6 py-4 transition-colors">
                       <div className="flex items-center justify-between">
                         <div>
                           <p className="font-medium text-slate-100">

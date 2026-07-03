@@ -448,6 +448,13 @@ button, a, [role="button"], .cursor-pointer {
 .fold-card {
   --fold: 20px;
   /* Na dużych kartach jasna klapka była zbyt krzykliwa — ciemniejsza niż na przyciskach */
+  background-image: linear-gradient(225deg, transparent 50%, rgba(255, 255, 255, 0.07) 50%);
+}
+
+/* Ciemne przyciski (secondary) — klapka stonowana jak na kartach;
+   jasna wersja 0.3 zostaje dla kolorowych (primary/danger) */
+.fold-btn.bg-dark-700,
+.fold-btn.bg-dark-800 {
   background-image: linear-gradient(225deg, transparent 50%, rgba(255, 255, 255, 0.1) 50%);
 }
 
@@ -526,6 +533,47 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator {
 .border-dark-700 { border-color: var(--color-dark-700); }
 .border-dark-600 { border-color: var(--color-dark-600); }
 .divide-dark-600 > :not([hidden]) ~ :not([hidden]) { border-color: var(--color-dark-600); }
+
+/* ============================================
+   Papierowy duszek przeciągania (kanban) — karta trzymana
+   krzywo, delikatnie buja się wokół kursora; przy upuszczeniu
+   prostuje się i znika (patrz src/lib/paperDragGhost.ts)
+   ============================================ */
+.paper-drag-ghost {
+  position: fixed;
+  left: 0;
+  top: 0;
+  margin: 0;
+  z-index: 100;
+  pointer-events: none;
+  opacity: 0.95;
+  /* Cień mieści się w 24px marginesu clip-pathu zagiętej kartki */
+  box-shadow: 0 12px 20px -8px rgba(0, 0, 0, 0.7);
+  animation: paper-sway 1s ease-in-out infinite alternate;
+}
+
+@keyframes paper-sway {
+  from { rotate: 1.5deg; }
+  to { rotate: 5.5deg; }
+}
+
+.paper-drag-ghost-drop {
+  animation: none;
+  rotate: 0deg;
+  opacity: 0;
+  transition: rotate 180ms ease-out, opacity 180ms ease-out;
+}
+
+/* Rozwinięcie przycisku "+" w kartę formularza (inline dodawanie w kanbanie) */
+@keyframes unfold-card {
+  from { opacity: 0.4; transform: scaleY(0.35); }
+  to { opacity: 1; transform: scaleY(1); }
+}
+
+.animate-unfold-card {
+  transform-origin: top;
+  animation: unfold-card 200ms ease-out;
+}
 
 /* ============================================
    Delikatne wejście — LandingPage

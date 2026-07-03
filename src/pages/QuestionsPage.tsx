@@ -349,7 +349,7 @@ export function QuestionsPage() {
               <Card key={question.id}>
                 <CardBody className="p-0">
                   <div
-                    className="p-4 cursor-pointer hover:bg-dark-700 transition-colors"
+                    className="p-4 cursor-pointer transition-colors"
                     onClick={() => toggleExpanded(question.id)}
                   >
                     <div className="flex items-start justify-between">
@@ -460,7 +460,7 @@ export function QuestionsPage() {
                             e.stopPropagation();
                             openModal(question);
                           }}
-                          className="p-2 text-slate-500 hover:text-primary-400 hover:bg-primary-500/10 border-0"
+                          className="p-2 text-slate-500 hover:text-primary-400 border-0"
                         >
                           <Edit className="w-4 h-4" />
                         </button>
@@ -469,7 +469,7 @@ export function QuestionsPage() {
                             e.stopPropagation();
                             handleDelete(question.id);
                           }}
-                          className="p-2 text-slate-500 hover:text-danger-400 hover:bg-danger-500/10 border-0"
+                          className="p-2 text-slate-500 hover:text-danger-400 border-0"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>

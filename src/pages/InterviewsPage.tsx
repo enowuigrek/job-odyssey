@@ -19,6 +19,7 @@ import {
 import { useApp } from '../contexts/AppContext';
 import { KanbanStatusTabs } from '../components/kanban/KanbanStatusTabs';
 import { useKanbanCarousel } from '../hooks/useKanbanCarousel';
+import { startPaperGhost, endPaperGhost } from '../lib/paperDragGhost';
 import {
   Button,
   Input,
@@ -236,6 +237,112 @@ export function InterviewsPage() {
     }
   };
 
+  // ── Inline dodawanie w kolumnie kanbanu — "+" rozwija się w kartę ──────────
+  const [inlineAddStatus, setInlineAddStatus] = useState<InterviewStatus | null>(null);
+  const [inlineForm, setInlineForm] = useState({
+    applicationId: '',
+    scheduledDate: '',
+    scheduledTime: '',
+    location: '',
+  });
+
+  const startInlineAdd = (status: InterviewStatus) => {
+    setInlineForm({
+      applicationId: state.applications[0]?.id || '',
+      scheduledDate: new Date().toISOString().split('T')[0],
+      scheduledTime: '',
+      location: '',
+    });
+    setInlineAddStatus(status);
+  };
+
+  const submitInlineAdd = () => {
+    if (!inlineForm.applicationId || !inlineForm.scheduledDate || !inlineAddStatus) return;
+    dispatch({
+      type: 'ADD_INTERVIEW',
+      payload: {
+        applicationId: inlineForm.applicationId,
+        scheduledDate: `${inlineForm.scheduledDate}T${inlineForm.scheduledTime || '09:00'}:00`,
+        duration: 60,
+        location: inlineForm.location || undefined,
+        status: inlineAddStatus,
+        whatWentWell: undefined,
+        whatWentWrong: undefined,
+        notes: undefined,
+      },
+    });
+    setInlineAddStatus(null);
+  };
+
+  const inlineInputClass = 'w-full px-2 py-1.5 bg-dark-700 text-white text-sm placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-primary-500';
+
+  // Zwykła funkcja (nie komponent!) — komponent definiowany w środku
+  // tracił by focus inputa przy każdym re-renderze strony
+  const renderInlineAdd = (status: InterviewStatus) =>
+    inlineAddStatus === status ? (
+      <form
+        className="animate-unfold-card fold-card bg-dark-800 p-3 space-y-2"
+        onSubmit={(e) => { e.preventDefault(); submitInlineAdd(); }}
+        onKeyDown={(e) => { if (e.key === 'Escape') setInlineAddStatus(null); }}
+      >
+        <Select
+          label="Aplikacja *"
+          dense
+          options={state.applications.map(a => ({
+            value: a.id,
+            label: `${a.companyName}${a.position ? ' - ' + a.position : ''}`,
+          }))}
+          value={inlineForm.applicationId}
+          onChange={(e) => setInlineForm(f => ({ ...f, applicationId: e.target.value }))}
+        />
+        <div className="grid grid-cols-2 gap-2">
+          <div>
+            <label className="block text-xs text-slate-300 mb-1">Data *</label>
+            <input
+              type="date"
+              value={inlineForm.scheduledDate}
+              onChange={(e) => setInlineForm(f => ({ ...f, scheduledDate: e.target.value }))}
+              className={inlineInputClass}
+            />
+          </div>
+          <div>
+            <label className="block text-xs text-slate-300 mb-1">Godzina</label>
+            <input
+              type="time"
+              value={inlineForm.scheduledTime}
+              onChange={(e) => setInlineForm(f => ({ ...f, scheduledTime: e.target.value }))}
+              className={inlineInputClass}
+            />
+          </div>
+        </div>
+        <div>
+          <label className="block text-xs text-slate-300 mb-1">Link do spotkania</label>
+          <input
+            value={inlineForm.location}
+            onChange={(e) => setInlineForm(f => ({ ...f, location: e.target.value }))}
+            placeholder="https://meet.google.com/..."
+            className={inlineInputClass}
+          />
+        </div>
+        <div className="flex gap-2 pt-1">
+          <Button type="button" size="sm" variant="secondary" onClick={() => setInlineAddStatus(null)}>
+            Anuluj
+          </Button>
+          <Button type="submit" size="sm" className="flex-1" disabled={!inlineForm.applicationId || !inlineForm.scheduledDate}>
+            Dodaj
+          </Button>
+        </div>
+      </form>
+    ) : (
+      <button
+        onClick={() => state.applications.length > 0 ? startInlineAdd(status) : undefined}
+        disabled={state.applications.length === 0}
+        className="fold-btn w-full py-2 flex items-center justify-center bg-primary-500 text-slate-900 disabled:cursor-not-allowed transition-colors cursor-pointer"
+      >
+        <Plus className="w-4 h-4" />
+      </button>
+    );
+
   const handleStatusChange = (interview: Interview, newStatus: InterviewStatus) => {
     dispatch({
       type: 'UPDATE_INTERVIEW',
@@ -252,6 +359,7 @@ export function InterviewsPage() {
     e.dataTransfer.setData('application/json', JSON.stringify(interview));
     e.dataTransfer.setData('text/plain', interview.id);
     e.dataTransfer.effectAllowed = 'move';
+    startPaperGhost(e, e.currentTarget as HTMLElement);
     const target = e.currentTarget as HTMLElement;
     requestAnimationFrame(() => {
       target.style.opacity = '0.5';
@@ -261,6 +369,7 @@ export function InterviewsPage() {
   const handleDragEnd = (e: React.DragEvent) => {
     const target = e.currentTarget as HTMLElement;
     target.style.opacity = '1';
+    endPaperGhost();
     setDraggedInterview(null);
     setDragOverStatus(null);
   };
@@ -312,7 +421,7 @@ export function InterviewsPage() {
         <div className="p-0">
           {/* Główna sekcja - klikalna aby rozwinąć */}
           <div
-            className={`${compact ? 'px-2.5 py-2.5' : 'p-4'} cursor-pointer`}
+            className={`${compact ? 'px-2.5 py-2.5' : 'p-4'} cursor-pointer relative overflow-hidden`}
             onClick={handleExpandClick}
           >
             <div className="flex items-center gap-1">
@@ -364,38 +473,35 @@ export function InterviewsPage() {
               </div>
             </div>
 
-            {/* Slide-up icon bar on hover */}
+            {/* Ikony wjeżdżają z prawej na hover — karta nie zmienia rozmiaru */}
             {compact && !isExpanded && (
-              <div className="overflow-hidden max-h-0 group-hover:max-h-12 transition-all duration-200 ease-out">
-                <div className="flex items-center gap-1 pt-2 mt-1.5 border-t border-dark-600/50">
-                  {interview.location && interview.location.startsWith('http') && (
-                    <a
-                      href={interview.location}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      onClick={(e) => e.stopPropagation()}
-                      className="p-1.5 text-slate-500 hover:text-primary-400 transition-colors cursor-pointer"
-                      title="Otwórz link"
-                    >
-                      <ExternalLink className="w-3.5 h-3.5" />
-                    </a>
-                  )}
-                  <div className="flex-1" />
-                  <button
-                    onClick={(e) => { e.stopPropagation(); openModal(interview); }}
-                    className="p-1.5 text-slate-500 hover:text-primary-400 transition-colors cursor-pointer"
-                    title="Edytuj"
+              <div className="absolute inset-y-0 right-0 flex items-center pl-10 pr-1.5 translate-x-full group-hover:translate-x-0 transition-transform duration-200 ease-out bg-gradient-to-l from-dark-800 from-65% to-transparent">
+                {interview.location && interview.location.startsWith('http') && (
+                  <a
+                    href={interview.location}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={(e) => e.stopPropagation()}
+                    className="p-1.5 text-slate-400 hover:text-primary-400 transition-colors cursor-pointer"
+                    title="Otwórz link"
                   >
-                    <Edit className="w-3.5 h-3.5" />
-                  </button>
-                  <button
-                    onClick={(e) => { e.stopPropagation(); handleDelete(interview.id); }}
-                    className="p-1.5 text-slate-500 hover:text-danger-400 transition-colors cursor-pointer"
-                    title="Usuń"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
-                </div>
+                    <ExternalLink className="w-3.5 h-3.5" />
+                  </a>
+                )}
+                <button
+                  onClick={(e) => { e.stopPropagation(); openModal(interview); }}
+                  className="p-1.5 text-slate-400 hover:text-primary-400 transition-colors cursor-pointer"
+                  title="Edytuj"
+                >
+                  <Edit className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  onClick={(e) => { e.stopPropagation(); handleDelete(interview.id); }}
+                  className="p-1.5 text-slate-400 hover:text-danger-400 transition-colors cursor-pointer"
+                  title="Usuń"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
               </div>
             )}
           </div>
@@ -407,6 +513,7 @@ export function InterviewsPage() {
               <div className="mt-3 mb-3">
                 <Select
                   label="Zmień status"
+                  dense
                   options={statusOptions}
                   value={interview.status}
                   onChange={(e) => {
@@ -468,7 +575,7 @@ export function InterviewsPage() {
                     target="_blank"
                     rel="noopener noreferrer"
                     onClick={(e) => e.stopPropagation()}
-                    className="flex items-center gap-1 px-2 py-1 text-xs text-slate-400 hover:text-primary-400 hover:bg-dark-700 transition-colors cursor-pointer"
+                    className="flex items-center gap-1 px-2 py-1 text-xs text-slate-400 hover:text-primary-400 transition-colors cursor-pointer"
                   >
                     <ExternalLink className="w-3.5 h-3.5" />
                     Otwórz link
@@ -480,7 +587,7 @@ export function InterviewsPage() {
                     e.stopPropagation();
                     openModal(interview);
                   }}
-                  className="p-1.5 text-slate-500 hover:text-primary-400 hover:bg-primary-500/10 cursor-pointer"
+                  className="p-1.5 text-slate-500 hover:text-primary-400 cursor-pointer"
                 >
                   <Edit className="w-3.5 h-3.5" />
                 </button>
@@ -489,7 +596,7 @@ export function InterviewsPage() {
                     e.stopPropagation();
                     handleDelete(interview.id);
                   }}
-                  className="p-1.5 text-slate-500 hover:text-danger-400 hover:bg-danger-500/10 cursor-pointer"
+                  className="p-1.5 text-slate-500 hover:text-danger-400 cursor-pointer"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
                 </button>
@@ -620,7 +727,7 @@ export function InterviewsPage() {
               className={`px-3 py-1 text-xs transition-colors cursor-pointer ${
                 statusFilters.includes(opt.value as InterviewStatus)
                   ? 'bg-primary-500 text-slate-900'
-                  : 'bg-dark-700 text-slate-400 hover:text-white hover:bg-dark-600'
+                  : 'bg-dark-700 text-slate-400 hover:text-white'
               }`}
             >
               {opt.label}
@@ -714,13 +821,7 @@ export function InterviewsPage() {
                         <div className="w-full py-6 border-2 border-dashed border-dark-600 flex items-center justify-center">
                           <span className="text-xs text-slate-500">Brak rozmów</span>
                         </div>
-                        <button
-                          onClick={() => state.applications.length > 0 ? openModal() : undefined}
-                          disabled={state.applications.length === 0}
-                          className="fold-btn w-full py-2 flex items-center justify-center bg-primary-500 text-slate-900 hover:bg-primary-400 disabled:cursor-not-allowed transition-colors cursor-pointer"
-                        >
-                          <Plus className="w-4 h-4" />
-                        </button>
+                        {renderInlineAdd(status)}
                       </div>
                     ) : interviewsByStatus[status].length === 0 ? (
                       <div className="text-center py-8 text-slate-500 text-sm border-2 border-dashed border-primary-500/50">
@@ -731,13 +832,7 @@ export function InterviewsPage() {
                         {interviewsByStatus[status].map((interview) => (
                           <InterviewCard key={interview.id} interview={interview} compact draggable />
                         ))}
-                        <button
-                          onClick={() => state.applications.length > 0 ? openModal() : undefined}
-                          disabled={state.applications.length === 0}
-                          className="fold-btn w-full mt-1 py-2 flex items-center justify-center bg-primary-500 text-slate-900 hover:bg-primary-400 disabled:cursor-not-allowed transition-colors cursor-pointer"
-                        >
-                          <Plus className="w-4 h-4" />
-                        </button>
+                        {renderInlineAdd(status)}
                       </>
                     )}
                   </div>

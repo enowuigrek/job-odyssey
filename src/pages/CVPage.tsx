@@ -284,7 +284,7 @@ export function CVPage() {
                   {!cv.isDefault && (
                     <button
                       onClick={() => handleSetDefault(cv)}
-                      className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 text-sm text-slate-400 hover:bg-dark-700 transition-colors cursor-pointer"
+                      className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 text-sm text-slate-400 hover:text-white transition-colors cursor-pointer"
                     >
                       <Star className="w-4 h-4" />
                       Domyślne
@@ -293,7 +293,7 @@ export function CVPage() {
                   {getCVDataById(cv.id) && (
                     <button
                       onClick={() => setPreviewCvId(cv.id)}
-                      className="p-1.5 text-slate-500 hover:text-primary-400 hover:bg-primary-500/10 transition-colors cursor-pointer"
+                      className="p-1.5 text-slate-500 hover:text-primary-400 transition-colors cursor-pointer"
                       title="Podgląd CV"
                     >
                       <Eye className="w-4 h-4" />
@@ -302,7 +302,7 @@ export function CVPage() {
                   {getCVDataById(cv.id) && (
                     <button
                       onClick={() => navigate(`/cv-editor?edit=${cv.id}`)}
-                      className="p-1.5 text-slate-500 hover:text-primary-400 hover:bg-primary-500/10 transition-colors cursor-pointer"
+                      className="p-1.5 text-slate-500 hover:text-primary-400 transition-colors cursor-pointer"
                       title="Otwórz w generatorze CV"
                     >
                       <FileOutput className="w-4 h-4" />
@@ -312,7 +312,7 @@ export function CVPage() {
                   {cv.fileName && (
                     <button
                       onClick={() => handleDownloadCV(cv)}
-                      className="p-1.5 text-slate-500 hover:text-success-400 hover:bg-success-500/10 transition-colors cursor-pointer"
+                      className="p-1.5 text-slate-500 hover:text-success-400 transition-colors cursor-pointer"
                       title="Pobierz plik"
                     >
                       <Download className="w-4 h-4" />
@@ -320,14 +320,14 @@ export function CVPage() {
                   )}
                   <button
                     onClick={() => openModal(cv)}
-                    className="p-1.5 text-slate-500 hover:text-primary-400 hover:bg-primary-500/10 transition-colors cursor-pointer"
+                    className="p-1.5 text-slate-500 hover:text-primary-400 transition-colors cursor-pointer"
                     title="Edytuj metadane"
                   >
                     <Edit className="w-4 h-4" />
                   </button>
                   <button
                     onClick={() => handleDelete(cv.id)}
-                    className="p-1.5 text-slate-500 hover:text-danger-400 hover:bg-danger-500/10 transition-colors cursor-pointer"
+                    className="p-1.5 text-slate-500 hover:text-danger-400 transition-colors cursor-pointer"
                     title="Usuń"
                   >
                     <Trash2 className="w-4 h-4" />
@@ -428,7 +428,7 @@ export function CVPage() {
             <div className="sticky top-0 z-10 bg-dark-900 border-b border-dark-700 px-4 py-2 flex justify-end">
               <button
                 onClick={() => setPreviewCvId(null)}
-                className="fold-btn px-3 py-1.5 text-sm bg-dark-700 hover:bg-dark-600 text-slate-300 transition-colors cursor-pointer"
+                className="fold-btn px-3 py-1.5 text-sm bg-dark-700 text-slate-300 transition-colors cursor-pointer"
               >
                 Zamknij
               </button>

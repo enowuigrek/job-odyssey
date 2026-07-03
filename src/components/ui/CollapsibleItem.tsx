@@ -65,7 +65,7 @@ export function CollapsibleItem({
     >
       {/* pr-8 po rozwinięciu — ikony nie wjeżdżają w zagięty róg kartki */}
       <div
-        className={`flex items-center gap-2 pl-3 py-2.5 cursor-pointer hover:bg-dark-700 transition-colors select-none ${open ? 'pr-8' : 'pr-3'}`}
+        className={`flex items-center gap-2 pl-3 py-2.5 cursor-pointer select-none ${open ? 'pr-8' : 'pr-3'}`}
         onClick={() => setOpen(v => !v)}
       >
         {draggable && (

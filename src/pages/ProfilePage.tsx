@@ -80,7 +80,7 @@ function SaveButton({
       className={`fold-btn flex items-center gap-1.5 px-4 py-2 text-sm font-medium transition-colors cursor-pointer disabled:opacity-60 ${
         saved
           ? 'bg-success-500/20 text-success-400'
-          : 'bg-primary-500 hover:bg-primary-400 text-slate-900'
+          : 'bg-primary-500 text-slate-900'
       }`}
     >
       {saving ? (
@@ -834,7 +834,7 @@ export function ProfilePage() {
                       fileInputRef.current?.click();
                     }}
                     disabled={uploadingCertId === cert.id}
-                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-dark-700 text-slate-300 hover:text-white hover:bg-dark-600 transition-colors cursor-pointer disabled:opacity-60"
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-dark-700 text-slate-300 hover:text-white transition-colors cursor-pointer disabled:opacity-60"
                   >
                     {uploadingCertId === cert.id
                       ? <Loader2 className="w-3.5 h-3.5 animate-spin" />

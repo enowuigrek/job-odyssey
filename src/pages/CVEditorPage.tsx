@@ -67,8 +67,8 @@ function SectionHeading({
 
   return (
     <div
-      className={`flex items-center gap-2 pl-3 py-2.5 transition-colors select-none ${collapsed ? 'pr-3' : 'pr-8'}${
-        onToggleCollapse ? ' cursor-pointer hover:bg-dark-700' : ''
+      className={`flex items-center gap-2 pl-3 py-2.5 select-none ${collapsed ? 'pr-3' : 'pr-8'}${
+        onToggleCollapse ? ' cursor-pointer' : ''
       }`}
       onClick={editing ? undefined : onToggleCollapse}
     >
@@ -241,7 +241,7 @@ function ProfileImportMenu<T>({
               <button
                 type="button"
                 onClick={handleImport}
-                className="text-xs px-3 py-1.5 bg-primary-500 text-slate-900 hover:bg-primary-400 cursor-pointer transition-colors"
+                className="text-xs px-3 py-1.5 bg-primary-500 text-slate-900 cursor-pointer transition-colors"
               >
                 Importuj
               </button>
@@ -249,7 +249,7 @@ function ProfileImportMenu<T>({
             <button
               type="button"
               onClick={handleCancel}
-              className="text-xs px-3 py-1.5 bg-dark-700 text-slate-400 hover:bg-dark-600 cursor-pointer transition-colors"
+              className="text-xs px-3 py-1.5 bg-dark-700 text-slate-400 cursor-pointer transition-colors"
             >
               Anuluj
             </button>
@@ -815,7 +815,7 @@ export function CVEditorPage() {
             })}
             primaryLabel="Dodaj certyfikat"
           />
-        </>
+        </div>
       )}
       </DraggableSection>
 
@@ -906,7 +906,7 @@ export function CVEditorPage() {
         {/* Podgląd */}
         <button
           onClick={handlePreview}
-          className="fold-btn flex items-center gap-1.5 px-3 py-2 bg-dark-700 hover:bg-dark-600 text-slate-300 text-sm transition-colors cursor-pointer"
+          className="fold-btn flex items-center gap-1.5 px-3 py-2 bg-dark-700 text-slate-300 text-sm transition-colors cursor-pointer"
         >
           {showPreview ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
           <span className="hidden sm:inline">{showPreview ? 'Zamknij' : 'Podgląd'}</span>
@@ -915,7 +915,7 @@ export function CVEditorPage() {
         <button
           onClick={handleDraftSave}
           className={`fold-btn flex items-center gap-1.5 px-3 py-2 text-sm transition-colors cursor-pointer ${
-            draftSaved ? 'bg-success-500/20 text-success-400' : 'bg-dark-700 hover:bg-dark-600 text-slate-300'
+            draftSaved ? 'bg-success-500/20 text-success-400' : 'bg-dark-700 text-slate-300'
           }`}
           title="Szybki zapis roboczy — nie tworzy ani nie aktualizuje wpisu w Bazie CV"
         >
@@ -927,7 +927,7 @@ export function CVEditorPage() {
           onClick={handleSaveClick}
           disabled={isSaving}
           className={`fold-btn flex items-center gap-1.5 px-4 py-2 text-sm font-medium transition-colors cursor-pointer disabled:opacity-60 ${
-            saved ? 'bg-success-500/20 text-success-400' : 'bg-primary-500 hover:bg-primary-400 text-slate-900'
+            saved ? 'bg-success-500/20 text-success-400' : 'bg-primary-500 text-slate-900'
           }`}
         >
           {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}

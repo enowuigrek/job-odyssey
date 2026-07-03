@@ -35,6 +35,7 @@ import {
   getTrackingLinksForApplication,
 } from '../lib/db';
 import { getCVDataById, prepareTrackedCV } from '../lib/generateCV';
+import { startPaperGhost, endPaperGhost } from '../lib/paperDragGhost';
 import { CVTemplate } from '../templates/cv/CVTemplate';
 import { CVHtml } from '../templates/cv/CVHtml';
 import type { CVData } from '../templates/cv/types';
@@ -383,6 +384,102 @@ export function ApplicationsPage() {
     dispatch({ type: 'DELETE_APPLICATION', payload: id });
   };
 
+  // ── Inline dodawanie w kolumnie kanbanu — "+" rozwija się w kartę ──────────
+  const [inlineAddStatus, setInlineAddStatus] = useState<ApplicationStatus | null>(null);
+  const [inlineForm, setInlineForm] = useState({ companyName: '', position: '', jobUrl: '', cvId: '' });
+
+  const startInlineAdd = (status: ApplicationStatus) => {
+    const defaultCv = state.cvs.find(cv => cv.isDefault);
+    setInlineForm({ companyName: '', position: '', jobUrl: '', cvId: defaultCv?.id || '' });
+    setInlineAddStatus(status);
+  };
+
+  const submitInlineAdd = () => {
+    if (!inlineForm.companyName.trim() || !inlineAddStatus) return;
+    dispatch({
+      type: 'ADD_APPLICATION',
+      payload: {
+        companyName: inlineForm.companyName.trim(),
+        position: inlineForm.position,
+        jobUrl: inlineForm.jobUrl,
+        location: '',
+        salaryOffered: '',
+        salaryExpected: '',
+        status: inlineAddStatus,
+        appliedDate: new Date().toISOString().split('T')[0],
+        notes: '',
+        source: detectSourceFromUrl(inlineForm.jobUrl),
+        cvId: inlineForm.cvId || undefined,
+      },
+    });
+    setInlineAddStatus(null);
+  };
+
+  const inlineInputClass = 'w-full px-2 py-1.5 bg-dark-700 text-white text-sm placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-primary-500';
+
+  // Zwykła funkcja (nie komponent!) — komponent definiowany w środku
+  // tracił by focus inputa przy każdym re-renderze strony
+  const renderInlineAdd = (status: ApplicationStatus) =>
+    inlineAddStatus === status ? (
+      <form
+        className="animate-unfold-card fold-card bg-dark-800 p-3 space-y-2"
+        onSubmit={(e) => { e.preventDefault(); submitInlineAdd(); }}
+        onKeyDown={(e) => { if (e.key === 'Escape') setInlineAddStatus(null); }}
+      >
+        <div>
+          <label className="block text-xs text-slate-300 mb-1">Firma *</label>
+          <input
+            autoFocus
+            value={inlineForm.companyName}
+            onChange={(e) => setInlineForm(f => ({ ...f, companyName: e.target.value }))}
+            className={inlineInputClass}
+          />
+        </div>
+        <div>
+          <label className="block text-xs text-slate-300 mb-1">Stanowisko</label>
+          <input
+            value={inlineForm.position}
+            onChange={(e) => setInlineForm(f => ({ ...f, position: e.target.value }))}
+            placeholder="np. Frontend Developer"
+            className={inlineInputClass}
+          />
+        </div>
+        <div>
+          <label className="block text-xs text-slate-300 mb-1">Link do oferty</label>
+          <input
+            value={inlineForm.jobUrl}
+            onChange={(e) => setInlineForm(f => ({ ...f, jobUrl: e.target.value }))}
+            placeholder="https://..."
+            className={inlineInputClass}
+          />
+        </div>
+        {state.cvs.length > 0 && (
+          <Select
+            label="CV do tej aplikacji"
+            dense
+            options={[{ value: '', label: 'Bez CV' }, ...state.cvs.map(cv => ({ value: cv.id, label: cv.name }))]}
+            value={inlineForm.cvId}
+            onChange={(e) => setInlineForm(f => ({ ...f, cvId: e.target.value }))}
+          />
+        )}
+        <div className="flex gap-2 pt-1">
+          <Button type="button" size="sm" variant="secondary" onClick={() => setInlineAddStatus(null)}>
+            Anuluj
+          </Button>
+          <Button type="submit" size="sm" className="flex-1" disabled={!inlineForm.companyName.trim()}>
+            Dodaj
+          </Button>
+        </div>
+      </form>
+    ) : (
+      <button
+        onClick={() => startInlineAdd(status)}
+        className="fold-btn w-full py-2 flex items-center justify-center bg-primary-500 text-slate-900 transition-colors cursor-pointer"
+      >
+        <Plus className="w-4 h-4" />
+      </button>
+    );
+
   const handleStatusChange = (app: JobApplication, newStatus: ApplicationStatus, skipInterviewPrompt = false) => {
     dispatch({
       type: 'UPDATE_APPLICATION',
@@ -408,6 +505,7 @@ export function ApplicationsPage() {
     e.dataTransfer.setData('application/json', JSON.stringify(app));
     e.dataTransfer.setData('text/plain', app.id);
     e.dataTransfer.effectAllowed = 'move';
+    startPaperGhost(e, e.currentTarget as HTMLElement);
     // Dodaj nieco opóźnienia żeby element był widoczny podczas przeciągania
     const target = e.currentTarget as HTMLElement;
     requestAnimationFrame(() => {
@@ -418,6 +516,7 @@ export function ApplicationsPage() {
   const handleDragEnd = (e: React.DragEvent) => {
     const target = e.currentTarget as HTMLElement;
     target.style.opacity = '1';
+    endPaperGhost();
     setDraggedApp(null);
     setDragOverStatus(null);
   };
@@ -469,7 +568,7 @@ export function ApplicationsPage() {
         <div className="p-0">
           {/* Główna sekcja - klikalna aby rozwinąć */}
           <div
-            className={`${compact ? 'px-2.5 py-2.5' : 'p-4'} cursor-pointer`}
+            className={`${compact ? 'px-2.5 py-2.5' : 'p-4'} cursor-pointer relative overflow-hidden`}
             onClick={handleExpandClick}
           >
           <div className="flex items-center gap-1">
@@ -507,55 +606,52 @@ export function ApplicationsPage() {
               </div>
             </div>
 
-            {/* Slide-up icon bar on hover */}
+            {/* Ikony wjeżdżają z prawej na hover — karta nie zmienia rozmiaru */}
             {compact && !isExpanded && (
-              <div className="overflow-hidden max-h-0 group-hover:max-h-12 transition-all duration-200 ease-out">
-                <div className="flex items-center gap-1 pt-2 mt-1.5 border-t border-dark-600/50">
-                  {app.jobUrl && (
-                    <a
-                      href={app.jobUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      onClick={(e) => e.stopPropagation()}
-                      className="p-1.5 text-slate-500 hover:text-primary-400 transition-colors cursor-pointer"
-                      title="Otwórz ofertę"
-                    >
-                      <ExternalLink className="w-3.5 h-3.5" />
-                    </a>
-                  )}
-                  <button
-                    onClick={(e) => { e.stopPropagation(); setTrackingApp(app); }}
-                    className="p-1.5 text-slate-500 hover:text-success-400 transition-colors cursor-pointer"
-                    title="Śledź CV"
+              <div className="absolute inset-y-0 right-0 flex items-center pl-10 pr-1.5 translate-x-full group-hover:translate-x-0 transition-transform duration-200 ease-out bg-gradient-to-l from-dark-800 from-65% to-transparent">
+                {app.jobUrl && (
+                  <a
+                    href={app.jobUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={(e) => e.stopPropagation()}
+                    className="p-1.5 text-slate-400 hover:text-primary-400 transition-colors cursor-pointer"
+                    title="Otwórz ofertę"
                   >
-                    <MousePointerClick className="w-3.5 h-3.5" />
-                  </button>
-                  {app.cvId && getCVDataById(app.cvId) && (
-                    <button
-                      onClick={(e) => { e.stopPropagation(); downloadTaggedPdf(app); }}
-                      disabled={generatingTaggedFor === app.id}
-                      className="p-1.5 text-slate-500 hover:text-success-400 transition-colors cursor-pointer disabled:opacity-50"
-                      title="Pobierz otagowane CV"
-                    >
-                      <FileDown className="w-3.5 h-3.5" />
-                    </button>
-                  )}
-                  <div className="flex-1" />
+                    <ExternalLink className="w-3.5 h-3.5" />
+                  </a>
+                )}
+                <button
+                  onClick={(e) => { e.stopPropagation(); setTrackingApp(app); }}
+                  className="p-1.5 text-slate-400 hover:text-success-400 transition-colors cursor-pointer"
+                  title="Śledź CV"
+                >
+                  <MousePointerClick className="w-3.5 h-3.5" />
+                </button>
+                {app.cvId && getCVDataById(app.cvId) && (
                   <button
-                    onClick={(e) => { e.stopPropagation(); openModal(app); }}
-                    className="p-1.5 text-slate-500 hover:text-primary-400 transition-colors cursor-pointer"
-                    title="Edytuj"
+                    onClick={(e) => { e.stopPropagation(); downloadTaggedPdf(app); }}
+                    disabled={generatingTaggedFor === app.id}
+                    className="p-1.5 text-slate-400 hover:text-success-400 transition-colors cursor-pointer disabled:opacity-50"
+                    title="Pobierz otagowane CV"
                   >
-                    <Edit className="w-3.5 h-3.5" />
+                    <FileDown className="w-3.5 h-3.5" />
                   </button>
-                  <button
-                    onClick={(e) => { e.stopPropagation(); handleDelete(app.id); }}
-                    className="p-1.5 text-slate-500 hover:text-danger-400 transition-colors cursor-pointer"
-                    title="Usuń"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
-                </div>
+                )}
+                <button
+                  onClick={(e) => { e.stopPropagation(); openModal(app); }}
+                  className="p-1.5 text-slate-400 hover:text-primary-400 transition-colors cursor-pointer"
+                  title="Edytuj"
+                >
+                  <Edit className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  onClick={(e) => { e.stopPropagation(); handleDelete(app.id); }}
+                  className="p-1.5 text-slate-400 hover:text-danger-400 transition-colors cursor-pointer"
+                  title="Usuń"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
               </div>
             )}
           </div>
@@ -567,6 +663,7 @@ export function ApplicationsPage() {
               <div className="mt-3 mb-3">
                 <Select
                   label="Zmień status"
+                  dense
                   options={statusOptions}
                   value={app.status}
                   onChange={(e) => {
@@ -604,7 +701,7 @@ export function ApplicationsPage() {
                       {interviews.map((interview) => (
                         <div
                           key={interview.id}
-                          className="flex items-center justify-between text-xs bg-dark-700/50 p-2 hover:bg-dark-700 cursor-pointer transition-colors"
+                          className="flex items-center justify-between text-xs bg-dark-700/50 p-2 cursor-pointer transition-colors"
                           onClick={(e) => { e.stopPropagation(); navigate('/interviews', { state: { openFor: interview.id } }); }}
                         >
                           <span className="text-slate-300">
@@ -787,7 +884,7 @@ export function ApplicationsPage() {
               className={`px-3 py-1 text-xs transition-colors cursor-pointer ${
                 statusFilters.includes(opt.value)
                   ? 'bg-primary-500 text-slate-900'
-                  : 'bg-dark-700 text-slate-400 hover:text-white hover:bg-dark-600'
+                  : 'bg-dark-700 text-slate-400 hover:text-white'
               }`}
             >
               {opt.label}
@@ -881,12 +978,7 @@ export function ApplicationsPage() {
                         <div className="w-full py-6 border-2 border-dashed border-dark-600 flex items-center justify-center">
                           <span className="text-xs text-slate-500">Brak aplikacji</span>
                         </div>
-                        <button
-                          onClick={() => openModal(undefined, status)}
-                          className="fold-btn w-full py-2 flex items-center justify-center bg-primary-500 text-slate-900 hover:bg-primary-400 transition-colors cursor-pointer"
-                        >
-                          <Plus className="w-4 h-4" />
-                        </button>
+                        {renderInlineAdd(status)}
                       </div>
                     ) : applicationsByStatus[status].length === 0 ? (
                       <div className="text-center py-8 text-slate-500 text-sm border-2 border-dashed border-primary-500/50">
@@ -897,12 +989,7 @@ export function ApplicationsPage() {
                         {applicationsByStatus[status].map((app) => (
                           <ApplicationCard key={app.id} app={app} compact draggable />
                         ))}
-                        <button
-                          onClick={() => openModal(undefined, status)}
-                          className="fold-btn w-full mt-1 py-2 flex items-center justify-center bg-primary-500 text-slate-900 hover:bg-primary-400 transition-colors cursor-pointer"
-                        >
-                          <Plus className="w-4 h-4" />
-                        </button>
+                        {renderInlineAdd(status)}
                       </>
                     )}
                   </div>
@@ -1003,7 +1090,7 @@ export function ApplicationsPage() {
               <button
                 type="button"
                 onClick={() => setPreviewCvData(getCVDataById(formData.cvId!))}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-dark-600 hover:bg-dark-500 text-slate-300 transition-colors cursor-pointer"
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs fold-btn bg-dark-600 text-slate-300 transition-colors cursor-pointer"
               >
                 <Eye className="w-3.5 h-3.5" />
                 Podgląd CV
@@ -1027,7 +1114,7 @@ export function ApplicationsPage() {
                   type="button"
                   onClick={handleGeneratePdf}
                   disabled={isGeneratingPdf}
-                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-success-600 hover:bg-success-500 text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs fold-btn bg-success-600 text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer"
                 >
                   <FileDown className="w-3.5 h-3.5" />
                   {isGeneratingPdf ? 'Generuję...' : 'Pobierz otagowane CV'}
@@ -1102,7 +1189,7 @@ export function ApplicationsPage() {
           <div className="sticky top-0 z-10 bg-dark-900 border-b border-dark-700 px-4 py-2 flex justify-end">
             <button
               onClick={() => setPreviewCvData(null)}
-              className="fold-btn px-3 py-1.5 text-sm bg-dark-700 hover:bg-dark-600 text-slate-300 transition-colors cursor-pointer"
+              className="fold-btn px-3 py-1.5 text-sm bg-dark-700 text-slate-300 transition-colors cursor-pointer"
             >
               Zamknij
             </button>
