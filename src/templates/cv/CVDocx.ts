@@ -10,6 +10,7 @@ import {
 import type { CVData, CVLink } from './types';
 import { TEAL_HEX as TEAL, TEAL_LIGHT_HEX as TEAL_LIGHT, GRAY_HEX as GRAY } from './colors';
 import { formatRoleLabel, formatTechCategory, formatInterests } from './format';
+import { getSectionOrder } from './sectionOrder';
 
 // ---------------------------------------------------------------------------
 // Design tokens
@@ -126,145 +127,160 @@ export async function buildCVDocx(data: CVData): Promise<Blob> {
     spacing: { after: 80 },
   }));
 
-  // ── PROFIL ──────────────────────────────────────────────────────────
-  children.push(sectionHeader((data.profileTitle || 'PROFIL').toUpperCase()));
-  children.push(new Paragraph({
-    children: [run(data.profile, { size: 18 })],
-    spacing: { after: 100 },
-  }));
-
-  // ── PODEJŚCIE DO PRACY (optional) ───────────────────────────────────
-  if (data.showApproach !== false && data.approach) {
-    children.push(sectionHeader((data.approachTitle || 'PODEJŚCIE DO PRACY').toUpperCase()));
-    children.push(new Paragraph({
-      children: [run(data.approach, { size: 18 })],
-      spacing: { after: 100 },
-    }));
-  }
-
-  // ── TECHNOLOGIE I NARZĘDZIA ─────────────────────────────────────────
-  children.push(sectionHeader((data.technologiesTitle || 'TECHNOLOGIE I NARZĘDZIA').toUpperCase()));
-  for (const tech of data.technologies) {
-    children.push(new Paragraph({
-      tabStops: [{ type: TabStopType.LEFT, position: TECH_TAB }],
-      children: [
-        run(formatTechCategory(tech.category), { italics: true, color: TEAL, size: 18 }),
-        new TextRun({ text: '\t', font: FONT, size: 18 }),
-        run(tech.items, { size: 18 }),
-      ],
-      spacing: { after: 110 },
-    }));
-  }
-
-  // ── WYBRANE PROJEKTY ────────────────────────────────────────────────
-  children.push(sectionHeader('WYBRANE PROJEKTY'));
-  for (const project of data.projects) {
-    children.push(new Paragraph({
-      children: [run(project.name, { bold: true, size: 19 })],
-      spacing: { before: 60, after: 30 },
-    }));
-    children.push(new Paragraph({
-      children: [run(project.tagline, { italics: true, color: TEAL, size: 18 })],
-      spacing: { after: 80 },
-    }));
-    children.push(new Paragraph({
-      children: [run(project.description, { size: 18 })],
-      spacing: { after: 60 },
-    }));
-    children.push(new Paragraph({
-      children: [run(project.stack, { size: 17, color: GRAY })],
-      spacing: { after: project.note ? 40 : 60 },
-    }));
-    if (project.note) {
-      children.push(new Paragraph({
-        children: [run(project.note, { italics: true, size: 17, color: GRAY })],
-        spacing: { after: 60 },
-      }));
-    }
-    // Project links
-    const projLinkChildren: (TextRun | ExternalHyperlink)[] = [];
-    project.links.forEach((l, i) => {
-      if (i > 0) projLinkChildren.push(run('   |   ', { color: GRAY, size: 17 }));
-      const label =
-        l.label === 'GitHub' || l.label.endsWith('GitHub')
-          ? 'GitHub'
-          : l.url.replace(/^https?:\/\//, '');
-      projLinkChildren.push(hyperlink(l, label));
-    });
-    children.push(new Paragraph({ children: projLinkChildren, spacing: { after: 240 } }));
-  }
-
-  // ── DOŚWIADCZENIE ZAWODOWE ──────────────────────────────────────────
-  children.push(sectionHeader('DOŚWIADCZENIE ZAWODOWE'));
-  for (const exp of data.experience) {
-    const companyChildren: (TextRun | ExternalHyperlink)[] = [
-      run(exp.company, { bold: true, size: 19 }),
-    ];
-    if (exp.companyLink) {
-      companyChildren.push(run('   ', { size: 17 }));
-      companyChildren.push(hyperlink(exp.companyLink));
-    }
-    children.push(new Paragraph({
-      children: companyChildren,
-      spacing: { before: 200, after: 40 },
-    }));
-
-    for (const role of exp.roles) {
-      children.push(new Paragraph({
-        children: [run(formatRoleLabel(role), { italics: true, size: 18 })],
-        border: LEFT_BORDER,
-        indent: LEFT_INDENT,
-        spacing: { before: 40, after: 60 },
-      }));
-      for (const bullet of role.bullets) {
+  // ── Content sections, in user-defined order ──────────────────────────
+  for (const key of getSectionOrder(data)) {
+    switch (key) {
+      case 'profile':
+        children.push(sectionHeader((data.profileTitle || 'PROFIL').toUpperCase()));
         children.push(new Paragraph({
-          children: [run('• ' + bullet, { size: 18 })],
-          border: LEFT_BORDER,
-          indent: LEFT_INDENT,
-          spacing: { after: 50 },
+          children: [run(data.profile, { size: 18 })],
+          spacing: { after: 100 },
         }));
-      }
-      // Small gap after last bullet
-      children.push(new Paragraph({ children: [], spacing: { after: 40 } }));
+        if (data.showApproach !== false && data.approach) {
+          children.push(sectionHeader((data.approachTitle || 'PODEJŚCIE DO PRACY').toUpperCase()));
+          children.push(new Paragraph({
+            children: [run(data.approach, { size: 18 })],
+            spacing: { after: 100 },
+          }));
+        }
+        break;
+
+      case 'technologies':
+        children.push(sectionHeader((data.technologiesTitle || 'TECHNOLOGIE I NARZĘDZIA').toUpperCase()));
+        for (const tech of data.technologies) {
+          children.push(new Paragraph({
+            tabStops: [{ type: TabStopType.LEFT, position: TECH_TAB }],
+            children: [
+              run(formatTechCategory(tech.category), { italics: true, color: TEAL, size: 18 }),
+              new TextRun({ text: '\t', font: FONT, size: 18 }),
+              run(tech.items, { size: 18 }),
+            ],
+            spacing: { after: 110 },
+          }));
+        }
+        break;
+
+      case 'projects':
+        children.push(sectionHeader('WYBRANE PROJEKTY'));
+        for (const project of data.projects) {
+          children.push(new Paragraph({
+            children: [run(project.name, { bold: true, size: 19 })],
+            spacing: { before: 60, after: 30 },
+          }));
+          children.push(new Paragraph({
+            children: [run(project.tagline, { italics: true, color: TEAL, size: 18 })],
+            spacing: { after: 80 },
+          }));
+          children.push(new Paragraph({
+            children: [run(project.description, { size: 18 })],
+            spacing: { after: 60 },
+          }));
+          children.push(new Paragraph({
+            children: [run(project.stack, { size: 17, color: GRAY })],
+            spacing: { after: project.note ? 40 : 60 },
+          }));
+          if (project.note) {
+            children.push(new Paragraph({
+              children: [run(project.note, { italics: true, size: 17, color: GRAY })],
+              spacing: { after: 60 },
+            }));
+          }
+          // Project links
+          const projLinkChildren: (TextRun | ExternalHyperlink)[] = [];
+          project.links.forEach((l, i) => {
+            if (i > 0) projLinkChildren.push(run('   |   ', { color: GRAY, size: 17 }));
+            const label =
+              l.label === 'GitHub' || l.label.endsWith('GitHub')
+                ? 'GitHub'
+                : l.url.replace(/^https?:\/\//, '');
+            projLinkChildren.push(hyperlink(l, label));
+          });
+          children.push(new Paragraph({ children: projLinkChildren, spacing: { after: 240 } }));
+        }
+        break;
+
+      case 'experience':
+        children.push(sectionHeader('DOŚWIADCZENIE ZAWODOWE'));
+        for (const exp of data.experience) {
+          const companyChildren: (TextRun | ExternalHyperlink)[] = [
+            run(exp.company, { bold: true, size: 19 }),
+          ];
+          if (exp.companyLink) {
+            companyChildren.push(run('   ', { size: 17 }));
+            companyChildren.push(hyperlink(exp.companyLink));
+          }
+          children.push(new Paragraph({
+            children: companyChildren,
+            spacing: { before: 200, after: 40 },
+          }));
+
+          for (const role of exp.roles) {
+            children.push(new Paragraph({
+              children: [run(formatRoleLabel(role), { italics: true, size: 18 })],
+              border: LEFT_BORDER,
+              indent: LEFT_INDENT,
+              spacing: { before: 40, after: 60 },
+            }));
+            for (const bullet of role.bullets) {
+              children.push(new Paragraph({
+                children: [run('• ' + bullet, { size: 18 })],
+                border: LEFT_BORDER,
+                indent: LEFT_INDENT,
+                spacing: { after: 50 },
+              }));
+            }
+            // Small gap after last bullet
+            children.push(new Paragraph({ children: [], spacing: { after: 40 } }));
+          }
+        }
+        break;
+
+      case 'education':
+        children.push(sectionHeader('WYKSZTAŁCENIE'));
+        for (const edu of data.education) {
+          children.push(new Paragraph({
+            children: [run(edu.school, { bold: true, size: 19 })],
+            spacing: { before: 40, after: 20 },
+          }));
+          children.push(new Paragraph({
+            children: [run(`${edu.degree} | ${edu.years}`, { italics: true, size: 18 })],
+            spacing: { after: 140 },
+          }));
+        }
+        break;
+
+      case 'custom':
+        if (data.customSections) {
+          for (const sec of data.customSections) {
+            children.push(sectionHeader(sec.title.toUpperCase()));
+            children.push(new Paragraph({
+              children: [run(sec.content, { size: 18 })],
+              spacing: { after: 100 },
+            }));
+          }
+        }
+        break;
+
+      case 'certificates':
+        // Not currently rendered in the DOCX export (pre-existing gap, unrelated to reordering).
+        break;
+
+      case 'interests':
+        children.push(sectionHeader('ZAINTERESOWANIA'));
+        children.push(new Paragraph({
+          children: [run(formatInterests(data.interests), { size: 18 })],
+          spacing: { after: 100 },
+        }));
+        break;
+
+      case 'rodo':
+        children.push(new Paragraph({
+          children: [run(data.rodo, { italics: true, size: 15, color: GRAY })],
+          spacing: { before: 400, after: 0 },
+        }));
+        break;
     }
   }
-
-  // ── WYKSZTAŁCENIE ───────────────────────────────────────────────────
-  children.push(sectionHeader('WYKSZTAŁCENIE'));
-  for (const edu of data.education) {
-    children.push(new Paragraph({
-      children: [run(edu.school, { bold: true, size: 19 })],
-      spacing: { before: 40, after: 20 },
-    }));
-    children.push(new Paragraph({
-      children: [run(`${edu.degree} | ${edu.years}`, { italics: true, size: 18 })],
-      spacing: { after: 140 },
-    }));
-  }
-
-  // ── SEKCJE WŁASNE ───────────────────────────────────────────────────
-  if (data.customSections) {
-    for (const sec of data.customSections) {
-      children.push(sectionHeader(sec.title.toUpperCase()));
-      children.push(new Paragraph({
-        children: [run(sec.content, { size: 18 })],
-        spacing: { after: 100 },
-      }));
-    }
-  }
-
-  // ── ZAINTERESOWANIA ─────────────────────────────────────────────────
-  children.push(sectionHeader('ZAINTERESOWANIA'));
-  children.push(new Paragraph({
-    children: [run(formatInterests(data.interests), { size: 18 })],
-    spacing: { after: 100 },
-  }));
-
-  // ── RODO ────────────────────────────────────────────────────────────
-  children.push(new Paragraph({
-    children: [run(data.rodo, { italics: true, size: 15, color: GRAY })],
-    spacing: { before: 400, after: 0 },
-  }));
 
   // ---------------------------------------------------------------------------
   // Build document

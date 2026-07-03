@@ -1,7 +1,7 @@
 import { useState, useEffect, createElement, useRef } from 'react';
 import type { ReactElement } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Plus, Trash2, Save, Eye, EyeOff, ArrowLeft, FileEdit, Pencil, Check, Loader2, ChevronDown, ChevronRight, Database } from 'lucide-react';
+import { Plus, Trash2, Save, Eye, EyeOff, ArrowLeft, FileEdit, Pencil, Check, Loader2, ChevronDown, ChevronRight, Database, GripVertical } from 'lucide-react';
 import { pdf } from '@react-pdf/renderer';
 import type { DocumentProps } from '@react-pdf/renderer';
 import { Button, PageHeader, CollapsibleItem, Checkbox, Modal } from '../components/ui';
@@ -10,6 +10,7 @@ import type { CVData } from '../templates/cv/types';
 import { defaultCVData } from '../templates/cv/defaultCVData';
 import { CVTemplate } from '../templates/cv/CVTemplate';
 import { CVHtml } from '../templates/cv/CVHtml';
+import { getSectionOrder, type SectionKey } from '../templates/cv/sectionOrder';
 import {
   getCVDataById,
   saveCVDataById,
@@ -45,6 +46,7 @@ function SectionHeading({
   onToggleEnabled,
   collapsed,
   onToggleCollapse,
+  draggable = false,
 }: {
   title: string;
   onRename?: (v: string) => void;
@@ -52,6 +54,8 @@ function SectionHeading({
   onToggleEnabled?: () => void;
   collapsed?: boolean;
   onToggleCollapse?: () => void;
+  /** Shows a drag handle — the actual DOM drag wiring lives on the wrapping DraggableSection */
+  draggable?: boolean;
 }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(title);
@@ -68,6 +72,11 @@ function SectionHeading({
       }`}
       onClick={editing ? undefined : onToggleCollapse}
     >
+      {draggable && (
+        <div className="text-slate-500 flex-shrink-0 cursor-grab active:cursor-grabbing" onClick={e => e.stopPropagation()}>
+          <GripVertical className="w-4 h-4" />
+        </div>
+      )}
       {onToggleCollapse && (
         collapsed
           ? <ChevronRight className="w-3.5 h-3.5 text-slate-500 flex-shrink-0" />
@@ -114,6 +123,33 @@ function SectionHeading({
           />
         </div>
       )}
+    </div>
+  );
+}
+
+/**
+ * Positions a content section via CSS `order` (so drag-reordering never
+ * relocates JSX — every section keeps its original place in the source,
+ * only its visual position moves) and carries the actual native drag
+ * wiring from useDragReorder.
+ */
+function DraggableSection({
+  order,
+  dragProps,
+  children,
+}: {
+  order: number;
+  dragProps: ReturnType<ReturnType<typeof useDragReorder>['getItemProps']>;
+  children: React.ReactNode;
+}) {
+  const { isDragging, isDragOver, ...domDragProps } = dragProps;
+  return (
+    <div
+      style={{ order }}
+      className={`transition-opacity ${isDragging ? 'opacity-40' : ''} ${isDragOver ? 'ring-2 ring-primary-500/50' : ''}`}
+      {...domDragProps}
+    >
+      {children}
     </div>
   );
 }
@@ -299,6 +335,10 @@ export function CVEditorPage() {
   const educationDrag = useDragReorder((from, to) => set({ education: moveAt(data.education, from, to) }));
   const certificatesDrag = useDragReorder((from, to) => set({ certificates: moveAt(data.certificates ?? [], from, to) }));
 
+  const sectionOrder = getSectionOrder(data);
+  const sectionDrag = useDragReorder((from, to) => set({ sectionOrder: moveAt(sectionOrder, from, to) }));
+  const orderOf = (key: SectionKey) => sectionOrder.indexOf(key);
+
   /** Save draft to localStorage — no PDF, no Supabase */
   const handleDraftSave = () => {
     if (editCvId) {
@@ -377,7 +417,7 @@ export function CVEditorPage() {
   const handlePreview = () => setShowPreview(v => !v);
 
   return (
-    <div className={showPreview ? 'pb-20' : 'space-y-2 pb-28'}>
+    <div className={showPreview ? 'pb-20' : 'flex flex-col gap-2 pb-28'}>
       {!showPreview && (
       <PageHeader
         icon={FileEdit}
@@ -454,24 +494,28 @@ export function CVEditorPage() {
       )}
 
       {/* ── Profil ───────────────────────────────────────────────────── */}
-      <SectionHeading
-        title={data.profileTitle || 'Profil'}
-        onRename={v => set({ profileTitle: v })}
-        collapsed={collapsed['profile']}
-        onToggleCollapse={() => toggle('profile')}
-      />
-      {!collapsed['profile'] && (
-        <div className="space-y-2">
-          <TextArea value={data.profile} onChange={v => set({ profile: v })} rows={5} placeholder="Krótki opis..." />
-          <ProfileImportMenu
-            items={descriptions}
-            labelFn={d => d.name}
-            onImport={items => set({ profile: items.map(d => d.content).join('\n\n') })}
-          />
-        </div>
-      )}
+      <DraggableSection order={orderOf('profile')} dragProps={sectionDrag.getItemProps(orderOf('profile'))}>
+        <SectionHeading
+          title={data.profileTitle || 'Profil'}
+          onRename={v => set({ profileTitle: v })}
+          collapsed={collapsed['profile']}
+          onToggleCollapse={() => toggle('profile')}
+          draggable
+        />
+        {!collapsed['profile'] && (
+          <div className="space-y-2">
+            <TextArea value={data.profile} onChange={v => set({ profile: v })} rows={5} placeholder="Krótki opis..." />
+            <ProfileImportMenu
+              items={descriptions}
+              labelFn={d => d.name}
+              onImport={items => set({ profile: items.map(d => d.content).join('\n\n') })}
+            />
+          </div>
+        )}
+      </DraggableSection>
 
       {/* ── Technologie ──────────────────────────────────────────────── */}
+      <DraggableSection order={orderOf('technologies')} dragProps={sectionDrag.getItemProps(orderOf('technologies'))}>
       <SectionHeading
         title={data.technologiesTitle || 'Technologie i narzędzia'}
         onRename={v => set({ technologiesTitle: v })}
@@ -479,6 +523,7 @@ export function CVEditorPage() {
         onToggleEnabled={() => set({ showTechnologies: !data.showTechnologies })}
         collapsed={collapsed['tech']}
         onToggleCollapse={() => toggle('tech')}
+        draggable
       />
       {!collapsed['tech'] && (
         <>
@@ -517,14 +562,17 @@ export function CVEditorPage() {
           />
         </>
       )}
+      </DraggableSection>
 
       {/* ── Projekty ─────────────────────────────────────────────────── */}
+      <DraggableSection order={orderOf('projects')} dragProps={sectionDrag.getItemProps(orderOf('projects'))}>
       <SectionHeading
         title="Wybrane projekty"
         enabled={data.showProjects !== false}
         onToggleEnabled={() => set({ showProjects: !data.showProjects })}
         collapsed={collapsed['projects']}
         onToggleCollapse={() => toggle('projects')}
+        draggable
       />
       {!collapsed['projects'] && (
         <>
@@ -573,12 +621,15 @@ export function CVEditorPage() {
           />
         </>
       )}
+      </DraggableSection>
 
       {/* ── Doświadczenie ─────────────────────────────────────────────── */}
+      <DraggableSection order={orderOf('experience')} dragProps={sectionDrag.getItemProps(orderOf('experience'))}>
       <SectionHeading
         title="Doświadczenie zawodowe"
         collapsed={collapsed['experience']}
         onToggleCollapse={() => toggle('experience')}
+        draggable
       />
       {!collapsed['experience'] && (
         <>
@@ -673,12 +724,15 @@ export function CVEditorPage() {
           />
         </>
       )}
+      </DraggableSection>
 
       {/* ── Wykształcenie ─────────────────────────────────────────────── */}
+      <DraggableSection order={orderOf('education')} dragProps={sectionDrag.getItemProps(orderOf('education'))}>
       <SectionHeading
         title="Wykształcenie"
         collapsed={collapsed['education']}
         onToggleCollapse={() => toggle('education')}
+        draggable
       />
       {!collapsed['education'] && (
         <>
@@ -713,8 +767,10 @@ export function CVEditorPage() {
           />
         </>
       )}
+      </DraggableSection>
 
       {/* ── Certyfikaty ───────────────────────────────────────────────── */}
+      <DraggableSection order={orderOf('certificates')} dragProps={sectionDrag.getItemProps(orderOf('certificates'))}>
       <SectionHeading
         title={data.certificatesTitle || 'Certyfikaty'}
         onRename={v => set({ certificatesTitle: v })}
@@ -722,6 +778,7 @@ export function CVEditorPage() {
         onToggleEnabled={() => set({ showCertificates: !data.showCertificates })}
         collapsed={collapsed['certificates']}
         onToggleCollapse={() => toggle('certificates')}
+        draggable
       />
       {!collapsed['certificates'] && (
         <>
@@ -771,12 +828,15 @@ export function CVEditorPage() {
           />
         </>
       )}
+      </DraggableSection>
 
       {/* ── Sekcje własne ─────────────────────────────────────────────── */}
+      <DraggableSection order={orderOf('custom')} dragProps={sectionDrag.getItemProps(orderOf('custom'))}>
       <SectionHeading
         title="Sekcje własne"
         collapsed={collapsed['custom']}
         onToggleCollapse={() => toggle('custom')}
+        draggable
       />
       {!collapsed['custom'] && (
         <>
@@ -808,12 +868,15 @@ export function CVEditorPage() {
           </Button>
         </>
       )}
+      </DraggableSection>
 
       {/* ── Zainteresowania ───────────────────────────────────────────── */}
+      <DraggableSection order={orderOf('interests')} dragProps={sectionDrag.getItemProps(orderOf('interests'))}>
       <SectionHeading
         title="Zainteresowania"
         collapsed={collapsed['interests']}
         onToggleCollapse={() => toggle('interests')}
+        draggable
       />
       {!collapsed['interests'] && (
         <TagListEditor
@@ -823,16 +886,20 @@ export function CVEditorPage() {
           placeholder="np. Muzyka"
         />
       )}
+      </DraggableSection>
 
       {/* ── RODO ──────────────────────────────────────────────────────── */}
+      <DraggableSection order={orderOf('rodo')} dragProps={sectionDrag.getItemProps(orderOf('rodo'))}>
       <SectionHeading
         title="Klauzula RODO"
         collapsed={collapsed['rodo']}
         onToggleCollapse={() => toggle('rodo')}
+        draggable
       />
       {!collapsed['rodo'] && (
         <TextArea value={data.rodo} onChange={v => set({ rodo: v })} rows={2} placeholder="Wyrażam zgodę na przetwarzanie…" />
       )}
+      </DraggableSection>
 
       </>)}
 

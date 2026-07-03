@@ -87,4 +87,12 @@ export interface CVData {
   certificates?: CVCertificate[];
   showCertificates?: boolean;
   customSections?: CVCustomSection[];
+  /**
+   * Order of content sections below Nagłówek/Kontakt (which always stay
+   * first). Built-in sections use fixed keys; each custom section gets its
+   * own `custom:<id>` key so it can be interleaved with the built-ins.
+   * Missing/unknown keys are resolved by getSectionOrder() — no migration
+   * needed for CVs saved before this existed.
+   */
+  sectionOrder?: string[];
 }

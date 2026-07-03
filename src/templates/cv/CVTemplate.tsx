@@ -11,6 +11,7 @@ import {
 import { CVData, CVLink } from './types';
 import { TEAL, TEAL_LIGHT, BLACK, GRAY } from './colors';
 import { formatRoleLabel, formatTechCategory, formatInterests } from './format';
+import { getSectionOrder } from './sectionOrder';
 
 // ---------------------------------------------------------------------------
 // Font registration
@@ -335,6 +336,7 @@ interface CVTemplateProps {
 }
 
 export function CVTemplate({ data }: CVTemplateProps) {
+  const sectionOrder = getSectionOrder(data);
   return (
     <Document>
       <Page size="A4" style={s.page}>
@@ -350,143 +352,154 @@ export function CVTemplate({ data }: CVTemplateProps) {
           <InlineLinks links={data.contact.links} />
         </View>
 
-        {/* ── PROFIL ──────────────────────────────────────────────── */}
-        <SectionHeader title={(data.profileTitle || 'PROFIL').toUpperCase()} />
-        <Text style={s.body}>{data.profile}</Text>
+        {/* ── Content sections, in user-defined order ─────────────── */}
+        {sectionOrder.map((key, i) => (
+          <React.Fragment key={key}>
+            {/* Spacer before whichever section ends up last — pins it to the page bottom */}
+            {i === sectionOrder.length - 1 && <View style={{ flexGrow: 1 }} />}
+            {key === 'profile' && (
+              <>
+                <SectionHeader title={(data.profileTitle || 'PROFIL').toUpperCase()} />
+                <Text style={s.body}>{data.profile}</Text>
+                {data.showApproach !== false && data.approach ? (
+                  <>
+                    <SectionHeader title={(data.approachTitle || 'PODEJŚCIE DO PRACY').toUpperCase()} />
+                    <Text style={s.body}>{data.approach}</Text>
+                  </>
+                ) : null}
+              </>
+            )}
 
-        {/* ── PODEJŚCIE DO PRACY (opcjonalne) ─────────────────────── */}
-        {data.showApproach !== false && data.approach ? (
-          <>
-            <SectionHeader title={(data.approachTitle || 'PODEJŚCIE DO PRACY').toUpperCase()} />
-            <Text style={s.body}>{data.approach}</Text>
-          </>
-        ) : null}
-
-        {/* ── TECHNOLOGIE I NARZĘDZIA ─────────────────────────────── */}
-        {data.showTechnologies !== false && (
-          <>
-            <SectionHeader title={(data.technologiesTitle || 'TECHNOLOGIE I NARZĘDZIA').toUpperCase()} />
-            {data.technologies.map(tech => (
-              <View key={tech.category} style={s.techRow}>
-                <Text style={s.techLabel}>{formatTechCategory(tech.category)}</Text>
-                <Text style={s.techValue}>{tech.items}</Text>
-              </View>
-            ))}
-          </>
-        )}
-
-        {/* ── WYBRANE PROJEKTY ────────────────────────────────────── */}
-        {data.showProjects !== false && (
-          <>
-            <SectionHeader title="WYBRANE PROJEKTY" />
-            {data.projects.map(project => (
-              <View key={project.name} wrap={false}>
-                <Text style={s.projectName}>{project.name}</Text>
-                <Text style={s.projectTagline}>{project.tagline}</Text>
-                <View style={s.projectBody}>
-                <Text style={s.projectDesc}>{project.description}</Text>
-                <Text style={s.projectStack}>{project.stack}</Text>
-                {project.note && <Text style={s.projectNote}>{project.note}</Text>}
-                <View style={s.projectLinksRow}>
-                  {project.links.map((link, i) => (
-                    <React.Fragment key={link.label}>
-                      {i > 0 && <Text style={s.separatorText}>|</Text>}
-                      <Link src={link.trackedUrl ?? link.url} style={s.linkInline}>
-                        {link.label === 'GitHub' || link.label.endsWith('GitHub')
-                          ? 'GitHub'
-                          : link.url.replace(/^https?:\/\//, '')}
-                      </Link>
-                    </React.Fragment>
-                  ))}
-                </View>
-                </View>
-              </View>
-            ))}
-          </>
-        )}
-
-        {/* ── DOŚWIADCZENIE ZAWODOWE ──────────────────────────────── */}
-        <SectionHeader title="DOŚWIADCZENIE ZAWODOWE" />
-        {data.experience.map(exp => (
-          <View key={exp.company}>
-            {/* Company header + first role block kept together — prevents orphan heading */}
-            <View wrap={false}>
-              <View style={s.expCompanyRow}>
-                <Text style={s.expCompany}>{exp.company}</Text>
-                {exp.companyLink && (
-                  <Link src={exp.companyLink.trackedUrl ?? exp.companyLink.url} style={s.expCompanyLink}>
-                    {exp.companyLink.url.replace(/^https?:\/\//, '')}
-                  </Link>
-                )}
-              </View>
-              {exp.roles[0] && (
-                <View style={s.expRoleBlock}>
-                  <Text style={s.expRole}>{formatRoleLabel(exp.roles[0])}</Text>
-                  {exp.roles[0].bullets.map((bullet, bi) => (
-                    <Bullet key={bi} text={bullet} />
-                  ))}
-                </View>
-              )}
-            </View>
-            {/* Remaining roles can break freely */}
-            {exp.roles.slice(1).map(role => (
-              <View key={role.title} style={s.expRoleBlock} wrap={false}>
-                <Text style={s.expRole}>{formatRoleLabel(role)}</Text>
-                {role.bullets.map((bullet, bi) => (
-                  <Bullet key={bi} text={bullet} />
+            {key === 'technologies' && data.showTechnologies !== false && (
+              <>
+                <SectionHeader title={(data.technologiesTitle || 'TECHNOLOGIE I NARZĘDZIA').toUpperCase()} />
+                {data.technologies.map(tech => (
+                  <View key={tech.category} style={s.techRow}>
+                    <Text style={s.techLabel}>{formatTechCategory(tech.category)}</Text>
+                    <Text style={s.techValue}>{tech.items}</Text>
+                  </View>
                 ))}
+              </>
+            )}
+
+            {key === 'projects' && data.showProjects !== false && (
+              <>
+                <SectionHeader title="WYBRANE PROJEKTY" />
+                {data.projects.map(project => (
+                  <View key={project.name} wrap={false}>
+                    <Text style={s.projectName}>{project.name}</Text>
+                    <Text style={s.projectTagline}>{project.tagline}</Text>
+                    <View style={s.projectBody}>
+                    <Text style={s.projectDesc}>{project.description}</Text>
+                    <Text style={s.projectStack}>{project.stack}</Text>
+                    {project.note && <Text style={s.projectNote}>{project.note}</Text>}
+                    <View style={s.projectLinksRow}>
+                      {project.links.map((link, li) => (
+                        <React.Fragment key={link.label}>
+                          {li > 0 && <Text style={s.separatorText}>|</Text>}
+                          <Link src={link.trackedUrl ?? link.url} style={s.linkInline}>
+                            {link.label === 'GitHub' || link.label.endsWith('GitHub')
+                              ? 'GitHub'
+                              : link.url.replace(/^https?:\/\//, '')}
+                          </Link>
+                        </React.Fragment>
+                      ))}
+                    </View>
+                    </View>
+                  </View>
+                ))}
+              </>
+            )}
+
+            {key === 'experience' && (
+              <>
+                <SectionHeader title="DOŚWIADCZENIE ZAWODOWE" />
+                {data.experience.map(exp => (
+                  <View key={exp.company}>
+                    {/* Company header + first role block kept together — prevents orphan heading */}
+                    <View wrap={false}>
+                      <View style={s.expCompanyRow}>
+                        <Text style={s.expCompany}>{exp.company}</Text>
+                        {exp.companyLink && (
+                          <Link src={exp.companyLink.trackedUrl ?? exp.companyLink.url} style={s.expCompanyLink}>
+                            {exp.companyLink.url.replace(/^https?:\/\//, '')}
+                          </Link>
+                        )}
+                      </View>
+                      {exp.roles[0] && (
+                        <View style={s.expRoleBlock}>
+                          <Text style={s.expRole}>{formatRoleLabel(exp.roles[0])}</Text>
+                          {exp.roles[0].bullets.map((bullet, bi) => (
+                            <Bullet key={bi} text={bullet} />
+                          ))}
+                        </View>
+                      )}
+                    </View>
+                    {/* Remaining roles can break freely */}
+                    {exp.roles.slice(1).map(role => (
+                      <View key={role.title} style={s.expRoleBlock} wrap={false}>
+                        <Text style={s.expRole}>{formatRoleLabel(role)}</Text>
+                        {role.bullets.map((bullet, bi) => (
+                          <Bullet key={bi} text={bullet} />
+                        ))}
+                      </View>
+                    ))}
+                  </View>
+                ))}
+              </>
+            )}
+
+            {key === 'education' && (
+              <>
+                <SectionHeader title="WYKSZTAŁCENIE" />
+                {data.education.map(edu => (
+                  <View key={edu.school} style={s.eduBlock}>
+                    <Text style={s.eduSchool}>{edu.school}</Text>
+                    <View style={s.eduDetailBlock}>
+                      <Text style={s.eduDetail}>{edu.degree} | {edu.years}</Text>
+                    </View>
+                  </View>
+                ))}
+              </>
+            )}
+
+            {key === 'custom' && data.customSections && data.customSections.map(sec => (
+              <View key={sec.id}>
+                <SectionHeader title={sec.title.toUpperCase()} />
+                <Text style={s.body}>{sec.content}</Text>
               </View>
             ))}
-          </View>
+
+            {key === 'certificates' && data.showCertificates !== false && data.certificates && data.certificates.length > 0 && (
+              <>
+                <SectionHeader title={(data.certificatesTitle || 'Certyfikaty').toUpperCase()} />
+                {data.certificates.map((cert, ci) => (
+                  <View key={ci} style={s.certRow}>
+                    {cert.url ? (
+                      <Link src={cert.trackedUrl ?? cert.url} style={s.certName}>
+                        {cert.name}
+                      </Link>
+                    ) : (
+                      <Text style={{ ...s.certName, color: BLACK }}>{cert.name}</Text>
+                    )}
+                    <Text style={s.certMeta}>
+                      {cert.issuer}{cert.issuer && cert.year ? ' · ' : ''}{cert.year}
+                    </Text>
+                  </View>
+                ))}
+              </>
+            )}
+
+            {key === 'interests' && (
+              <>
+                <SectionHeader title="ZAINTERESOWANIA" />
+                <Text style={s.interests}>{formatInterests(data.interests)}</Text>
+              </>
+            )}
+
+            {key === 'rodo' && <Text style={s.rodo}>{data.rodo}</Text>}
+          </React.Fragment>
         ))}
-
-        {/* ── WYKSZTAŁCENIE ───────────────────────────────────────── */}
-        <SectionHeader title="WYKSZTAŁCENIE" />
-        {data.education.map(edu => (
-          <View key={edu.school} style={s.eduBlock}>
-            <Text style={s.eduSchool}>{edu.school}</Text>
-            <View style={s.eduDetailBlock}>
-              <Text style={s.eduDetail}>{edu.degree} | {edu.years}</Text>
-            </View>
-          </View>
-        ))}
-
-        {/* ── SEKCJE WŁASNE ───────────────────────────────────────── */}
-        {data.customSections && data.customSections.map(sec => (
-          <View key={sec.id}>
-            <SectionHeader title={sec.title.toUpperCase()} />
-            <Text style={s.body}>{sec.content}</Text>
-          </View>
-        ))}
-
-        {/* ── CERTYFIKATY ─────────────────────────────────────────── */}
-        {data.showCertificates !== false && data.certificates && data.certificates.length > 0 && (
-          <>
-            <SectionHeader title={(data.certificatesTitle || 'Certyfikaty').toUpperCase()} />
-            {data.certificates.map((cert, i) => (
-              <View key={i} style={s.certRow}>
-                {cert.url ? (
-                  <Link src={cert.trackedUrl ?? cert.url} style={s.certName}>
-                    {cert.name}
-                  </Link>
-                ) : (
-                  <Text style={{ ...s.certName, color: BLACK }}>{cert.name}</Text>
-                )}
-                <Text style={s.certMeta}>
-                  {cert.issuer}{cert.issuer && cert.year ? ' · ' : ''}{cert.year}
-                </Text>
-              </View>
-            ))}
-          </>
-        )}
-
-        {/* ── ZAINTERESOWANIA ─────────────────────────────────────── */}
-        <SectionHeader title="ZAINTERESOWANIA" />
-        <Text style={s.interests}>{formatInterests(data.interests)}</Text>
-
-        {/* ── RODO — spacer pushes it to page bottom ──────────────── */}
-        <View style={{ flexGrow: 1 }} />
-        <Text style={s.rodo}>{data.rodo}</Text>
 
         {/* ── Page numbers ────────────────────────────────────────── */}
         <Text
