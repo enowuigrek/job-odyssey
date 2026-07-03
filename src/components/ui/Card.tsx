@@ -4,12 +4,14 @@ interface CardProps {
   children: ReactNode;
   className?: string;
   onClick?: () => void;
+  /** Sygnaturowy zagięty róg kartki — prostuje się i unosi na hover (patrz .fold-card w index.css) */
+  fold?: boolean;
 }
 
-export function Card({ children, className = '', onClick }: CardProps) {
+export function Card({ children, className = '', onClick, fold = false }: CardProps) {
   return (
     <div
-      className={`bg-dark-800 ${
+      className={`${fold ? 'fold-card ' : ''}bg-dark-800 ${
         onClick ? 'cursor-pointer hover:bg-dark-700 hover:shadow-[0_0_20px_rgba(6,182,212,0.15)] transition-all' : ''
       } ${className}`}
       onClick={onClick}

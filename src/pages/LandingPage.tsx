@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { MousePointerClick, FileOutput, Briefcase } from 'lucide-react';
-import { Button } from '../components/ui';
+import { Button, Card } from '../components/ui';
 
 interface LandingPageProps {
   onLoginClick: () => void;
@@ -85,16 +85,13 @@ export function LandingPage({ onLoginClick, onRegisterClick }: LandingPageProps)
         <section className="px-4 pb-16 md:px-8 md:pb-24">
           <div className="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
             {FEATURES.map(({ icon: Icon, title, description }) => (
-              <div
-                key={title}
-                className="bg-dark-800 p-6 rounded-tr-3xl transition-[border-radius] duration-200 hover:rounded-none"
-              >
+              <Card key={title} fold className="p-6">
                 <Icon className="w-6 h-6 text-primary-400 mb-4" />
                 <h3 className="text-sm font-semibold text-slate-100 uppercase tracking-wide mb-2">
                   {title}
                 </h3>
                 <p className="text-sm text-slate-400 leading-relaxed">{description}</p>
-              </div>
+              </Card>
             ))}
           </div>
         </section>

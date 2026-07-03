@@ -210,7 +210,7 @@ export function CVPage() {
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {filteredCVs.map((cv) => (
-            <Card key={cv.id} className="min-w-0 hover:shadow-md transition-shadow">
+            <Card key={cv.id} fold className="min-w-0">
               <CardBody>
                 <div className="flex items-start justify-between gap-2 mb-3">
                   <div className="min-w-0 flex-1">

@@ -403,27 +403,94 @@ button, a, [role="button"], .cursor-pointer {
 }
 
 /* ============================================
-   Sygnaturowy róg przycisków — złożony róg kartki (jak CV)
-   Prawy górny róg zawinięty, prostuje się na hover.
-   Zastosowane globalnie na każdym <button> w projekcie.
+   Sygnaturowy róg — zagięta kartka (jak ikona dokumentu)
+   Prawy górny róg zagięty z widoczną klapką. Hover: kartka
+   prostuje się i unosi (cień pod spodem). Kliknięcie: cień
+   znika — kartka odłożona na biurko.
+   .fold-btn  — przyciski z tłem (Button.tsx poza ghost)
+   .fold-card — kafelki (Card z propem fold; landing, Baza CV)
+   input/textarea — prostują się przy focusie, bez cienia
    ============================================ */
-button {
-  border-top-right-radius: 1rem;
-  transition: border-radius 200ms;
+@property --fold {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px;
 }
 
-button:hover {
-  border-top-right-radius: 0;
+.fold-btn,
+.fold-card,
+input:where(:not([type='checkbox'], [type='radio'], [type='range'])),
+textarea {
+  --fold: 12px;
+  /* Wielokąt wystaje 24px poza obrys, żeby nie ucinać cienia ani
+     focus ringa — realnie wycinany jest tylko zagięty róg */
+  clip-path: polygon(
+    -24px -24px,
+    calc(100% - var(--fold)) -24px,
+    calc(100% - var(--fold)) 0px,
+    100% var(--fold),
+    calc(100% + 24px) var(--fold),
+    calc(100% + 24px) calc(100% + 24px),
+    -24px calc(100% + 24px)
+  );
+  /* Klapka — jaśniejszy trójkąt, jak prześwitujący spód kartki */
+  background-image: linear-gradient(225deg, transparent 50%, rgba(255, 255, 255, 0.22) 50%);
+  background-repeat: no-repeat;
+  background-position: top right;
+  background-size: var(--fold) var(--fold);
+  transition:
+    --fold 200ms ease,
+    box-shadow 200ms ease,
+    color 200ms ease,
+    background-color 200ms ease,
+    opacity 200ms ease;
 }
 
-/* Ten sam motyw na polach formularzy — prostuje się przy focusie zamiast hover */
-input, textarea {
-  border-top-right-radius: 1rem;
-  transition: border-radius 200ms;
+.fold-card {
+  --fold: 20px;
+  /* Na dużych kartach jasna klapka była zbyt krzykliwa — ciemniejsza niż na przyciskach */
+  background-image: linear-gradient(225deg, transparent 50%, rgba(255, 255, 255, 0.1) 50%);
 }
 
-input:focus, textarea:focus {
-  border-top-right-radius: 0;
+/* Hover/wciśnięcie/focus: róg się prostuje */
+.fold-btn:hover:not(:disabled),
+.fold-btn:not(:disabled):active,
+.fold-card:hover,
+.fold-card:active,
+input:focus,
+textarea:focus {
+  --fold: 0px;
+}
+
+/* Hover: kartka unosi się nad biurko */
+.fold-btn:hover:not(:disabled),
+.fold-card:hover {
+  box-shadow:
+    var(--tw-ring-offset-shadow, 0 0 #0000),
+    var(--tw-ring-shadow, 0 0 #0000),
+    0 6px 14px -4px rgba(0, 0, 0, 0.6);
+}
+
+/* Kliknięcie: kartka odłożona — cień znika */
+.fold-btn:not(:disabled):active,
+.fold-card:active {
+  box-shadow: var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000);
+}
+
+/* Jasny motyw: ciemna klapka i delikatniejszy cień */
+.light-theme .fold-btn,
+.light-theme .fold-card,
+.light-theme input:where(:not([type='checkbox'], [type='radio'], [type='range'])),
+.light-theme textarea {
+  background-image: linear-gradient(225deg, transparent 50%, rgba(2, 6, 23, 0.12) 50%);
+}
+
+.light-theme .fold-btn:hover:not(:disabled),
+.light-theme .fold-card:hover {
+  box-shadow:
+    var(--tw-ring-offset-shadow, 0 0 #0000),
+    var(--tw-ring-shadow, 0 0 #0000),
+    0 6px 14px -4px rgba(0, 0, 0, 0.22);
 }
 
 /* Style dla inputów typu date i time - jasniejsza ikona kalendarza */
