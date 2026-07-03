@@ -4,7 +4,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Plus, Trash2, Save, Eye, EyeOff, ArrowLeft, FileEdit, Pencil, Check, Loader2, ChevronDown, ChevronRight, Database } from 'lucide-react';
 import { pdf } from '@react-pdf/renderer';
 import type { DocumentProps } from '@react-pdf/renderer';
-import { Button, PageHeader, CollapsibleItem, Checkbox } from '../components/ui';
+import { Button, PageHeader, CollapsibleItem, Checkbox, Modal } from '../components/ui';
 import { FieldLabel, TextInput, TextArea, LinksEditor, BulletsEditor, YearRangePicker, TagListEditor } from '../components/forms/FormPrimitives';
 import type { CVData } from '../templates/cv/types';
 import { defaultCVData } from '../templates/cv/defaultCVData';
@@ -255,13 +255,12 @@ export function CVEditorPage() {
     } catch { /* ignore */ }
     return '';
   });
-  const [nameError, setNameError] = useState(false);
   const [saved, setSaved] = useState(false);
   const [draftSaved, setDraftSaved] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
-
-  const nameRef = useRef<HTMLDivElement>(null);
+  const [showSaveAsModal, setShowSaveAsModal] = useState(false);
+  const [saveAsName, setSaveAsName] = useState('');
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({
     header: true, contact: true, profile: true,
     tech: true, projects: true, experience: true, education: true,
@@ -315,13 +314,7 @@ export function CVEditorPage() {
     setTimeout(() => setDraftSaved(false), 2000);
   };
 
-  const handleSave = async () => {
-    if (!cvName.trim()) {
-      setNameError(true);
-      nameRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      return;
-    }
-    setNameError(false);
+  const performSave = async (name: string) => {
     setIsSaving(true);
 
     // Auto-generate PDF and upload to storage
@@ -332,7 +325,7 @@ export function CVEditorPage() {
         const el = createElement(CVTemplate, { data }) as unknown as ReactElement<DocumentProps, any>;
         const blob = await pdf(el).toBlob();
         const cvId = editCvId ?? uid();
-        const safeName = cvName
+        const safeName = name
           .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
           .replace(/\s+/g, '_')
           .replace(/[^a-zA-Z0-9._-]/g, '');
@@ -347,20 +340,38 @@ export function CVEditorPage() {
 
     if (editCvId && editingCv) {
       saveCVDataById(editCvId, data);
-      dispatch({ type: 'UPDATE_CV', payload: { ...editingCv, name: cvName, ...(fileName ? { fileName } : {}) } });
+      dispatch({ type: 'UPDATE_CV', payload: { ...editingCv, name, ...(fileName ? { fileName } : {}) } });
       setSaved(true);
       setIsSaving(false);
-      setTimeout(() => setSaved(false), 2000); // stay in editor
+      // Came from Baza CV (editCvId only ever gets set via its "edit" button) \u2014 go back there
+      setTimeout(() => { setSaved(false); navigate('/cv'); }, 800);
     } else {
       const newId = uid();
       saveCVDataById(newId, data);
-      dispatch({ type: 'ADD_CV', payload: { id: newId, name: cvName, isDefault: state.cvs.length === 0, fileName } });
+      dispatch({ type: 'ADD_CV', payload: { id: newId, name, isDefault: state.cvs.length === 0, fileName } });
       localStorage.removeItem(DRAFT_KEY);
       setSaved(true);
       setIsSaving(false);
       // Navigate to edit mode so user can continue editing the newly created CV
       setTimeout(() => { setSaved(false); navigate(`/cv-editor?edit=${newId}`); }, 800);
     }
+  };
+
+  /** Existing CV: name is already established, save right away. New CV: confirm/pick a name first. */
+  const handleSaveClick = () => {
+    if (editCvId) {
+      performSave(cvName);
+    } else {
+      setSaveAsName(cvName);
+      setShowSaveAsModal(true);
+    }
+  };
+
+  const handleConfirmSaveAs = () => {
+    if (!saveAsName.trim()) return;
+    setCvName(saveAsName);
+    setShowSaveAsModal(false);
+    performSave(saveAsName);
   };
 
   const handlePreview = () => setShowPreview(v => !v);
@@ -384,15 +395,13 @@ export function CVEditorPage() {
 
       {!showPreview && (<>
       {/* CV name — required */}
-      <div ref={nameRef} className="bg-dark-800 border border-dark-600 p-4">
+      <div className="bg-dark-800 border border-dark-600 p-4">
         <FieldLabel>Nazwa CV (widoczna w Bazie CV) *</FieldLabel>
         <TextInput
           value={cvName}
-          onChange={v => { setCvName(v); if (v.trim()) setNameError(false); }}
+          onChange={setCvName}
           placeholder="np. CV Frontend Developer 2025"
-          className={nameError ? 'ring-1 ring-danger-500' : ''}
         />
-        {nameError && <p className="text-xs text-danger-400 mt-1">Podaj nazwę CV przed zapisaniem.</p>}
       </div>
 
       {/* ── Nagłówek ─────────────────────────────────────────────────── */}
@@ -849,14 +858,14 @@ export function CVEditorPage() {
           className={`flex items-center gap-1.5 px-3 py-2 text-sm transition-colors cursor-pointer ${
             draftSaved ? 'bg-success-500/20 text-success-400' : 'bg-dark-700 hover:bg-dark-600 text-slate-300'
           }`}
-          title="Zapisz szkic lokalnie"
+          title="Szybki zapis roboczy — nie tworzy ani nie aktualizuje wpisu w Bazie CV"
         >
           <Save className="w-4 h-4" />
-          <span className="hidden sm:inline">{draftSaved ? 'Zapisano' : 'Zapisz'}</span>
+          <span className="hidden sm:inline">{draftSaved ? 'Zapisano' : 'Zapisz szkic'}</span>
         </button>
         {/* Dodaj / zapisz do bazy CV */}
         <button
-          onClick={handleSave}
+          onClick={handleSaveClick}
           disabled={isSaving}
           className={`flex items-center gap-1.5 px-4 py-2 text-sm font-medium transition-colors cursor-pointer disabled:opacity-60 ${
             saved ? 'bg-success-500/20 text-success-400' : 'bg-primary-500 hover:bg-primary-400 text-slate-900'
@@ -868,6 +877,35 @@ export function CVEditorPage() {
           </span>
         </button>
       </div>
+
+      <Modal
+        isOpen={showSaveAsModal}
+        onClose={() => setShowSaveAsModal(false)}
+        title="Zapisz w Bazie CV"
+        size="sm"
+      >
+        <form
+          className="space-y-4"
+          onSubmit={e => { e.preventDefault(); handleConfirmSaveAs(); }}
+        >
+          <div>
+            <FieldLabel>Nazwa CV *</FieldLabel>
+            <TextInput
+              value={saveAsName}
+              onChange={setSaveAsName}
+              placeholder="np. CV Frontend Developer 2025"
+            />
+          </div>
+          <div className="flex justify-end gap-3 pt-2">
+            <Button type="button" variant="secondary" onClick={() => setShowSaveAsModal(false)}>
+              Anuluj
+            </Button>
+            <Button type="submit" disabled={!saveAsName.trim()}>
+              Zapisz
+            </Button>
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 }

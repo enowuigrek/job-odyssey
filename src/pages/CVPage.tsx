@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, FileText, Star, Trash2, Edit, Tag, Download, PenLine, Eye } from 'lucide-react';
+import { Plus, FileText, Star, Trash2, Edit, Tag, Download, FileOutput, Eye } from 'lucide-react';
 
 import { useApp } from '../contexts/AppContext';
 import { getCVDataById } from '../lib/generateCV';
@@ -282,11 +282,12 @@ export function CVPage() {
                     <button
                       onClick={() => navigate(`/cv-editor?edit=${cv.id}`)}
                       className="p-1.5 text-slate-500 hover:text-primary-400 hover:bg-primary-500/10 transition-colors cursor-pointer"
-                      title="Edytuj treść"
+                      title="Otwórz w generatorze CV"
                     >
-                      <PenLine className="w-4 h-4" />
+                      <FileOutput className="w-4 h-4" />
                     </button>
                   )}
+                  {getCVDataById(cv.id) && <div className="w-px h-4 bg-dark-600" />}
                   {cv.fileName && (
                     <button
                       onClick={() => handleDownloadCV(cv)}
