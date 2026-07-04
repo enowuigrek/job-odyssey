@@ -20,7 +20,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
         <select
           ref={ref}
           className={`
-            w-full bg-dark-700 text-white
+            w-full bg-dark-900 text-white
             ${dense ? 'pl-3 pr-9 py-1.5 text-sm' : 'pl-4 pr-10 py-3'}
             focus:outline-none focus:ring-2 focus:ring-primary-500
             disabled:bg-dark-900 disabled:cursor-not-allowed disabled:text-slate-600
@@ -33,7 +33,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
           {...props}
         >
           {options.map((option) => (
-            <option key={option.value} value={option.value} className="bg-dark-700">
+            <option key={option.value} value={option.value} className="bg-dark-900">
               {option.label}
             </option>
           ))}

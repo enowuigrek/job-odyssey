@@ -36,7 +36,7 @@ export function TextInput({
       value={value}
       onChange={e => onChange(e.target.value)}
       placeholder={placeholder}
-      className={`w-full px-3 py-1.5 bg-dark-700 text-white text-sm${light ? ' font-light' : ''} placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-primary-500 ${className}`}
+      className={`w-full px-3 py-1.5 bg-dark-900 text-white text-sm${light ? ' font-light' : ''} placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-primary-500 ${className}`}
     />
   );
 }
@@ -67,7 +67,7 @@ export function YearRangePicker({
   light?: boolean;
 }) {
   const { from, to } = parseYearRange(value);
-  const selectClass = `px-2 py-1.5 bg-dark-700 text-white text-sm${light ? ' font-light' : ''} focus:outline-none focus:ring-1 focus:ring-primary-500 cursor-pointer`;
+  const selectClass = `px-2 py-1.5 bg-dark-900 text-white text-sm${light ? ' font-light' : ''} focus:outline-none focus:ring-1 focus:ring-primary-500 cursor-pointer`;
 
   return (
     <div className="flex items-center gap-2">
@@ -115,7 +115,7 @@ export function TextArea({
       onChange={e => onChange(e.target.value)}
       placeholder={placeholder}
       rows={rows}
-      className={`w-full px-3 py-2 bg-dark-700 text-white text-sm${light ? ' font-light' : ''} placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-primary-500 resize-none overflow-hidden`}
+      className={`w-full px-3 py-2 bg-dark-900 text-white text-sm${light ? ' font-light' : ''} placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-primary-500 resize-none overflow-hidden`}
     />
   );
 }
@@ -142,13 +142,13 @@ export function LinksEditor<T extends LabelUrl>({
             value={link.label}
             onChange={e => onChange(updateAt(links, i, { ...link, label: e.target.value }))}
             placeholder="Etykieta"
-            className={`w-28 px-2 py-1.5 bg-dark-700 text-white text-sm${light ? ' font-light' : ''} placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-primary-500 flex-shrink-0`}
+            className={`w-28 px-2 py-1.5 bg-dark-900 text-white text-sm${light ? ' font-light' : ''} placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-primary-500 flex-shrink-0`}
           />
           <input
             value={link.url}
             onChange={e => onChange(updateAt(links, i, { ...link, url: e.target.value }))}
             placeholder="https://..."
-            className={`flex-1 px-2 py-1.5 bg-dark-700 text-white text-sm${light ? ' font-light' : ''} placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-primary-500 min-w-0`}
+            className={`flex-1 px-2 py-1.5 bg-dark-900 text-white text-sm${light ? ' font-light' : ''} placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-primary-500 min-w-0`}
           />
           <button
             type="button"
@@ -188,7 +188,7 @@ function BulletRow({
         onChange={e => onChange(e.target.value)}
         rows={2}
         placeholder="Opis..."
-        className={`flex-1 px-2 py-1.5 bg-dark-700 text-white text-sm${light ? ' font-light' : ''} placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-primary-500 resize-none overflow-hidden min-w-0`}
+        className={`flex-1 px-2 py-1.5 bg-dark-900 text-white text-sm${light ? ' font-light' : ''} placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-primary-500 resize-none overflow-hidden min-w-0`}
       />
       <button
         type="button"
@@ -250,7 +250,7 @@ export function TagListEditor({
             value={item}
             onChange={e => onChange(updateAt(items, i, e.target.value))}
             placeholder={placeholder}
-            className={`flex-1 px-2 py-1.5 bg-dark-700 text-white text-sm${light ? ' font-light' : ''} placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-primary-500 min-w-0`}
+            className={`flex-1 px-2 py-1.5 bg-dark-900 text-white text-sm${light ? ' font-light' : ''} placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-primary-500 min-w-0`}
           />
           <button
             type="button"

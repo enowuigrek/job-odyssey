@@ -191,7 +191,7 @@ export function StoriesPage() {
           placeholder="Szukaj po tytule, umiejętnościach lub tagach..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full px-4 py-2 bg-dark-700 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-primary-500"
+          className="w-full px-4 py-2 bg-dark-800 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-primary-500"
         />
       </div>
 

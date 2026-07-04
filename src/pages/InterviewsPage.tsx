@@ -274,7 +274,7 @@ export function InterviewsPage() {
     setInlineAddStatus(null);
   };
 
-  const inlineInputClass = 'w-full px-2 py-1.5 bg-dark-700 text-white text-sm placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-primary-500';
+  const inlineInputClass = 'w-full px-2 py-1.5 bg-dark-900 text-white text-sm placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-primary-500';
 
   // Zwykła funkcja (nie komponent!) — komponent definiowany w środku
   // tracił by focus inputa przy każdym re-renderze strony
@@ -673,7 +673,7 @@ export function InterviewsPage() {
           placeholder="Szukaj po firmie lub stanowisku..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full px-4 py-2 bg-dark-700 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-primary-500"
+          className="w-full px-4 py-2 bg-dark-800 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-primary-500"
         />
 
         {/* Mobile: toggle button */}

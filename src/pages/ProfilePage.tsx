@@ -461,7 +461,7 @@ export function ProfilePage() {
                           );
                         }}
                         placeholder="Etykieta"
-                        className="w-24 px-2 py-1.5 bg-dark-700 text-white text-sm font-light placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-primary-500 flex-shrink-0"
+                        className="w-24 px-2 py-1.5 bg-dark-900 text-white text-sm font-light placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-primary-500 flex-shrink-0"
                       />
                       <input
                         value={exp.company_link?.url ?? ''}
@@ -476,7 +476,7 @@ export function ProfilePage() {
                           );
                         }}
                         placeholder="https://…"
-                        className="flex-1 px-2 py-1.5 bg-dark-700 text-white text-sm font-light placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-primary-500 min-w-0"
+                        className="flex-1 px-2 py-1.5 bg-dark-900 text-white text-sm font-light placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-primary-500 min-w-0"
                       />
                     </div>
                   </div>
