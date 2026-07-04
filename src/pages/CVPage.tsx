@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, FileText, Star, Trash2, Edit, Tag, Download, FileOutput, Eye } from 'lucide-react';
+import { Plus, FileText, Star, Trash2, Edit, Tag, Download, FileOutput, Eye, GripVertical } from 'lucide-react';
 
 import { useApp } from '../contexts/AppContext';
 import { getCVDataById } from '../lib/generateCV';
@@ -11,7 +11,6 @@ import {
   Input,
   Card,
   CardBody,
-  Badge,
   Modal,
   EmptyState,
   Textarea,
@@ -233,19 +232,14 @@ export function CVPage() {
             >
             <Card fold className="min-w-0 h-full">
               <CardBody>
-                <div className="flex items-start justify-between gap-2 mb-3">
+                <div className="flex items-start gap-2 mb-3">
+                  <GripVertical className="w-4 h-4 text-slate-600 flex-shrink-0 mt-1 cursor-grab active:cursor-grabbing" />
                   <div className="min-w-0 flex-1">
                     <h3 className="font-semibold text-slate-100 truncate">{cv.name}</h3>
                     {cv.targetPosition && (
                       <p className="text-sm text-slate-400 truncate">{cv.targetPosition}</p>
                     )}
                   </div>
-                  {cv.isDefault && (
-                    <Badge variant="success" size="sm">
-                      <Star className="w-3 h-3 mr-1" />
-                      Domyślne
-                    </Badge>
-                  )}
                 </div>
 
                 {cv.keywords && cv.keywords.length > 0 && (
@@ -281,13 +275,18 @@ export function CVPage() {
                 )}
 
                 <div className="flex items-center gap-2 pt-3 border-t border-dark-700">
-                  {!cv.isDefault && (
+                  <div className="flex-1" />
+                  {cv.isDefault ? (
+                    <span className="p-1.5" title="Domyślne CV">
+                      <Star className="w-4 h-4 text-success-400 fill-success-400" />
+                    </span>
+                  ) : (
                     <button
                       onClick={() => handleSetDefault(cv)}
-                      className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 text-sm text-slate-400 hover:text-white transition-colors cursor-pointer"
+                      className="p-1.5 text-slate-500 hover:text-success-400 transition-colors cursor-pointer"
+                      title="Ustaw jako domyślne"
                     >
                       <Star className="w-4 h-4" />
-                      Domyślne
                     </button>
                   )}
                   {getCVDataById(cv.id) && (
@@ -299,14 +298,21 @@ export function CVPage() {
                       <Eye className="w-4 h-4" />
                     </button>
                   )}
-                  {getCVDataById(cv.id) && (
+                  {getCVDataById(cv.id) ? (
                     <button
                       onClick={() => navigate(`/cv-editor?edit=${cv.id}`)}
                       className="p-1.5 text-slate-500 hover:text-primary-400 transition-colors cursor-pointer"
-                      title="Otwórz w generatorze CV"
+                      title="Edytuj treść w generatorze"
                     >
                       <FileOutput className="w-4 h-4" />
                     </button>
+                  ) : (
+                    <span
+                      className="p-1.5 text-slate-700 cursor-not-allowed"
+                      title="Treść tego CV nie jest dostępna na tym urządzeniu (plik wgrany z zewnątrz lub CV utworzone w innej przeglądarce)"
+                    >
+                      <FileOutput className="w-4 h-4" />
+                    </span>
                   )}
                   {getCVDataById(cv.id) && <div className="w-px h-4 bg-dark-600" />}
                   {cv.fileName && (

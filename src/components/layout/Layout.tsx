@@ -28,9 +28,12 @@ export function Layout() {
         <div style={dragStyle} className="h-10 flex-shrink-0 hidden md:block" />
         {/* Mobile header z hamburger + bell */}
         <MobileHeader />
-        {/* pb-20 na mobile zostawia miejsce dla bottom nav */}
+        {/* pb-20 na mobile zostawia miejsce dla bottom nav;
+            wewnętrzny wrapper ogranicza szerokość treści na dużych ekranach */}
         <div className="flex-1 overflow-auto p-4 pt-2 md:p-8 md:pt-0 md:pb-8 pb-32">
-          <Outlet />
+          <div className="max-w-6xl mx-auto">
+            <Outlet />
+          </div>
         </div>
       </main>
       {/* Mobile FAB — fixed nad bottom nav */}

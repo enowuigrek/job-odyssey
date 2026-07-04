@@ -640,7 +640,7 @@ export function CVEditorPage() {
               {...experienceDrag.getItemProps(ei)}
             >
               <div className="space-y-3">
-                <div className="grid grid-cols-1 gap-3">
+                <div className="max-w-md">
                   <div>
                     <FieldLabel>Link firmy (opcjonalny)</FieldLabel>
                     <div className="flex gap-2">
@@ -694,7 +694,7 @@ export function CVEditorPage() {
                         />
                       </div>
                     </div>
-                    <FieldLabel>Punkty</FieldLabel>
+                    <FieldLabel>Zakres obowiązków</FieldLabel>
                     <BulletsEditor
                       bullets={role.bullets}
                       onChange={bullets => set({ experience: updateAt(data.experience, ei, { ...exp, roles: updateAt(exp.roles, ri, { ...role, bullets }) }) })}

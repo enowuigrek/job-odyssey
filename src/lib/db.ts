@@ -388,6 +388,10 @@ export async function getTrackingLinksForApplication(
   }));
 }
 
+export async function deleteTrackingLink(id: string): Promise<void> {
+  await supabase.from('cv_tracking_links').delete().eq('id', id);
+}
+
 export async function getClicksForApplication(applicationId: string): Promise<TrackingClick[]> {
   const { data: links } = await supabase
     .from('cv_tracking_links')

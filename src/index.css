@@ -547,21 +547,42 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator {
   z-index: 100;
   pointer-events: none;
   opacity: 0.95;
-  /* Cień mieści się w 24px marginesu clip-pathu zagiętej kartki */
+  /* Cień mieści się w 24px marginesu clip-pathu zagiętej kartki;
+     przechył sterowany z JS (kierunek ruchu kursora), bez keyframes */
   box-shadow: 0 12px 20px -8px rgba(0, 0, 0, 0.7);
-  animation: paper-sway 1s ease-in-out infinite alternate;
 }
 
-@keyframes paper-sway {
-  from { rotate: 1.5deg; }
-  to { rotate: 5.5deg; }
-}
-
-.paper-drag-ghost-drop {
-  animation: none;
-  rotate: 0deg;
+/* ============================================
+   Tooltip appki (data-tip + src/lib/tooltip.ts) — zamiast
+   natywnych title: w stylu appki i pojawia się szybciej
+   ============================================ */
+.app-tooltip {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 200;
+  pointer-events: none;
+  background: var(--color-dark-600);
+  color: #f1f5f9;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  padding: 4px 8px;
+  white-space: nowrap;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
   opacity: 0;
-  transition: rotate 180ms ease-out, opacity 180ms ease-out;
+  transition: opacity 100ms ease;
+}
+
+.app-tooltip.visible {
+  opacity: 1;
+}
+
+/* Wysuwany pasek akcji karty kanbanu — pełne krycie (zasłania tekst
+   pod spodem), odcień jak klapka zagięcia, prosta pionowa krawędź */
+.paper-tray {
+  background-color: var(--color-dark-800);
+  background-image: linear-gradient(rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.07));
 }
 
 /* Rozwinięcie przycisku "+" w kartę formularza (inline dodawanie w kanbanie) */

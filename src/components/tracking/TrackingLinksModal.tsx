@@ -7,10 +7,13 @@ import {
   createTrackingLinks,
   getTrackingLinksForApplication,
   getClicksForApplication,
+  deleteTrackingLink,
   TrackingLink,
   TrackingClick,
 } from '../../lib/db';
 import { JobApplication } from '../../types';
+import { getCVDataById } from '../../lib/generateCV';
+import type { CVData } from '../../templates/cv/types';
 import { format, parseISO } from 'date-fns';
 import { pl } from 'date-fns/locale';
 
@@ -32,6 +35,29 @@ const PRESETS = [
   { key: 'github' as const, label: 'GitHub', placeholder: 'https://github.com/twoj-profil' },
   { key: 'custom' as const, label: 'Custom', placeholder: 'https://...' },
 ];
+
+const normalizeUrl = (u: string) => u.trim().toLowerCase().replace(/^https?:\/\//, '').replace(/\/+$/, '');
+
+const presetForUrl = (url: string): LinkInput['preset'] =>
+  url.includes('linkedin.com') ? 'linkedin' : url.includes('github.com') ? 'github' : 'custom';
+
+/** Linki faktycznie użyte w CV podpiętym pod aplikację (kontakt, projekty, firmy, certyfikaty) */
+function collectCvLinks(cv: CVData): { label: string; url: string }[] {
+  const out: { label: string; url: string }[] = [];
+  cv.contact.links.forEach(l => out.push({ label: l.label, url: l.url }));
+  if (cv.showProjects !== false) {
+    cv.projects.forEach(p => p.links.forEach(l =>
+      out.push({ label: p.name ? `${p.name} - ${l.label}` : l.label, url: l.url })
+    ));
+  }
+  cv.experience.forEach(e => {
+    if (e.companyLink?.url) out.push({ label: e.companyLink.label || e.company, url: e.companyLink.url });
+  });
+  if (cv.showCertificates !== false) {
+    (cv.certificates ?? []).forEach(c => { if (c.url) out.push({ label: c.name, url: c.url }); });
+  }
+  return out.filter(l => l.url?.trim());
+}
 
 interface Props {
   isOpen: boolean;
@@ -56,6 +82,12 @@ export function TrackingLinksModal({ isOpen, onClose, application, onFirstClick 
     if (!isOpen || !user) return;
     setIsLoading(true);
 
+    // Gdy aplikacja ma podpięte CV — pokazujemy TYLKO linki użyte w tym CV,
+    // nie wszystkie linki użytkownika
+    const cvData = application.cvId ? getCVDataById(application.cvId) : null;
+    const cvLinks = cvData ? collectCvLinks(cvData) : null;
+    const cvUrlSet = cvLinks ? new Set(cvLinks.map(l => normalizeUrl(l.url))) : null;
+
     Promise.all([
       getTrackingLinksForApplication(application.id),
       getClicksForApplication(application.id),
@@ -64,9 +96,12 @@ export function TrackingLinksModal({ isOpen, onClose, application, onFirstClick 
 
       if (clicks.length > 0 && onFirstClick) onFirstClick();
 
-      // Jeśli brak linków, a mamy domyślne linki użytkownika → auto-generuj
-      if (links.length === 0 && userLinks.length > 0) {
-        const validLinks = userLinks.filter(l => l.url.trim());
+      const relevant = cvUrlSet ? links.filter(l => cvUrlSet.has(normalizeUrl(l.targetUrl))) : links;
+
+      // Auto-generacja TYLKO gdy znamy treść CV (dane edytora) — bez nich
+      // nie zgadujemy, które linki użytkownika faktycznie są w dokumencie
+      if (relevant.length === 0 && cvLinks) {
+        const validLinks = cvLinks.filter(l => l.url.trim());
         if (validLinks.length > 0) {
           const toCreate = validLinks.map(l => ({
             userId: user.id,
@@ -85,14 +120,20 @@ export function TrackingLinksModal({ isOpen, onClose, application, onFirstClick 
           setExistingLinks([]);
         }
       } else {
-        setExistingLinks(links);
+        setExistingLinks(relevant);
       }
 
       setIsLoading(false);
     });
 
-    // Formularz do ręcznego dodawania linków
-    if (userLinks.length > 0) {
+    // Formularz do ręcznego dodawania linków — z CV jeśli jest, inaczej z linków użytkownika
+    if (cvLinks && cvLinks.length > 0) {
+      setLinkInputs(cvLinks.map(l => ({
+        label: l.label,
+        targetUrl: l.url,
+        preset: presetForUrl(l.url),
+      })));
+    } else if (userLinks.length > 0) {
       setLinkInputs(userLinks.map(l => ({
         label: l.label,
         targetUrl: l.url,
@@ -104,7 +145,7 @@ export function TrackingLinksModal({ isOpen, onClose, application, onFirstClick 
         { label: 'GitHub', targetUrl: '', preset: 'github' },
       ]);
     }
-  }, [isOpen, application.id, onFirstClick, user, userLinks]);
+  }, [isOpen, application.id, application.cvId, onFirstClick, user, userLinks]);
 
   const addLinkInput = () => {
     setLinkInputs([...linkInputs, { label: '', targetUrl: '', preset: 'custom' }]);
@@ -270,6 +311,16 @@ export function TrackingLinksModal({ isOpen, onClose, application, onFirstClick 
                             ) : (
                               <Copy className="w-4 h-4" />
                             )}
+                          </button>
+                          <button
+                            onClick={async () => {
+                              await deleteTrackingLink(link.id);
+                              setExistingLinks(prev => prev.filter(l => l.id !== link.id));
+                            }}
+                            className="p-1.5 text-slate-500 hover:text-danger-400 transition-colors cursor-pointer"
+                            title="Usuń link (nie dotyczy już wysłanych CV)"
+                          >
+                            <Trash2 className="w-4 h-4" />
                           </button>
                         </div>
                       </div>

@@ -323,7 +323,7 @@ export function ProfilePage() {
 
       {/* ── DANE OSOBOWE ─────────────────────────────────────────────────────── */}
       {section === 'kontakt' && (
-        <div className="space-y-4">
+        <div className="fold-card bg-dark-800 p-4 space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
               <FieldLabel light>Imię i nazwisko</FieldLabel>
@@ -444,7 +444,7 @@ export function ProfilePage() {
               {...experiencesDrag.getItemProps(expi)}
             >
               <div className="space-y-3">
-                <div className="grid grid-cols-1 gap-3">
+                <div className="max-w-md">
                   <div>
                     <FieldLabel light>Link firmy (opcjonalny)</FieldLabel>
                     <div className="flex gap-2">
@@ -461,7 +461,7 @@ export function ProfilePage() {
                           );
                         }}
                         placeholder="Etykieta"
-                        className="w-24 px-2 py-1.5 bg-dark-900 text-white text-sm font-light placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-primary-500 flex-shrink-0"
+                        className="w-24 px-2 py-1.5 bg-dark-900 text-white text-sm placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-primary-500 flex-shrink-0"
                       />
                       <input
                         value={exp.company_link?.url ?? ''}
@@ -476,7 +476,7 @@ export function ProfilePage() {
                           );
                         }}
                         placeholder="https://…"
-                        className="flex-1 px-2 py-1.5 bg-dark-900 text-white text-sm font-light placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-primary-500 min-w-0"
+                        className="flex-1 px-2 py-1.5 bg-dark-900 text-white text-sm placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-primary-500 min-w-0"
                       />
                     </div>
                   </div>
@@ -523,7 +523,7 @@ export function ProfilePage() {
                         />
                       </div>
                     </div>
-                    <FieldLabel light>Punkty</FieldLabel>
+                    <FieldLabel light>Zakres obowiązków</FieldLabel>
                     <BulletsEditor light
                       bullets={role.bullets}
                       onChange={bullets => setLocalExperiences(prev =>
@@ -881,7 +881,7 @@ export function ProfilePage() {
 
       {/* ── ZAINTERESOWANIA + RODO ───────────────────────────────────────────── */}
       {section === 'zainteresowania' && (
-        <div className="space-y-4">
+        <div className="fold-card bg-dark-800 p-4 space-y-4">
           <div>
             <FieldLabel light>Zainteresowania</FieldLabel>
             <TextInput light

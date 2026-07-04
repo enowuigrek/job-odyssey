@@ -162,7 +162,7 @@ export function DashboardPage() {
       {/* Informacja o rozmowach */}
       {todaysInterviews.length > 0 ? (
         // Rozmowy dzisiaj
-        <Card className="bg-warning-500/10 border border-warning-500/30">
+        <Card fold className="bg-warning-500/10">
           <CardBody className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 bg-warning-500/20 flex items-center justify-center flex-shrink-0">
@@ -201,7 +201,7 @@ export function DashboardPage() {
         </Card>
       ) : nextInterview ? (
         // Najbliższa rozmowa w przyszłości
-        <Card className="bg-primary-500/10 border border-primary-500/30">
+        <Card fold className="bg-primary-500/10">
           <CardBody className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 bg-primary-500/20 flex items-center justify-center flex-shrink-0">
@@ -235,7 +235,7 @@ export function DashboardPage() {
         </Card>
       ) : (
         // Brak zaplanowanych rozmów
-        <Card className="bg-dark-800 border border-dark-700">
+        <Card fold>
           <CardBody className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 bg-dark-700 flex items-center justify-center flex-shrink-0">

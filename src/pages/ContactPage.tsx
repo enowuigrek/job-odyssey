@@ -55,7 +55,7 @@ export function ContactPage() {
             </div>
           </div>
         ) : (
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="fold-card bg-dark-800 p-4 space-y-4">
             <Input
               label="Imię"
               value={name}

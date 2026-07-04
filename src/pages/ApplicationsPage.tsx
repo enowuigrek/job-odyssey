@@ -608,7 +608,7 @@ export function ApplicationsPage() {
 
             {/* Ikony wjeżdżają z prawej na hover — karta nie zmienia rozmiaru */}
             {compact && !isExpanded && (
-              <div className="absolute inset-y-0 right-0 flex items-center pl-10 pr-1.5 translate-x-full group-hover:translate-x-0 transition-transform duration-200 ease-out bg-gradient-to-l from-dark-800 from-65% to-transparent">
+              <div className="paper-tray absolute inset-y-0 right-0 flex items-center pl-3 pr-1.5 translate-x-full group-hover:translate-x-0 transition-transform duration-200 ease-out">
                 {app.jobUrl && (
                   <a
                     href={app.jobUrl}
@@ -717,8 +717,8 @@ export function ApplicationsPage() {
                 )}
               </div>
 
-              {/* Akcje — icon-only */}
-              <div className="flex items-center gap-1 mt-4 pt-4 border-t border-dark-600">
+              {/* Akcje — icon-only, wszystkie po prawej (jak pasek na hoverze) */}
+              <div className="flex items-center justify-end gap-1 mt-4 pt-4 border-t border-dark-600">
                 {app.jobUrl && (
                   <a
                     href={app.jobUrl}
@@ -748,7 +748,6 @@ export function ApplicationsPage() {
                     <FileDown className="w-4 h-4" />
                   </button>
                 )}
-                <div className="flex-1" />
                 <button
                   onClick={(e) => { e.stopPropagation(); openModal(app); }}
                   className="p-2 text-slate-500 hover:text-primary-400 transition-colors cursor-pointer"
@@ -1064,23 +1063,18 @@ export function ApplicationsPage() {
 
           {/* CV + Generuj PDF */}
           <div className="space-y-2">
-            <label className="block text-sm font-medium text-slate-300">
-              CV do tej aplikacji
-            </label>
-            <div className="flex gap-2">
-              <select
-                value={formData.cvId || ''}
-                onChange={(e) => setFormData({ ...formData, cvId: e.target.value || undefined })}
-                className="flex-1 px-3 py-2 bg-dark-700 text-white border border-dark-600 focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm"
-              >
-                <option value="">— Bez CV —</option>
-                {state.cvs.map(cv => (
-                  <option key={cv.id} value={cv.id}>
-                    {cv.name}{cv.fileName ? ' 📎' : ''}{cv.isDefault ? ' ★' : ''}
-                  </option>
-                ))}
-              </select>
-            </div>
+            <Select
+              label="CV do tej aplikacji"
+              value={formData.cvId || ''}
+              onChange={(e) => setFormData({ ...formData, cvId: e.target.value || undefined })}
+              options={[
+                { value: '', label: '— Bez CV —' },
+                ...state.cvs.map(cv => ({
+                  value: cv.id,
+                  label: `${cv.name}${cv.fileName ? ' 📎' : ''}${cv.isDefault ? ' ★' : ''}`,
+                })),
+              ]}
+            />
             {formData.cvId && !state.cvs.find(cv => cv.id === formData.cvId)?.fileName && (
               <p className="text-xs text-warning-400">
                 To CV nie ma pliku PDF — nie można wygenerować otagowanego PDF.

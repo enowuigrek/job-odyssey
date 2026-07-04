@@ -475,7 +475,7 @@ export function InterviewsPage() {
 
             {/* Ikony wjeżdżają z prawej na hover — karta nie zmienia rozmiaru */}
             {compact && !isExpanded && (
-              <div className="absolute inset-y-0 right-0 flex items-center pl-10 pr-1.5 translate-x-full group-hover:translate-x-0 transition-transform duration-200 ease-out bg-gradient-to-l from-dark-800 from-65% to-transparent">
+              <div className="paper-tray absolute inset-y-0 right-0 flex items-center pl-3 pr-1.5 translate-x-full group-hover:translate-x-0 transition-transform duration-200 ease-out">
                 {interview.location && interview.location.startsWith('http') && (
                   <a
                     href={interview.location}
@@ -567,8 +567,8 @@ export function InterviewsPage() {
                 )}
               </div>
 
-              {/* Akcje */}
-              <div className="flex items-center gap-2 mt-3 pt-3 border-t border-dark-600">
+              {/* Akcje — wszystkie po prawej (jak pasek na hoverze) */}
+              <div className="flex items-center justify-end gap-2 mt-3 pt-3 border-t border-dark-600">
                 {interview.location && interview.location.startsWith('http') && (
                   <a
                     href={interview.location}
@@ -581,7 +581,6 @@ export function InterviewsPage() {
                     Otwórz link
                   </a>
                 )}
-                <div className="flex-1" />
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
