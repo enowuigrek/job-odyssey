@@ -1,7 +1,5 @@
 import { PDFDocument, PDFDict, PDFName, PDFArray, PDFString, PDFHexString, PDFStream, PDFRef, PDFPage } from 'pdf-lib';
-
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
-const TRACK_BASE = `${SUPABASE_URL}/functions/v1/track`;
+import { trackUrl } from './trackUrl';
 
 export interface LinkMapping {
   originalUrl: string;
@@ -716,7 +714,7 @@ export async function extractTextUrls(pdfBytes: ArrayBuffer | Uint8Array): Promi
 }
 
 export function buildTrackUrl(token: string): string {
-  return `${TRACK_BASE}?t=${token}`;
+  return trackUrl(token);
 }
 
 // ── Placeholder-based replacement (nowa, niezawodna metoda) ─────────────────

@@ -12,17 +12,10 @@ import {
   TrackingClick,
 } from '../../lib/db';
 import { JobApplication } from '../../types';
-import { getCVDataById } from '../../lib/generateCV';
-import type { CVData } from '../../templates/cv/types';
+import { getCVDataById, collectCvLinks } from '../../lib/generateCV';
+import { trackUrl } from '../../lib/trackUrl';
 import { format, parseISO } from 'date-fns';
 import { pl } from 'date-fns/locale';
-
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
-const TRACK_BASE = `${SUPABASE_URL}/functions/v1/track`;
-
-function trackUrl(token: string) {
-  return `${TRACK_BASE}?t=${token}`;
-}
 
 interface LinkInput {
   label: string;
@@ -40,24 +33,6 @@ const normalizeUrl = (u: string) => u.trim().toLowerCase().replace(/^https?:\/\/
 
 const presetForUrl = (url: string): LinkInput['preset'] =>
   url.includes('linkedin.com') ? 'linkedin' : url.includes('github.com') ? 'github' : 'custom';
-
-/** Linki faktycznie użyte w CV podpiętym pod aplikację (kontakt, projekty, firmy, certyfikaty) */
-function collectCvLinks(cv: CVData): { label: string; url: string }[] {
-  const out: { label: string; url: string }[] = [];
-  cv.contact.links.forEach(l => out.push({ label: l.label, url: l.url }));
-  if (cv.showProjects !== false) {
-    cv.projects.forEach(p => p.links.forEach(l =>
-      out.push({ label: p.name ? `${p.name} - ${l.label}` : l.label, url: l.url })
-    ));
-  }
-  cv.experience.forEach(e => {
-    if (e.companyLink?.url) out.push({ label: e.companyLink.label || e.company, url: e.companyLink.url });
-  });
-  if (cv.showCertificates !== false) {
-    (cv.certificates ?? []).forEach(c => { if (c.url) out.push({ label: c.name, url: c.url }); });
-  }
-  return out.filter(l => l.url?.trim());
-}
 
 interface Props {
   isOpen: boolean;

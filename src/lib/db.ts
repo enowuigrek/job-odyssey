@@ -458,18 +458,20 @@ export async function markAllClicksRead(userId: string): Promise<void> {
   if (!links || links.length === 0) return;
 
   const tokens = links.map(l => l.token);
-  await supabase
+  const { error } = await supabase
     .from('cv_clicks')
     .update({ read_at: new Date().toISOString() })
     .in('token', tokens)
     .is('read_at', null);
+  if (error) console.error('markAllClicksRead failed:', error.message);
 }
 
 export async function dismissClick(clickId: string): Promise<void> {
-  await supabase
+  const { error } = await supabase
     .from('cv_clicks')
     .update({ dismissed_at: new Date().toISOString() })
     .eq('id', clickId);
+  if (error) console.error('dismissClick failed:', error.message);
 }
 
 export async function dismissAllClicks(userId: string): Promise<void> {
@@ -480,11 +482,12 @@ export async function dismissAllClicks(userId: string): Promise<void> {
   if (!links || links.length === 0) return;
 
   const tokens = links.map(l => l.token);
-  await supabase
+  const { error } = await supabase
     .from('cv_clicks')
     .update({ dismissed_at: new Date().toISOString() })
     .in('token', tokens)
     .is('dismissed_at', null);
+  if (error) console.error('dismissAllClicks failed:', error.message);
 }
 
 export async function getDistinctTrackingLinksForUser(

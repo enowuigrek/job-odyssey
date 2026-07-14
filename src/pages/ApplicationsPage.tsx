@@ -34,7 +34,7 @@ import {
   createTrackingLinks,
   getTrackingLinksForApplication,
 } from '../lib/db';
-import { getCVDataById, prepareTrackedCV } from '../lib/generateCV';
+import { getCVDataById, prepareTrackedCV, collectCvLinks } from '../lib/generateCV';
 import { startPaperGhost, endPaperGhost } from '../lib/paperDragGhost';
 import { CVTemplate } from '../templates/cv/CVTemplate';
 import { CVHtml } from '../templates/cv/CVHtml';
@@ -216,17 +216,22 @@ export function ApplicationsPage() {
     setPdfError(null);
     try {
       let trackingLinks = await getTrackingLinksForApplication(app.id);
-      if (trackingLinks.length === 0 && userLinks.length > 0) {
-        trackingLinks = await createTrackingLinks(userLinks.filter(l => l.url.trim()).map(l => ({
-          userId: user.id,
-          applicationId: app.id,
-          token: `${app.id.slice(0, 6)}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`,
-          label: l.label,
-          targetUrl: l.url.trim(),
-        })));
+      if (trackingLinks.length === 0) {
+        // Linki bierzemy z TREŚCI tego CV (kontakt, projekty, firmy, certyfikaty),
+        // nie ze wszystkich linków użytkownika
+        const cvLinks = collectCvLinks(cvData);
+        if (cvLinks.length > 0) {
+          trackingLinks = await createTrackingLinks(cvLinks.map(l => ({
+            userId: user.id,
+            applicationId: app.id,
+            token: `${app.id.slice(0, 6)}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`,
+            label: l.label,
+            targetUrl: l.url.trim(),
+          })));
+        }
       }
       if (trackingLinks.length === 0) {
-        setPdfError('Brak linków do śledzenia. Dodaj linki w „Moje linki".');
+        setPdfError('To CV nie zawiera żadnych linków do śledzenia.');
         return;
       }
       const trackedData = prepareTrackedCV(trackingLinks, cvData, cvId!, user.id);

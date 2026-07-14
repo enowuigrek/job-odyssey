@@ -1,6 +1,7 @@
 import { CVData, CVLink } from '../templates/cv/types';
 import { defaultCVData } from '../templates/cv/defaultCVData';
 import { normalizeCVData } from '../templates/cv/format';
+import { trackUrl } from './trackUrl';
 import type { TrackingLink } from './db';
 
 function cvEditorStorageKey(userId?: string) {
@@ -51,8 +52,26 @@ export function deleteCVDataById(cvId: string): void {
   localStorage.removeItem(`jo-cv-data-${cvId}`);
 }
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
-const TRACK_BASE = `${SUPABASE_URL}/functions/v1/track`;
+/**
+ * Linki faktycznie użyte w CV (kontakt, projekty, firmy, certyfikaty) —
+ * wspólne źródło dla generowania linków śledzących i modala "Śledzone linki".
+ */
+export function collectCvLinks(cv: CVData): { label: string; url: string }[] {
+  const out: { label: string; url: string }[] = [];
+  cv.contact.links.forEach(l => out.push({ label: l.label, url: l.url }));
+  if (cv.showProjects !== false) {
+    cv.projects.forEach(p => p.links.forEach(l =>
+      out.push({ label: p.name ? `${p.name} - ${l.label}` : l.label, url: l.url })
+    ));
+  }
+  cv.experience.forEach(e => {
+    if (e.companyLink?.url) out.push({ label: e.companyLink.label || e.company, url: e.companyLink.url });
+  });
+  if (cv.showCertificates !== false) {
+    (cv.certificates ?? []).forEach(c => { if (c.url) out.push({ label: c.name, url: c.url }); });
+  }
+  return out.filter(l => l.url?.trim());
+}
 
 /**
  * Build a mapping from original CV link URL → tracked URL.
@@ -68,10 +87,12 @@ function buildTrackedUrlMap(
     ...cvData.contact.links,
     ...cvData.projects.flatMap(p => p.links),
     ...cvData.experience.flatMap(e => (e.companyLink ? [e.companyLink] : [])),
+    // Certyfikaty z plikiem/URL-em też są klikalnymi linkami w CV
+    ...(cvData.certificates ?? []).flatMap(c => (c.url ? [{ label: c.name, url: c.url }] : [])),
   ];
 
   for (const tl of trackingLinks) {
-    const trackedUrl = `${TRACK_BASE}?t=${tl.token}`;
+    const trackedUrl = trackUrl(tl.token);
 
     const byUrl = allCvLinks.find(
       l => l.url === tl.targetUrl || l.url === tl.targetUrl.replace(/\/$/, '')
@@ -107,6 +128,11 @@ function injectTrackedUrls(data: CVData, urlMap: Map<string, string>): CVData {
       ...e,
       companyLink: e.companyLink ? replaceLink(e.companyLink) : undefined,
     })),
+    certificates: (data.certificates ?? []).map(c => {
+      if (!c.url) return c;
+      const tracked = urlMap.get(c.url);
+      return tracked ? { ...c, trackedUrl: tracked } : c;
+    }),
   };
 }
 
