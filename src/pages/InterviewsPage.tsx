@@ -473,9 +473,9 @@ export function InterviewsPage() {
               </div>
             </div>
 
-            {/* Ikony akcji na stałe pod treścią karty */}
+            {/* Ikony akcji na stałe pod treścią karty, po lewej */}
             {compact && !isExpanded && (
-              <div className="flex items-center justify-end gap-0.5 mt-1.5">
+              <div className="flex items-center gap-0.5 mt-1.5">
                 {interview.location && interview.location.startsWith('http') && (
                   <a
                     href={interview.location}
@@ -506,9 +506,9 @@ export function InterviewsPage() {
             )}
           </div>
 
-          {/* Rozwinięte szczegóły */}
+          {/* Rozwinięte szczegóły — rozkłada się jak karta inline'owego dodawania */}
           {isExpanded && (
-            <div className="px-3 pb-3 border-t border-dark-600">
+            <div className="animate-unfold-card px-3 pb-3 border-t border-dark-600">
               {/* Szybka zmiana statusu */}
               <div className="mt-3 mb-3">
                 <Select
@@ -567,15 +567,15 @@ export function InterviewsPage() {
                 )}
               </div>
 
-              {/* Akcje — wszystkie po prawej (jak pasek na hoverze) */}
-              <div className="flex items-center justify-end gap-2 mt-3 pt-3 border-t border-dark-600">
+              {/* Akcje — po lewej, ten sam rozmiar co na zwiniętej karcie */}
+              <div className="flex items-center gap-0.5 mt-3 pt-3 border-t border-dark-600">
                 {interview.location && interview.location.startsWith('http') && (
                   <a
                     href={interview.location}
                     target="_blank"
                     rel="noopener noreferrer"
                     onClick={(e) => e.stopPropagation()}
-                    className="flex items-center gap-1 px-2 py-1 text-xs text-slate-400 hover:text-primary-400 transition-colors cursor-pointer"
+                    className="flex items-center gap-1 px-1 py-1 text-xs text-slate-400 hover:text-primary-400 transition-colors cursor-pointer"
                   >
                     <ExternalLink className="w-3.5 h-3.5" />
                     Otwórz link
@@ -586,7 +586,7 @@ export function InterviewsPage() {
                     e.stopPropagation();
                     openModal(interview);
                   }}
-                  className="p-1.5 text-slate-500 hover:text-primary-400 cursor-pointer"
+                  className="p-1 text-slate-600 hover:text-primary-400 cursor-pointer"
                 >
                   <Edit className="w-3.5 h-3.5" />
                 </button>
@@ -595,7 +595,7 @@ export function InterviewsPage() {
                     e.stopPropagation();
                     handleDelete(interview.id);
                   }}
-                  className="p-1.5 text-slate-500 hover:text-danger-400 cursor-pointer"
+                  className="p-1 text-slate-600 hover:text-danger-400 cursor-pointer"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
                 </button>

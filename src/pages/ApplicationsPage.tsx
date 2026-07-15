@@ -614,9 +614,9 @@ export function ApplicationsPage() {
               </div>
             </div>
 
-            {/* Ikony akcji na stałe pod treścią karty */}
+            {/* Ikony akcji na stałe pod treścią karty, po lewej */}
             {compact && !isExpanded && (
-              <div className="flex items-center justify-end gap-0.5 mt-1.5">
+              <div className="flex items-center gap-0.5 mt-1.5">
                 {app.jobUrl && (
                   <a
                     href={app.jobUrl}
@@ -664,9 +664,9 @@ export function ApplicationsPage() {
             )}
           </div>
 
-          {/* Rozwinięte szczegóły */}
+          {/* Rozwinięte szczegóły — rozkłada się jak karta inline'owego dodawania */}
           {isExpanded && (
-            <div className="px-4 pb-4 border-t border-dark-600">
+            <div className="animate-unfold-card px-4 pb-4 border-t border-dark-600">
               {/* Szybka zmiana statusu */}
               <div className="mt-3 mb-3">
                 <Select
@@ -725,50 +725,50 @@ export function ApplicationsPage() {
                 )}
               </div>
 
-              {/* Akcje — icon-only, wszystkie po prawej (jak pasek na hoverze) */}
-              <div className="flex items-center justify-end gap-1 mt-4 pt-4 border-t border-dark-600">
+              {/* Akcje — icon-only, po lewej, ten sam rozmiar co na zwiniętej karcie */}
+              <div className="flex items-center gap-0.5 mt-4 pt-4 border-t border-dark-600">
                 {app.jobUrl && (
                   <a
                     href={app.jobUrl}
                     target="_blank"
                     rel="noopener noreferrer"
                     onClick={(e) => e.stopPropagation()}
-                    className="p-2 text-slate-500 hover:text-primary-400 transition-colors cursor-pointer"
+                    className="p-1 text-slate-600 hover:text-primary-400 transition-colors cursor-pointer"
                     title="Otwórz ofertę"
                   >
-                    <ExternalLink className="w-4 h-4" />
+                    <ExternalLink className="w-3.5 h-3.5" />
                   </a>
                 )}
                 <button
                   onClick={(e) => { e.stopPropagation(); setTrackingApp(app); }}
-                  className="p-2 text-slate-500 hover:text-success-400 transition-colors cursor-pointer"
+                  className="p-1 text-slate-600 hover:text-success-400 transition-colors cursor-pointer"
                   title="Śledź CV"
                 >
-                  <MousePointerClick className="w-4 h-4" />
+                  <MousePointerClick className="w-3.5 h-3.5" />
                 </button>
                 {app.cvId && getCVDataById(app.cvId) && (
                   <button
                     onClick={(e) => { e.stopPropagation(); downloadTaggedPdf(app); }}
                     disabled={generatingTaggedFor === app.id}
-                    className="p-2 text-slate-500 hover:text-success-400 transition-colors cursor-pointer disabled:opacity-50"
+                    className="p-1 text-slate-600 hover:text-success-400 transition-colors cursor-pointer disabled:opacity-50"
                     title="Pobierz otagowane CV"
                   >
-                    <FileDown className="w-4 h-4" />
+                    <FileDown className="w-3.5 h-3.5" />
                   </button>
                 )}
                 <button
                   onClick={(e) => { e.stopPropagation(); openModal(app); }}
-                  className="p-2 text-slate-500 hover:text-primary-400 transition-colors cursor-pointer"
+                  className="p-1 text-slate-600 hover:text-primary-400 transition-colors cursor-pointer"
                   title="Edytuj"
                 >
-                  <Edit className="w-4 h-4" />
+                  <Edit className="w-3.5 h-3.5" />
                 </button>
                 <button
                   onClick={(e) => { e.stopPropagation(); handleDelete(app.id); }}
-                  className="p-2 text-slate-500 hover:text-danger-400 transition-colors cursor-pointer"
+                  className="p-1 text-slate-600 hover:text-danger-400 transition-colors cursor-pointer"
                   title="Usuń"
                 >
-                  <Trash2 className="w-4 h-4" />
+                  <Trash2 className="w-3.5 h-3.5" />
                 </button>
               </div>
             </div>
