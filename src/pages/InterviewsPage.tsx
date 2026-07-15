@@ -421,7 +421,7 @@ export function InterviewsPage() {
         <div className="p-0">
           {/* Główna sekcja - klikalna aby rozwinąć */}
           <div
-            className={`${compact ? 'px-2.5 py-2.5' : 'p-4'} cursor-pointer relative overflow-hidden`}
+            className={`${compact ? 'px-2.5 py-2.5' : 'p-4'} cursor-pointer`}
             onClick={handleExpandClick}
           >
             <div className="flex items-center gap-1">
@@ -473,16 +473,16 @@ export function InterviewsPage() {
               </div>
             </div>
 
-            {/* Ikony wjeżdżają z prawej na hover — karta nie zmienia rozmiaru */}
+            {/* Ikony akcji na stałe pod treścią karty */}
             {compact && !isExpanded && (
-              <div className="paper-tray absolute inset-y-0 right-0 flex items-center pl-3 pr-1.5 translate-x-full group-hover:translate-x-0 transition-transform duration-200 ease-out">
+              <div className="flex items-center justify-end gap-0.5 mt-1.5">
                 {interview.location && interview.location.startsWith('http') && (
                   <a
                     href={interview.location}
                     target="_blank"
                     rel="noopener noreferrer"
                     onClick={(e) => e.stopPropagation()}
-                    className="p-1.5 text-slate-400 hover:text-primary-400 transition-colors cursor-pointer"
+                    className="p-1 text-slate-600 hover:text-primary-400 transition-colors cursor-pointer"
                     title="Otwórz link"
                   >
                     <ExternalLink className="w-3.5 h-3.5" />
@@ -490,14 +490,14 @@ export function InterviewsPage() {
                 )}
                 <button
                   onClick={(e) => { e.stopPropagation(); openModal(interview); }}
-                  className="p-1.5 text-slate-400 hover:text-primary-400 transition-colors cursor-pointer"
+                  className="p-1 text-slate-600 hover:text-primary-400 transition-colors cursor-pointer"
                   title="Edytuj"
                 >
                   <Edit className="w-3.5 h-3.5" />
                 </button>
                 <button
                   onClick={(e) => { e.stopPropagation(); handleDelete(interview.id); }}
-                  className="p-1.5 text-slate-400 hover:text-danger-400 transition-colors cursor-pointer"
+                  className="p-1 text-slate-600 hover:text-danger-400 transition-colors cursor-pointer"
                   title="Usuń"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
