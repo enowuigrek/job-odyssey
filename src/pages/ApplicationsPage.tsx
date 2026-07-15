@@ -216,19 +216,22 @@ export function ApplicationsPage() {
     setPdfError(null);
     try {
       let trackingLinks = await getTrackingLinksForApplication(app.id);
-      if (trackingLinks.length === 0) {
-        // Linki bierzemy z TREŚCI tego CV (kontakt, projekty, firmy, certyfikaty),
-        // nie ze wszystkich linków użytkownika
-        const cvLinks = collectCvLinks(cvData);
-        if (cvLinks.length > 0) {
-          trackingLinks = await createTrackingLinks(cvLinks.map(l => ({
-            userId: user.id,
-            applicationId: app.id,
-            token: `${app.id.slice(0, 6)}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`,
-            label: l.label,
-            targetUrl: l.url.trim(),
-          })));
-        }
+      // Dotwórz linki śledzące dla URL-i z TREŚCI tego CV (kontakt, projekty,
+      // firmy, certyfikaty), których jeszcze nie ma — starsze aplikacje mają
+      // komplety sprzed tagowania certyfikatów
+      const normUrl = (u: string) =>
+        u.trim().toLowerCase().replace(/^https?:\/\//, '').replace(/^www\./, '').replace(/\/+$/, '');
+      const covered = new Set(trackingLinks.map(l => normUrl(l.targetUrl)));
+      const missing = collectCvLinks(cvData).filter(l => !covered.has(normUrl(l.url)));
+      if (missing.length > 0) {
+        const created = await createTrackingLinks(missing.map(l => ({
+          userId: user.id,
+          applicationId: app.id,
+          token: `${app.id.slice(0, 6)}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`,
+          label: l.label,
+          targetUrl: l.url.trim(),
+        })));
+        trackingLinks = [...trackingLinks, ...created];
       }
       if (trackingLinks.length === 0) {
         setPdfError('To CV nie zawiera żadnych linków do śledzenia.');
