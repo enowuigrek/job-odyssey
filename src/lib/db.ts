@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import { ensureHttps } from './trackUrl';
 import {
   AppState,
   JobApplication,
@@ -353,7 +354,8 @@ export async function createTrackingLinks(
     cv_id: l.cvId ?? null,
     token: l.token,
     label: l.label,
-    target_url: l.targetUrl,
+    // Bez protokołu redirect z funkcji track robi się względny — normalizujemy przy zapisie
+    target_url: ensureHttps(l.targetUrl),
   }));
   const { data, error } = await supabase.from('cv_tracking_links').insert(rows).select();
   if (error) throw error;

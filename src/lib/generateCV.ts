@@ -1,7 +1,7 @@
 import { CVData, CVLink } from '../templates/cv/types';
 import { defaultCVData } from '../templates/cv/defaultCVData';
 import { normalizeCVData } from '../templates/cv/format';
-import { trackUrl } from './trackUrl';
+import { trackUrl, normalizeUrlKey } from './trackUrl';
 import type { TrackingLink } from './db';
 
 function cvEditorStorageKey(userId?: string) {
@@ -94,9 +94,9 @@ function buildTrackedUrlMap(
   for (const tl of trackingLinks) {
     const trackedUrl = trackUrl(tl.token);
 
-    const byUrl = allCvLinks.find(
-      l => l.url === tl.targetUrl || l.url === tl.targetUrl.replace(/\/$/, '')
-    );
+    // Porównanie niewrażliwe na protokół/www/ukośnik — targetUrl jest
+    // normalizowany do https:// przy zapisie, a w CV bywa wpisany bez
+    const byUrl = allCvLinks.find(l => normalizeUrlKey(l.url) === normalizeUrlKey(tl.targetUrl));
     if (byUrl) { map.set(byUrl.url, trackedUrl); continue; }
 
     const byLabel = allCvLinks.find(

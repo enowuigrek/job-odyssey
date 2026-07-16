@@ -36,6 +36,7 @@ import {
 } from '../lib/db';
 import { getCVDataById, prepareTrackedCV, collectCvLinks } from '../lib/generateCV';
 import { startPaperGhost, endPaperGhost } from '../lib/paperDragGhost';
+import { normalizeUrlKey } from '../lib/trackUrl';
 import { CVTemplate } from '../templates/cv/CVTemplate';
 import { CVHtml } from '../templates/cv/CVHtml';
 import type { CVData } from '../templates/cv/types';
@@ -219,10 +220,8 @@ export function ApplicationsPage() {
       // Dotwórz linki śledzące dla URL-i z TREŚCI tego CV (kontakt, projekty,
       // firmy, certyfikaty), których jeszcze nie ma — starsze aplikacje mają
       // komplety sprzed tagowania certyfikatów
-      const normUrl = (u: string) =>
-        u.trim().toLowerCase().replace(/^https?:\/\//, '').replace(/^www\./, '').replace(/\/+$/, '');
-      const covered = new Set(trackingLinks.map(l => normUrl(l.targetUrl)));
-      const missing = collectCvLinks(cvData).filter(l => !covered.has(normUrl(l.url)));
+      const covered = new Set(trackingLinks.map(l => normalizeUrlKey(l.targetUrl)));
+      const missing = collectCvLinks(cvData).filter(l => !covered.has(normalizeUrlKey(l.url)));
       if (missing.length > 0) {
         const created = await createTrackingLinks(missing.map(l => ({
           userId: user.id,

@@ -31,9 +31,13 @@ Deno.serve(async (req: Request) => {
     referrer: req.headers.get('referer') ?? null,
   });
 
-  // Redirect do docelowego URL
+  // Redirect do docelowego URL — dopnij protokół, gdyby URL zapisano bez
+  // niego (Location bez schematu działa jak ścieżka względna wobec funkcji)
+  const target = /^https?:\/\//i.test(link.target_url)
+    ? link.target_url
+    : `https://${link.target_url}`;
   return new Response(null, {
     status: 302,
-    headers: { Location: link.target_url },
+    headers: { Location: target },
   });
 });

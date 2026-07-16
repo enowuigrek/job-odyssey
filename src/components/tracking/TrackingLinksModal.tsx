@@ -13,7 +13,7 @@ import {
 } from '../../lib/db';
 import { JobApplication } from '../../types';
 import { getCVDataById, collectCvLinks } from '../../lib/generateCV';
-import { trackUrl } from '../../lib/trackUrl';
+import { trackUrl, normalizeUrlKey } from '../../lib/trackUrl';
 import { format, parseISO } from 'date-fns';
 import { pl } from 'date-fns/locale';
 
@@ -28,8 +28,6 @@ const PRESETS = [
   { key: 'github' as const, label: 'GitHub', placeholder: 'https://github.com/twoj-profil' },
   { key: 'custom' as const, label: 'Custom', placeholder: 'https://...' },
 ];
-
-const normalizeUrl = (u: string) => u.trim().toLowerCase().replace(/^https?:\/\//, '').replace(/\/+$/, '');
 
 const presetForUrl = (url: string): LinkInput['preset'] =>
   url.includes('linkedin.com') ? 'linkedin' : url.includes('github.com') ? 'github' : 'custom';
@@ -61,7 +59,7 @@ export function TrackingLinksModal({ isOpen, onClose, application, onFirstClick 
     // nie wszystkie linki użytkownika
     const cvData = application.cvId ? getCVDataById(application.cvId) : null;
     const cvLinks = cvData ? collectCvLinks(cvData) : null;
-    const cvUrlSet = cvLinks ? new Set(cvLinks.map(l => normalizeUrl(l.url))) : null;
+    const cvUrlSet = cvLinks ? new Set(cvLinks.map(l => normalizeUrlKey(l.url))) : null;
 
     Promise.all([
       getTrackingLinksForApplication(application.id),
@@ -71,7 +69,7 @@ export function TrackingLinksModal({ isOpen, onClose, application, onFirstClick 
 
       if (clicks.length > 0 && onFirstClick) onFirstClick();
 
-      const relevant = cvUrlSet ? links.filter(l => cvUrlSet.has(normalizeUrl(l.targetUrl))) : links;
+      const relevant = cvUrlSet ? links.filter(l => cvUrlSet.has(normalizeUrlKey(l.targetUrl))) : links;
 
       // Auto-generacja TYLKO gdy znamy treść CV (dane edytora) — bez nich
       // nie zgadujemy, które linki użytkownika faktycznie są w dokumencie
