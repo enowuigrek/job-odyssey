@@ -614,9 +614,9 @@ export function ApplicationsPage() {
               </div>
             </div>
 
-            {/* Ikony akcji na stałe pod treścią karty, po lewej */}
+            {/* Ikony akcji na stałe pod treścią karty, po prawej */}
             {compact && !isExpanded && (
-              <div className="flex items-center gap-0.5 mt-1.5">
+              <div className="flex items-center justify-end gap-0.5 mt-1.5">
                 {app.jobUrl && (
                   <a
                     href={app.jobUrl}
@@ -664,9 +664,10 @@ export function ApplicationsPage() {
             )}
           </div>
 
-          {/* Rozwinięte szczegóły — rozkłada się jak karta inline'owego dodawania */}
-          {isExpanded && (
-            <div className="animate-unfold-card px-4 pb-4 border-t border-dark-600">
+          {/* Rozwinięte szczegóły — płynnie rozwijane i zwijane (grid-rows 0fr↔1fr) */}
+          <div className={`grid transition-[grid-template-rows] duration-200 ease-out ${isExpanded ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
+            <div className="overflow-hidden">
+            <div className="px-4 pb-4 border-t border-dark-600">
               {/* Szybka zmiana statusu */}
               <div className="mt-3 mb-3">
                 <Select
@@ -725,8 +726,8 @@ export function ApplicationsPage() {
                 )}
               </div>
 
-              {/* Akcje — icon-only, po lewej, ten sam rozmiar co na zwiniętej karcie */}
-              <div className="flex items-center gap-0.5 mt-4 pt-4 border-t border-dark-600">
+              {/* Akcje — icon-only, po prawej, ten sam rozmiar co na zwiniętej karcie */}
+              <div className="flex items-center justify-end gap-0.5 mt-4 pt-4 border-t border-dark-600">
                 {app.jobUrl && (
                   <a
                     href={app.jobUrl}
@@ -772,7 +773,8 @@ export function ApplicationsPage() {
                 </button>
               </div>
             </div>
-          )}
+            </div>
+          </div>
         </div>
       </Card>
     );

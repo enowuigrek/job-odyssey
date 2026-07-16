@@ -473,9 +473,9 @@ export function InterviewsPage() {
               </div>
             </div>
 
-            {/* Ikony akcji na stałe pod treścią karty, po lewej */}
+            {/* Ikony akcji na stałe pod treścią karty, po prawej */}
             {compact && !isExpanded && (
-              <div className="flex items-center gap-0.5 mt-1.5">
+              <div className="flex items-center justify-end gap-0.5 mt-1.5">
                 {interview.location && interview.location.startsWith('http') && (
                   <a
                     href={interview.location}
@@ -506,9 +506,10 @@ export function InterviewsPage() {
             )}
           </div>
 
-          {/* Rozwinięte szczegóły — rozkłada się jak karta inline'owego dodawania */}
-          {isExpanded && (
-            <div className="animate-unfold-card px-3 pb-3 border-t border-dark-600">
+          {/* Rozwinięte szczegóły — płynnie rozwijane i zwijane (grid-rows 0fr↔1fr) */}
+          <div className={`grid transition-[grid-template-rows] duration-200 ease-out ${isExpanded ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
+            <div className="overflow-hidden">
+            <div className="px-3 pb-3 border-t border-dark-600">
               {/* Szybka zmiana statusu */}
               <div className="mt-3 mb-3">
                 <Select
@@ -567,8 +568,8 @@ export function InterviewsPage() {
                 )}
               </div>
 
-              {/* Akcje — po lewej, ten sam rozmiar co na zwiniętej karcie */}
-              <div className="flex items-center gap-0.5 mt-3 pt-3 border-t border-dark-600">
+              {/* Akcje — po prawej, ten sam rozmiar co na zwiniętej karcie */}
+              <div className="flex items-center justify-end gap-0.5 mt-3 pt-3 border-t border-dark-600">
                 {interview.location && interview.location.startsWith('http') && (
                   <a
                     href={interview.location}
@@ -601,7 +602,8 @@ export function InterviewsPage() {
                 </button>
               </div>
             </div>
-          )}
+            </div>
+          </div>
         </div>
       </Card>
     );
