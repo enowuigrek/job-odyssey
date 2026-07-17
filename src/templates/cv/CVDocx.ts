@@ -146,6 +146,7 @@ export async function buildCVDocx(data: CVData): Promise<Blob> {
         break;
 
       case 'technologies':
+        if (data.showTechnologies === false) break;
         children.push(sectionHeader((data.technologiesTitle || 'TECHNOLOGIE I NARZĘDZIA').toUpperCase()));
         for (const tech of data.technologies) {
           children.push(new Paragraph({
@@ -161,6 +162,7 @@ export async function buildCVDocx(data: CVData): Promise<Blob> {
         break;
 
       case 'projects':
+        if (data.showProjects === false) break;
         children.push(sectionHeader('WYBRANE PROJEKTY'));
         for (const project of data.projects) {
           children.push(new Paragraph({
@@ -262,7 +264,20 @@ export async function buildCVDocx(data: CVData): Promise<Blob> {
         break;
 
       case 'certificates':
-        // Not currently rendered in the DOCX export (pre-existing gap, unrelated to reordering).
+        if (data.showCertificates === false || !data.certificates || data.certificates.length === 0) break;
+        children.push(sectionHeader((data.certificatesTitle || 'Certyfikaty').toUpperCase()));
+        for (const cert of data.certificates) {
+          const certChildren: (TextRun | ExternalHyperlink)[] = [
+            cert.url
+              ? hyperlink({ label: cert.name, url: cert.url, trackedUrl: cert.trackedUrl }, cert.name)
+              : run(cert.name, { bold: true, size: 18 }),
+          ];
+          const meta = [cert.issuer, cert.year].filter(Boolean).join(' · ');
+          if (meta) {
+            certChildren.push(run('   ' + meta, { size: 17, color: GRAY }));
+          }
+          children.push(new Paragraph({ children: certChildren, spacing: { after: 100 } }));
+        }
         break;
 
       case 'interests':
