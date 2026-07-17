@@ -382,7 +382,7 @@ export function CVEditorPage() {
 
     if (editCvId && editingCv) {
       saveCVDataById(editCvId, data);
-      dispatch({ type: 'UPDATE_CV', payload: { ...editingCv, name, ...(fileName ? { fileName } : {}) } });
+      dispatch({ type: 'UPDATE_CV', payload: { ...editingCv, name, data, ...(fileName ? { fileName } : {}) } });
       setSaved(true);
       setIsSaving(false);
       // Came from Baza CV (editCvId only ever gets set via its "edit" button) \u2014 go back there
@@ -390,7 +390,7 @@ export function CVEditorPage() {
     } else {
       const newId = uid();
       saveCVDataById(newId, data);
-      dispatch({ type: 'ADD_CV', payload: { id: newId, name, isDefault: state.cvs.length === 0, fileName } });
+      dispatch({ type: 'ADD_CV', payload: { id: newId, name, data, isDefault: state.cvs.length === 0, fileName } });
       localStorage.removeItem(DRAFT_KEY);
       setSaved(true);
       setIsSaving(false);

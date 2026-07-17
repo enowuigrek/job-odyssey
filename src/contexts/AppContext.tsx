@@ -32,7 +32,10 @@ import {
   deleteQuestion,
   upsertStory,
   deleteStory,
+  getUserSettings,
 } from '../lib/db';
+import { hydrateCVDataCache } from '../lib/generateCV';
+import { setUserTrackBase } from '../lib/trackUrl';
 import { useAuth } from './AuthContext';
 
 // ============================================================
@@ -250,6 +253,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       dispatch({ type: 'CLEAR_ALL' });
       prevStateRef.current = emptyState;
       syncReadyRef.current = false;
+      setUserTrackBase(null);
       setIsLoading(false);
       return;
     }
@@ -260,11 +264,20 @@ export function AppProvider({ children }: { children: ReactNode }) {
     loadUserState(user.id).then(data => {
       prevStateRef.current = data;
       dispatch({ type: 'INIT_STATE', payload: data });
+      hydrateCVDataCache(data.cvs);
       syncReadyRef.current = true;
       setIsLoading(false);
     }).catch(err => {
       console.error('Failed to load state from Supabase:', err);
       setIsLoading(false);
+    });
+
+    // Domena linków śledzących — osobne, lekkie zapytanie (nie blokuje
+    // powyższego ładowania głównego stanu)
+    getUserSettings(user.id).then(settings => {
+      setUserTrackBase(settings.trackingDomain);
+    }).catch(err => {
+      console.error('Failed to load user settings from Supabase:', err);
     });
   }, [user]);
 

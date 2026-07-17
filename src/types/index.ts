@@ -1,3 +1,5 @@
+import type { CVData } from '../templates/cv/types';
+
 // Status aplikacji o pracę
 export type ApplicationStatus =
   | 'saved'                    // Zapisana - do aplikowania
@@ -78,6 +80,8 @@ export interface CV {
   usedInApplications?: string[]; // ID aplikacji
   notes?: string;
   sortOrder?: number; // własna kolejność kafelków w Bazie CV (drag & drop)
+  /** Treść CV z generatora — w Supabase, żeby edycja/podgląd działały na każdym urządzeniu */
+  data?: CVData;
   createdAt: string;
   updatedAt: string;
 }

@@ -99,6 +99,7 @@ function mapCV(row: Record<string, unknown>): CV {
     isDefault: row.is_default as boolean,
     notes: row.notes as string | undefined,
     sortOrder: (row.sort_order as number | null) ?? undefined,
+    data: (row.data as CV['data'] | null) ?? undefined,
     createdAt: row.created_at as string,
     updatedAt: row.updated_at as string,
   };
@@ -115,6 +116,7 @@ function toDbCV(cv: CV, userId: string) {
     is_default: cv.isDefault,
     notes: cv.notes ?? null,
     sort_order: cv.sortOrder ?? null,
+    data: cv.data ?? null,
     created_at: cv.createdAt,
     updated_at: cv.updatedAt,
   };
@@ -508,4 +510,36 @@ export async function getDistinctTrackingLinksForUser(
       seen.add(r.targetUrl);
       return true;
     });
+}
+
+// ============================================================
+// User settings (per-user app config — na razie własna domena linków
+// śledzących; kolejne ustawienia globalne appki lądują tu, nie w
+// candidate_profile, który jest danymi CV)
+// ============================================================
+
+export interface UserSettings {
+  trackingDomain?: string;
+}
+
+export async function getUserSettings(userId: string): Promise<UserSettings> {
+  const { data, error } = await supabase
+    .from('user_settings')
+    .select('tracking_domain')
+    .eq('user_id', userId)
+    .maybeSingle();
+  if (error) {
+    console.error('getUserSettings failed:', error.message);
+    return {};
+  }
+  return { trackingDomain: (data?.tracking_domain as string | null) ?? undefined };
+}
+
+export async function upsertUserSettings(userId: string, settings: UserSettings): Promise<void> {
+  const { error } = await supabase.from('user_settings').upsert({
+    user_id: userId,
+    tracking_domain: settings.trackingDomain ?? null,
+    updated_at: new Date().toISOString(),
+  });
+  if (error) console.error('upsertUserSettings failed:', error.message);
 }

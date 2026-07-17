@@ -3,6 +3,7 @@ import { defaultCVData } from '../templates/cv/defaultCVData';
 import { normalizeCVData } from '../templates/cv/format';
 import { trackUrl, normalizeUrlKey } from './trackUrl';
 import type { TrackingLink } from './db';
+import type { CV } from '../types';
 
 function cvEditorStorageKey(userId?: string) {
   return userId ? `jo-cv-editor-data-${userId}` : 'jo-cv-editor-data';
@@ -36,6 +37,14 @@ export function clearCVPrintData(userId?: string): void {
   localStorage.removeItem(cvPrintStorageKey(userId));
 }
 
+/**
+ * Treść CV z generatora żyje w Supabase (kolumna `cvs.data`, patrz
+ * `hydrateCVDataCache`), z lokalnym cache w localStorage dla szybkiego
+ * synchronicznego odczytu — mnóstwo miejsc w kodzie woła getCVDataById
+ * bez await. Cache jest zasilany z Supabase przy każdym logowaniu/odświeżeniu
+ * (AppContext), więc "Otwórz w generatorze" i podgląd działają też na
+ * urządzeniu, na którym dane CV nigdy nie były edytowane.
+ */
 export function getCVDataById(cvId: string): CVData | null {
   const raw = localStorage.getItem(`jo-cv-data-${cvId}`);
   if (raw) {
@@ -50,6 +59,20 @@ export function saveCVDataById(cvId: string, data: CVData): void {
 
 export function deleteCVDataById(cvId: string): void {
   localStorage.removeItem(`jo-cv-data-${cvId}`);
+}
+
+/**
+ * Zasila lokalny cache treścią CV pobraną z Supabase — wołane raz po
+ * załadowaniu stanu użytkownika (AppContext). Nie nadpisuje cache dla CV,
+ * które w Supabase jeszcze nie mają `.data` (np. sam plik PDF bez treści
+ * z generatora), żeby nie skasować danych utworzonych offline w tej sesji.
+ */
+export function hydrateCVDataCache(cvs: CV[]): void {
+  for (const cv of cvs) {
+    if (cv.data) {
+      localStorage.setItem(`jo-cv-data-${cv.id}`, JSON.stringify(cv.data));
+    }
+  }
 }
 
 /**
