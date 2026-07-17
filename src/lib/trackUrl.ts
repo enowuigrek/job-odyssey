@@ -2,17 +2,31 @@
  * Jedno źródło URL-i śledzących (poprzednio budowane w 3 miejscach).
  *
  * Domyślnie linki prowadzą przez funkcję Supabase — długi, "techniczny"
- * adres, który w podglądzie PDF potrafi wystraszyć rekrutera. Ustawienie
- * VITE_TRACK_BASE_URL (np. https://lukasznowak.dev/r) skraca je do
- * przyjaznej postaci `https://domena/r/<token>`; po stronie tej domeny
- * musi istnieć przekierowanie /r/* → funkcja Supabase (patrz README/notatki).
+ * adres, który w podglądzie PDF potrafi wystraszyć rekrutera. Trzy poziomy
+ * skracania, sprawdzane w kolejności:
+ *   1. własna domena użytkownika, ustawiona w Ustawieniach (per-user,
+ *      trzymana w Supabase `user_settings.tracking_domain`, cache'owana
+ *      tu przez setUserTrackBase po zalogowaniu — trackUrl() jest funkcją
+ *      synchroniczną wołaną z wielu miejsc bez await, stąd cache modułowy)
+ *   2. VITE_TRACK_BASE_URL — globalna domena dla całej instancji appki
+ *   3. fallback: bezpośredni adres funkcji Supabase
+ * W każdym przypadku po stronie domeny musi istnieć przekierowanie
+ * /r/* → funkcja Supabase (patrz notatki wdrożeniowe).
  */
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
-const CUSTOM_BASE = (import.meta.env.VITE_TRACK_BASE_URL as string | undefined)?.replace(/\/+$/, '');
+const GLOBAL_BASE = (import.meta.env.VITE_TRACK_BASE_URL as string | undefined)?.replace(/\/+$/, '');
+
+let userTrackBase: string | null = null;
+
+/** Wołane po zalogowaniu (i po zapisaniu ustawień) — patrz AppContext/SettingsPage */
+export function setUserTrackBase(domain: string | null | undefined) {
+  userTrackBase = domain ? domain.trim().replace(/\/+$/, '') : null;
+}
 
 export function trackUrl(token: string): string {
-  if (CUSTOM_BASE) return `${CUSTOM_BASE}/${token}`;
+  const base = userTrackBase || GLOBAL_BASE;
+  if (base) return `${base}/${token}`;
   return `${SUPABASE_URL}/functions/v1/track?t=${token}`;
 }
 

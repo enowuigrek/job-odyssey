@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Database,
   Sun,
@@ -10,11 +10,14 @@ import {
   Trash2,
   CheckCircle,
   AlertCircle,
+  Link2,
 } from 'lucide-react';
 import { useApp } from '../contexts/AppContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
+import { getUserSettings, upsertUserSettings } from '../lib/db';
+import { ensureHttps, setUserTrackBase } from '../lib/trackUrl';
 import { Card, CardBody, CardHeader, PageHeader, Input, Button, useConfirm } from '../components/ui';
 
 function StatusMsg({ type, text }: { type: 'ok' | 'err'; text: string }) {
@@ -42,6 +45,42 @@ export function SettingsPage() {
   const [newEmail, setNewEmail] = useState('');
   const [emailMsg, setEmailMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
   const [emailLoading, setEmailLoading] = useState(false);
+
+  // Tracking domain
+  const [trackingDomain, setTrackingDomain] = useState('');
+  const [domainMsg, setDomainMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
+  const [domainLoading, setDomainLoading] = useState(false);
+
+  useEffect(() => {
+    if (!user) return;
+    getUserSettings(user.id).then(settings => {
+      setTrackingDomain(settings.trackingDomain ?? '');
+    });
+  }, [user]);
+
+  const handleSaveDomain = async () => {
+    if (!user) return;
+    setDomainMsg(null);
+
+    const trimmed = trackingDomain.trim();
+    let normalized: string | undefined;
+    if (trimmed) {
+      try {
+        normalized = ensureHttps(trimmed).replace(/\/+$/, '');
+        new URL(normalized); // rzuca dla niepoprawnego URL-a
+      } catch {
+        setDomainMsg({ type: 'err', text: 'Podaj poprawny adres, np. https://twojadomena.pl/r' });
+        return;
+      }
+    }
+
+    setDomainLoading(true);
+    await upsertUserSettings(user.id, { trackingDomain: normalized });
+    setUserTrackBase(normalized);
+    setTrackingDomain(normalized ?? '');
+    setDomainLoading(false);
+    setDomainMsg({ type: 'ok', text: normalized ? 'Domena zapisana.' : 'Domena usunięta — wracamy do domyślnych linków.' });
+  };
 
   const stats = {
     applications: state.applications.length,
@@ -211,6 +250,46 @@ export function SettingsPage() {
             </div>
           </div>
 
+        </CardBody>
+      </Card>
+
+      {/* Tracking domain */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <Link2 className="w-5 h-5 text-slate-400" />
+            <h2 className="font-semibold text-slate-100">Domena linków śledzących</h2>
+          </div>
+        </CardHeader>
+        <CardBody className="space-y-3">
+          <p className="text-sm text-slate-400">
+            Domyślnie linki w Twoich CV prowadzą przez długi, techniczny adres. Podpinając własną
+            domenę (np. <span className="text-slate-300">https://twojadomena.pl/r</span>), linki
+            będą krótsze i bardziej wiarygodne dla rekrutera.
+          </p>
+          <p className="text-sm text-slate-400">
+            Wymaga przekierowania po stronie Twojej domeny: ścieżka <code className="text-slate-300">/r/*</code>{' '}
+            musi przekierowywać (302) do{' '}
+            <code className="text-slate-300 break-all">
+              {(import.meta.env.VITE_SUPABASE_URL as string)}/functions/v1/track?t=:token
+            </code>
+            . Na Netlify to reguła w <code className="text-slate-300">netlify.toml</code> lub pliku{' '}
+            <code className="text-slate-300">_redirects</code>.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-2 sm:items-end pt-1">
+            <div className="flex-1">
+              <Input
+                placeholder="https://twojadomena.pl/r"
+                value={trackingDomain}
+                onChange={e => setTrackingDomain(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && handleSaveDomain()}
+              />
+            </div>
+            <Button onClick={handleSaveDomain} disabled={domainLoading} size="sm">
+              {domainLoading ? 'Zapisuję...' : 'Zapisz domenę'}
+            </Button>
+          </div>
+          {domainMsg && <StatusMsg {...domainMsg} />}
         </CardBody>
       </Card>
 
