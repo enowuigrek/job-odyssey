@@ -17,8 +17,9 @@ import { useTheme } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import { getUserSettings, upsertUserSettings, deleteAllUserStorageFiles } from '../lib/db';
+import { translateAuthError } from '../lib/authErrors';
 import { ensureHttps, setUserTrackBase } from '../lib/trackUrl';
-import { Card, CardBody, CardHeader, PageHeader, Input, Button, useConfirm } from '../components/ui';
+import { Card, CardBody, CardHeader, PageHeader, Input, Button, Modal } from '../components/ui';
 
 function StatusMsg({ type, text }: { type: 'ok' | 'err'; text: string }) {
   return (
@@ -33,7 +34,6 @@ export function SettingsPage() {
   const { state } = useApp();
   const { theme, setTheme } = useTheme();
   const { user, signOut } = useAuth();
-  const { confirm, ConfirmDialog } = useConfirm();
 
   // Change password
   const [newPassword, setNewPassword] = useState('');
@@ -105,7 +105,7 @@ export function SettingsPage() {
     const { error } = await supabase.auth.updateUser({ password: newPassword });
     setPasswordLoading(false);
     if (error) {
-      setPasswordMsg({ type: 'err', text: error.message });
+      setPasswordMsg({ type: 'err', text: translateAuthError(error) ?? 'Wystąpił błąd.' });
     } else {
       setPasswordMsg({ type: 'ok', text: 'Hasło zostało zmienione.' });
       setNewPassword('');
@@ -123,38 +123,62 @@ export function SettingsPage() {
     const { error } = await supabase.auth.updateUser({ email: newEmail });
     setEmailLoading(false);
     if (error) {
-      setEmailMsg({ type: 'err', text: error.message });
+      setEmailMsg({ type: 'err', text: translateAuthError(error) ?? 'Wystąpił błąd.' });
     } else {
       setEmailMsg({ type: 'ok', text: 'Link potwierdzający wysłany na nowy adres email.' });
       setNewEmail('');
     }
   };
 
+  // Usuwanie konta — dodatkowe potwierdzenie wpisaniem słowa (zbyt łatwo
+  // kliknąć przycisk niechcący), a po sukcesie ekran informacyjny ZANIM
+  // signOut() przełączy appkę na LandingPage (SettingsPage inaczej znika
+  // z ekranu w tej samej klatce, w której user zobaczyłby komunikat)
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [accountDeleted, setAccountDeleted] = useState(false);
+
   const handleDeleteAccount = async () => {
-    const ok = await confirm({
-      title: 'Usuń konto',
-      message: 'Ta operacja jest nieodwracalna. Wszystkie Twoje dane (aplikacje, rozmowy, CV) zostaną trwale usunięte.',
-      confirmLabel: 'Tak, usuń konto',
-      variant: 'danger',
-    });
-    if (!ok) return;
-    if (user) {
-      // Pliki w Storage kasujemy PRZED usunięciem konta — po skasowaniu
-      // sesja przestaje być ważna, a Storage API wymaga uwierzytelnienia
-      await deleteAllUserStorageFiles(user.id);
-    }
+    if (deleteConfirmText.trim().toUpperCase() !== 'USUŃ') return;
+    if (!user) return;
+
+    setDeleteLoading(true);
+    setDeleteError(null);
+    // Pliki w Storage kasujemy PRZED usunięciem konta — po skasowaniu
+    // sesja przestaje być ważna, a Storage API wymaga uwierzytelnienia
+    await deleteAllUserStorageFiles(user.id);
     const { error } = await supabase.rpc('delete_user');
+    setDeleteLoading(false);
+
     if (error) {
-      alert('Błąd: ' + error.message);
+      setDeleteError('Nie udało się usunąć konta. Spróbuj ponownie lub napisz do nas.');
+      console.error('delete_user RPC failed:', error.message);
     } else {
-      await signOut();
+      setShowDeleteModal(false);
+      setAccountDeleted(true);
     }
   };
 
+  if (accountDeleted) {
+    return (
+      <div className="fixed inset-0 z-50 bg-dark-900 flex items-center justify-center p-4">
+        <div className="max-w-sm text-center space-y-4">
+          <CheckCircle className="w-12 h-12 text-success-400 mx-auto" />
+          <h2 className="text-xl font-semibold text-slate-100">Konto zostało usunięte</h2>
+          <p className="text-sm text-slate-400">
+            Wszystkie Twoje dane — aplikacje, rozmowy, CV i profil — zostały trwale skasowane.
+            Dziękujemy, że korzystałeś z Job Odyssey.
+          </p>
+          <Button onClick={() => signOut()}>Wróć do strony głównej</Button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6 max-w-3xl">
-      <ConfirmDialog />
-
       <PageHeader
         icon={Palette}
         title="Ustawienia"
@@ -246,7 +270,7 @@ export function SettingsPage() {
               <Button
                 variant="danger"
                 size="sm"
-                onClick={handleDeleteAccount}
+                onClick={() => { setShowDeleteModal(true); setDeleteConfirmText(''); setDeleteError(null); }}
                 className="self-start sm:self-auto"
               >
                 <Trash2 className="w-4 h-4" />
@@ -257,6 +281,44 @@ export function SettingsPage() {
 
         </CardBody>
       </Card>
+
+      <Modal
+        isOpen={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        title="Usuń konto"
+        size="sm"
+      >
+        <div className="space-y-4">
+          <p className="text-slate-300 text-sm">
+            Ta operacja jest nieodwracalna. Wszystkie Twoje dane — aplikacje, rozmowy, CV, profil
+            kandydata i linki śledzące — zostaną trwale usunięte.
+          </p>
+          <div>
+            <label className="block text-sm font-medium text-slate-300 mb-1.5">
+              Wpisz <span className="font-semibold text-danger-400">USUŃ</span>, żeby potwierdzić
+            </label>
+            <Input
+              value={deleteConfirmText}
+              onChange={e => setDeleteConfirmText(e.target.value)}
+              placeholder="USUŃ"
+              autoFocus
+            />
+          </div>
+          {deleteError && <StatusMsg type="err" text={deleteError} />}
+          <div className="flex justify-end gap-3 pt-2 border-t border-dark-700">
+            <Button variant="secondary" onClick={() => setShowDeleteModal(false)}>
+              Anuluj
+            </Button>
+            <Button
+              variant="danger"
+              onClick={handleDeleteAccount}
+              disabled={deleteConfirmText.trim().toUpperCase() !== 'USUŃ' || deleteLoading}
+            >
+              {deleteLoading ? 'Usuwam...' : 'Usuń konto na zawsze'}
+            </Button>
+          </div>
+        </div>
+      </Modal>
 
       {/* Tracking domain */}
       <Card>
