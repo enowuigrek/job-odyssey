@@ -1,7 +1,7 @@
 import { useState, useEffect, createElement, useRef } from 'react';
 import type { ReactElement } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Plus, Trash2, Save, Eye, EyeOff, ArrowLeft, FileEdit, Pencil, Check, Loader2, ChevronDown, ChevronRight, Database, GripVertical } from 'lucide-react';
+import { Plus, Trash2, Save, Eye, EyeOff, ArrowLeft, FileEdit, Pencil, Check, Loader2, ChevronDown, ChevronRight, Database, GripVertical, X } from 'lucide-react';
 import { pdf } from '@react-pdf/renderer';
 import type { DocumentProps } from '@react-pdf/renderer';
 import { Button, PageHeader, CollapsibleItem, Checkbox, Modal } from '../components/ui';
@@ -19,8 +19,10 @@ import { uploadCVFile } from '../lib/db';
 import { useProfile } from '../hooks/useProfile';
 import { useAuth } from '../contexts/AuthContext';
 import { useApp } from '../contexts/AppContext';
+import { useUserSettings } from '../contexts/UserSettingsContext';
 import { useDragReorder } from '../hooks/useDragReorder';
 import { updateAt, removeAt, moveAt } from '../utils/array';
+import { TRIAL_CV_LIMIT, TRIAL_LIMIT_MESSAGE_CV } from '../lib/planLimits';
 
 function draftKey(userId?: string) {
   return userId ? `jo-cv-editor-draft-${userId}` : 'jo-cv-editor-draft';
@@ -267,6 +269,7 @@ export function CVEditorPage() {
   const [searchParams] = useSearchParams();
   const { user } = useAuth();
   const { state, dispatch } = useApp();
+  const { plan } = useUserSettings();
   const { profile, descriptions, experiences, projects: profileProjects, techCategories, education: profileEducation, certificates: profileCertificates, isLoading: profileLoading } = useProfile();
   const editCvId = searchParams.get('edit');
   const editingCv = editCvId ? state.cvs.find(cv => cv.id === editCvId) : null;
@@ -297,6 +300,7 @@ export function CVEditorPage() {
   const [draftSaved, setDraftSaved] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
+  const [limitError, setLimitError] = useState<string | null>(null);
   const [showSaveAsModal, setShowSaveAsModal] = useState(false);
   const [saveAsName, setSaveAsName] = useState('');
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({
@@ -401,8 +405,11 @@ export function CVEditorPage() {
 
   /** Existing CV: name is already established, save right away. New CV: confirm/pick a name first. */
   const handleSaveClick = () => {
+    setLimitError(null);
     if (editCvId) {
       performSave(cvName);
+    } else if (plan === 'trial' && state.cvs.length >= TRIAL_CV_LIMIT) {
+      setLimitError(TRIAL_LIMIT_MESSAGE_CV);
     } else {
       setSaveAsName(cvName);
       setShowSaveAsModal(true);
@@ -897,6 +904,18 @@ export function CVEditorPage() {
 
       {/* ── Preview ───────────────────────────────────────────────────── */}
       {showPreview && <CVHtml data={data} preview />}
+
+      {/* ── Limit wersji próbnej ─────────────────────────────────────────── */}
+      {limitError && (
+        <div className="fixed bottom-14 left-0 right-0 md:left-64 px-4 z-40">
+          <div className="bg-warning-500/10 border border-warning-500/30 text-warning-300 text-sm px-4 py-2 flex items-center justify-between gap-3">
+            <span>{limitError}</span>
+            <button onClick={() => setLimitError(null)} className="text-warning-400 hover:text-warning-300 transition-colors cursor-pointer flex-shrink-0">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* ── Bottom bar (always visible) ────────────────────────────────── */}
       <div className="fixed bottom-0 left-0 right-0 md:left-64 bg-dark-900 border-t border-dark-700 px-4 py-3 flex items-center gap-2 z-40">

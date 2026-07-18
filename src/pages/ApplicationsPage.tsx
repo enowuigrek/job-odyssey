@@ -26,6 +26,8 @@ import { pdf } from '@react-pdf/renderer';
 import type { DocumentProps } from '@react-pdf/renderer';
 import { useApp } from '../contexts/AppContext';
 import { useAuth } from '../contexts/AuthContext';
+import { useUserSettings } from '../contexts/UserSettingsContext';
+import { TRIAL_APPLICATION_LIMIT, TRIAL_LIMIT_MESSAGE_APPLICATION } from '../lib/planLimits';
 import { TrackingLinksModal } from '../components/tracking/TrackingLinksModal';
 import { KanbanStatusTabs } from '../components/kanban/KanbanStatusTabs';
 import { useKanbanCarousel } from '../hooks/useKanbanCarousel';
@@ -136,6 +138,7 @@ function SourceIcon({ url, className = 'w-4 h-4' }: { url?: string; className?: 
 
 export function ApplicationsPage() {
   const { state, dispatch } = useApp();
+  const { plan } = useUserSettings();
   const { user } = useAuth();
   const { links: userLinks } = useUserLinks();
   const navigate = useNavigate();
@@ -204,6 +207,7 @@ export function ApplicationsPage() {
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const [generatingTaggedFor, setGeneratingTaggedFor] = useState<string | null>(null);
   const [pdfError, setPdfError] = useState<string | null>(null);
+  const [limitMsg, setLimitMsg] = useState<string | null>(null);
   const [previewCvData, setPreviewCvData] = useState<CVData | null>(null);
 
   /** Generate tagged PDF, download it directly (no navigate) */
@@ -345,6 +349,7 @@ export function ApplicationsPage() {
       setAutoSource('');
     }
     setPdfError(null);
+    setLimitMsg(null);
     setIsModalOpen(true);
   };
 
@@ -371,6 +376,10 @@ export function ApplicationsPage() {
         },
       });
     } else {
+      if (plan === 'trial' && state.applications.length >= TRIAL_APPLICATION_LIMIT) {
+        setLimitMsg(TRIAL_LIMIT_MESSAGE_APPLICATION);
+        return;
+      }
       dispatch({
         type: 'ADD_APPLICATION',
         payload: finalData,
@@ -398,11 +407,16 @@ export function ApplicationsPage() {
   const startInlineAdd = (status: ApplicationStatus) => {
     const defaultCv = state.cvs.find(cv => cv.isDefault);
     setInlineForm({ companyName: '', position: '', jobUrl: '', cvId: defaultCv?.id || '' });
+    setLimitMsg(null);
     setInlineAddStatus(status);
   };
 
   const submitInlineAdd = () => {
     if (!inlineForm.companyName.trim() || !inlineAddStatus) return;
+    if (plan === 'trial' && state.applications.length >= TRIAL_APPLICATION_LIMIT) {
+      setLimitMsg(TRIAL_LIMIT_MESSAGE_APPLICATION);
+      return;
+    }
     dispatch({
       type: 'ADD_APPLICATION',
       payload: {
@@ -468,6 +482,9 @@ export function ApplicationsPage() {
             value={inlineForm.cvId}
             onChange={(e) => setInlineForm(f => ({ ...f, cvId: e.target.value }))}
           />
+        )}
+        {limitMsg && inlineAddStatus === status && (
+          <p className="text-xs text-warning-300 bg-warning-500/10 border border-warning-500/30 px-2 py-1.5">{limitMsg}</p>
         )}
         <div className="flex gap-2 pt-1">
           <Button type="button" size="sm" variant="secondary" onClick={() => setInlineAddStatus(null)}>
@@ -1131,6 +1148,10 @@ export function ApplicationsPage() {
                 Generuje CV z linkami śledzącymi dla tej aplikacji.
               </p>
             </div>
+          )}
+
+          {limitMsg && (
+            <p className="text-sm text-warning-300 bg-warning-500/10 border border-warning-500/30 px-3 py-2">{limitMsg}</p>
           )}
 
           <div className="flex justify-end gap-3 pt-4 border-t border-dark-600">

@@ -11,15 +11,18 @@ import {
   CheckCircle,
   AlertCircle,
   Link2,
+  Sparkles,
 } from 'lucide-react';
 import { useApp } from '../contexts/AppContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
+import { useUserSettings } from '../contexts/UserSettingsContext';
 import { supabase } from '../lib/supabase';
-import { getUserSettings, upsertUserSettings, deleteAllUserStorageFiles } from '../lib/db';
+import { upsertUserSettings, deleteAllUserStorageFiles } from '../lib/db';
 import { translateAuthError } from '../lib/authErrors';
-import { ensureHttps, setUserTrackBase } from '../lib/trackUrl';
+import { ensureHttps } from '../lib/trackUrl';
 import { Card, CardBody, CardHeader, PageHeader, Input, Button, Modal } from '../components/ui';
+import { TRIAL_CV_LIMIT, TRIAL_APPLICATION_LIMIT } from '../lib/planLimits';
 
 function StatusMsg({ type, text }: { type: 'ok' | 'err'; text: string }) {
   return (
@@ -34,6 +37,7 @@ export function SettingsPage() {
   const { state } = useApp();
   const { theme, setTheme } = useTheme();
   const { user, signOut } = useAuth();
+  const { plan, trackingDomain: settingsTrackingDomain, redeemCode, refresh: refreshSettings } = useUserSettings();
 
   // Change password
   const [newPassword, setNewPassword] = useState('');
@@ -46,17 +50,14 @@ export function SettingsPage() {
   const [emailMsg, setEmailMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
   const [emailLoading, setEmailLoading] = useState(false);
 
-  // Tracking domain
+  // Tracking domain — pole edycji seedowane z kontekstu, po zapisie odświeżamy kontekst
   const [trackingDomain, setTrackingDomain] = useState('');
   const [domainMsg, setDomainMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
   const [domainLoading, setDomainLoading] = useState(false);
 
   useEffect(() => {
-    if (!user) return;
-    getUserSettings(user.id).then(settings => {
-      setTrackingDomain(settings.trackingDomain ?? '');
-    });
-  }, [user]);
+    setTrackingDomain(settingsTrackingDomain ?? '');
+  }, [settingsTrackingDomain]);
 
   const handleSaveDomain = async () => {
     if (!user) return;
@@ -76,10 +77,28 @@ export function SettingsPage() {
 
     setDomainLoading(true);
     await upsertUserSettings(user.id, { trackingDomain: normalized });
-    setUserTrackBase(normalized);
-    setTrackingDomain(normalized ?? '');
+    await refreshSettings();
     setDomainLoading(false);
     setDomainMsg({ type: 'ok', text: normalized ? 'Domena zapisana.' : 'Domena usunięta — wracamy do domyślnych linków.' });
+  };
+
+  // Kod dostępu (odblokowanie pełnej wersji)
+  const [accessCode, setAccessCode] = useState('');
+  const [codeMsg, setCodeMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
+  const [codeLoading, setCodeLoading] = useState(false);
+
+  const handleRedeemCode = async () => {
+    if (!accessCode.trim()) return;
+    setCodeLoading(true);
+    setCodeMsg(null);
+    const error = await redeemCode(accessCode.trim());
+    setCodeLoading(false);
+    if (error) {
+      setCodeMsg({ type: 'err', text: error });
+    } else {
+      setCodeMsg({ type: 'ok', text: 'Kod przyjęty — masz teraz pełną wersję.' });
+      setAccessCode('');
+    }
   };
 
   const stats = {
@@ -319,6 +338,49 @@ export function SettingsPage() {
           </div>
         </div>
       </Modal>
+
+      {/* Plan */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <Sparkles className="w-5 h-5 text-slate-400" />
+            <h2 className="font-semibold text-slate-100">Plan</h2>
+          </div>
+        </CardHeader>
+        <CardBody className="space-y-4">
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-slate-400">Aktualny plan:</span>
+            {plan === 'full' ? (
+              <span className="px-2 py-0.5 text-xs font-medium bg-success-500/20 text-success-400">Pełny</span>
+            ) : (
+              <span className="px-2 py-0.5 text-xs font-medium bg-warning-500/20 text-warning-400">Wersja próbna</span>
+            )}
+          </div>
+          {plan === 'trial' && (
+            <p className="text-sm text-slate-400">
+              W wersji próbnej możesz mieć do {TRIAL_CV_LIMIT} CV w Bazie CV i {TRIAL_APPLICATION_LIMIT} aplikacji.
+              Rozmowy, pytania i historie bez limitu. Masz kod dostępu? Wpisz go poniżej, żeby odblokować pełną wersję.
+            </p>
+          )}
+          {plan === 'full' && (
+            <p className="text-sm text-slate-400">Masz pełny dostęp, bez limitów.</p>
+          )}
+          <div className="flex flex-col sm:flex-row gap-2 sm:items-end pt-1">
+            <div className="flex-1">
+              <Input
+                placeholder="Kod dostępu"
+                value={accessCode}
+                onChange={e => setAccessCode(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && handleRedeemCode()}
+              />
+            </div>
+            <Button onClick={handleRedeemCode} disabled={codeLoading || !accessCode.trim()} size="sm">
+              {codeLoading ? 'Sprawdzam...' : 'Aktywuj kod'}
+            </Button>
+          </div>
+          {codeMsg && <StatusMsg {...codeMsg} />}
+        </CardBody>
+      </Card>
 
       {/* Tracking domain */}
       <Card>

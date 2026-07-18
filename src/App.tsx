@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { AppProvider } from './contexts/AppContext';
+import { UserSettingsProvider } from './contexts/UserSettingsContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { Layout } from './components/layout/Layout';
 import { CookieConsentBanner } from './components/layout/CookieConsentBanner';
@@ -29,28 +30,30 @@ import {
 
 function AuthenticatedApp() {
   return (
-    <AppProvider>
-      <Routes>
-        {/* Bare print page — no layout, no nav */}
-        <Route path="cv-print" element={<CVPrintPage />} />
-        <Route path="/" element={<Layout />}>
-          <Route index element={<DashboardPage />} />
-          <Route path="applications" element={<ApplicationsPage />} />
-          <Route path="interviews" element={<InterviewsPage />} />
-          <Route path="cv-generator" element={<CVGeneratorPage />} />
-          <Route path="cv-editor" element={<CVEditorPage />} />
-          <Route path="cv" element={<CVPage />} />
-          <Route path="links" element={<LinksPage />} />
-          <Route path="profil" element={<Navigate to="/profil/kontakt" replace />} />
-          <Route path="profil/:section" element={<ProfilePage />} />
-          <Route path="questions" element={<QuestionsPage />} />
-          <Route path="stories" element={<StoriesPage />} />
-          <Route path="settings" element={<SettingsPage />} />
-          <Route path="admin" element={<AdminPage />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Route>
-      </Routes>
-    </AppProvider>
+    <UserSettingsProvider>
+      <AppProvider>
+        <Routes>
+          {/* Bare print page — no layout, no nav */}
+          <Route path="cv-print" element={<CVPrintPage />} />
+          <Route path="/" element={<Layout />}>
+            <Route index element={<DashboardPage />} />
+            <Route path="applications" element={<ApplicationsPage />} />
+            <Route path="interviews" element={<InterviewsPage />} />
+            <Route path="cv-generator" element={<CVGeneratorPage />} />
+            <Route path="cv-editor" element={<CVEditorPage />} />
+            <Route path="cv" element={<CVPage />} />
+            <Route path="links" element={<LinksPage />} />
+            <Route path="profil" element={<Navigate to="/profil/kontakt" replace />} />
+            <Route path="profil/:section" element={<ProfilePage />} />
+            <Route path="questions" element={<QuestionsPage />} />
+            <Route path="stories" element={<StoriesPage />} />
+            <Route path="settings" element={<SettingsPage />} />
+            <Route path="admin" element={<AdminPage />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Route>
+        </Routes>
+      </AppProvider>
+    </UserSettingsProvider>
   );
 }
 

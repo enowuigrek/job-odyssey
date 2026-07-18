@@ -547,28 +547,41 @@ export async function getDistinctTrackingLinksForUser(
 // candidate_profile, który jest danymi CV)
 // ============================================================
 
+export type UserPlan = 'trial' | 'full';
+
 export interface UserSettings {
   trackingDomain?: string;
+  plan: UserPlan;
 }
 
 export async function getUserSettings(userId: string): Promise<UserSettings> {
   const { data, error } = await supabase
     .from('user_settings')
-    .select('tracking_domain')
+    .select('tracking_domain, plan')
     .eq('user_id', userId)
     .maybeSingle();
   if (error) {
     console.error('getUserSettings failed:', error.message);
-    return {};
+    return { plan: 'trial' };
   }
-  return { trackingDomain: (data?.tracking_domain as string | null) ?? undefined };
+  return {
+    trackingDomain: (data?.tracking_domain as string | null) ?? undefined,
+    plan: data?.plan === 'full' ? 'full' : 'trial',
+  };
 }
 
-export async function upsertUserSettings(userId: string, settings: UserSettings): Promise<void> {
+export async function upsertUserSettings(userId: string, settings: { trackingDomain?: string }): Promise<void> {
   const { error } = await supabase.from('user_settings').upsert({
     user_id: userId,
     tracking_domain: settings.trackingDomain ?? null,
     updated_at: new Date().toISOString(),
   });
   if (error) console.error('upsertUserSettings failed:', error.message);
+}
+
+/** Zwraca nowy plan przy sukcesie, albo czytelny (już po polsku) komunikat błędu z funkcji SQL */
+export async function redeemAccessCode(code: string): Promise<{ plan?: UserPlan; error?: string }> {
+  const { data, error } = await supabase.rpc('redeem_access_code', { p_code: code });
+  if (error) return { error: error.message };
+  return { plan: data === 'full' ? 'full' : 'trial' };
 }
