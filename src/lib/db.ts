@@ -299,6 +299,35 @@ export async function deleteCVFileFromStorage(path: string) {
   await supabase.storage.from('cv-files').remove([path]);
 }
 
+/**
+ * Kasuje wszystkie pliki usera we wskazanym buckecie (struktura zawsze
+ * `<userId>/<podfolder>/<plik>` — cv-files: cvId, certificates: certId).
+ * Storage.list() nie jest rekurencyjne, stąd dwupoziomowy przejazd.
+ * Woływane z SettingsPage PRZED usunięciem konta — storage.objects nie da
+ * się kasować bezpośrednim SQL DELETE ("Direct deletion... not allowed"),
+ * trzeba przez Storage API, które wymaga jeszcze ważnej sesji użytkownika.
+ */
+async function deleteAllFilesInBucket(bucket: string, userId: string): Promise<void> {
+  const { data: subfolders } = await supabase.storage.from(bucket).list(userId);
+  if (!subfolders || subfolders.length === 0) return;
+
+  const allPaths: string[] = [];
+  for (const folder of subfolders) {
+    const { data: files } = await supabase.storage.from(bucket).list(`${userId}/${folder.name}`);
+    (files ?? []).forEach(f => allPaths.push(`${userId}/${folder.name}/${f.name}`));
+  }
+  if (allPaths.length > 0) {
+    await supabase.storage.from(bucket).remove(allPaths);
+  }
+}
+
+export async function deleteAllUserStorageFiles(userId: string): Promise<void> {
+  await Promise.all([
+    deleteAllFilesInBucket('cv-files', userId),
+    deleteAllFilesInBucket('certificates', userId),
+  ]);
+}
+
 // ============================================================
 // Questions
 // ============================================================

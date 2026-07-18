@@ -16,7 +16,7 @@ import { useApp } from '../contexts/AppContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
-import { getUserSettings, upsertUserSettings } from '../lib/db';
+import { getUserSettings, upsertUserSettings, deleteAllUserStorageFiles } from '../lib/db';
 import { ensureHttps, setUserTrackBase } from '../lib/trackUrl';
 import { Card, CardBody, CardHeader, PageHeader, Input, Button, useConfirm } from '../components/ui';
 
@@ -138,6 +138,11 @@ export function SettingsPage() {
       variant: 'danger',
     });
     if (!ok) return;
+    if (user) {
+      // Pliki w Storage kasujemy PRZED usunięciem konta — po skasowaniu
+      // sesja przestaje być ważna, a Storage API wymaga uwierzytelnienia
+      await deleteAllUserStorageFiles(user.id);
+    }
     const { error } = await supabase.rpc('delete_user');
     if (error) {
       alert('Błąd: ' + error.message);
