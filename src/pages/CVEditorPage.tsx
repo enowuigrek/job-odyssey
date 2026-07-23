@@ -1,4 +1,5 @@
 import { useState, useEffect, createElement, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import type { ReactElement } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Plus, Trash2, Save, Eye, EyeOff, ArrowLeft, FileEdit, Pencil, Check, Loader2, ChevronDown, ChevronRight, Database, GripVertical, X } from 'lucide-react';
@@ -11,6 +12,7 @@ import { defaultCVData } from '../templates/cv/defaultCVData';
 import { CVTemplate } from '../templates/cv/CVTemplate';
 import { CVHtml } from '../templates/cv/CVHtml';
 import { getSectionOrder, type SectionKey } from '../templates/cv/sectionOrder';
+import { normalizeInterests } from '../templates/cv/format';
 import {
   getCVDataById,
   saveCVDataById,
@@ -189,6 +191,35 @@ function ProfileImportMenu<T>({
 }) {
   const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState<Set<number>>(new Set());
+  // Pozycja liczona ręcznie i menu renderowane portalem do <body> — sekcje
+  // CV mają .fold-card (clip-path), co tworzy własny kontekst nakładania i
+  // przycina/chowa zwykłe position:absolute pod kolejnymi sekcjami
+  const [pos, setPos] = useState<{ left: number; bottom: number } | null>(null);
+  const triggerRef = useRef<HTMLDivElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const updatePos = () => {
+      const rect = triggerRef.current?.getBoundingClientRect();
+      if (rect) setPos({ left: rect.left, bottom: window.innerHeight - rect.top + 4 });
+    };
+    updatePos();
+
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as Node;
+      if (triggerRef.current?.contains(target) || menuRef.current?.contains(target)) return;
+      setOpen(false);
+    };
+    window.addEventListener('resize', updatePos);
+    window.addEventListener('scroll', updatePos, true);
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      window.removeEventListener('resize', updatePos);
+      window.removeEventListener('scroll', updatePos, true);
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [open]);
 
   if (items.length === 0 && !primaryLabel) return null;
 
@@ -211,7 +242,7 @@ function ProfileImportMenu<T>({
   };
 
   return (
-    <div className="relative inline-block">
+    <div ref={triggerRef} className="inline-block">
       <Button
         type="button"
         size="sm"
@@ -221,8 +252,12 @@ function ProfileImportMenu<T>({
         {primaryLabel ? <Plus className="w-3.5 h-3.5 mr-1.5" /> : <Database className="w-3.5 h-3.5 mr-1.5" />}
         {primaryLabel ?? 'Wybierz z profilu'}
       </Button>
-      {open && (
-        <div className="absolute z-20 bottom-full mb-1 left-0 bg-dark-800 border border-dark-600 p-3 w-64 shadow-xl">
+      {open && pos && createPortal(
+        <div
+          ref={menuRef}
+          style={{ position: 'fixed', left: pos.left, bottom: pos.bottom }}
+          className="z-50 bg-dark-800 border border-dark-600 p-3 w-64 shadow-xl"
+        >
           {items.length === 0 ? (
             <p className="text-xs text-slate-400 py-1">Brak pozycji w profilu kandydata.</p>
           ) : (
@@ -256,7 +291,8 @@ function ProfileImportMenu<T>({
               Anuluj
             </button>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
@@ -310,7 +346,12 @@ export function CVEditorPage() {
   });
   const toggle = (id: string) => setCollapsed(c => ({ ...c, [id]: !c[id] }));
 
-  // Auto-fill from Profil kandydata for brand-new CVs (no draft, no edit)
+  // Auto-fill from Profil kandydata for brand-new CVs (no draft, no edit).
+  // Doświadczenie/Wykształcenie/Certyfikaty/Zainteresowania/RODO wchodzą w
+  // całości — usuwanie tego, czego user nie chce w danym CV, jest łatwiejsze
+  // niż ręczne dodawanie wszystkiego przez "Wybierz z profilu" za każdym razem.
+  // Profil (opis)/Technologie/Projekty zostają manualne — to zestawy, z
+  // których user zwykle wybiera JEDEN wariant dopasowany do oferty, nie całość.
   const autoFilledProfile = useRef(false);
   useEffect(() => {
     if (editCvId) return;
@@ -330,8 +371,24 @@ export function CVEditorPage() {
           ? profile.links.map(l => ({ label: l.label, url: l.url }))
           : d.contact.links,
       },
+      experience: experiences.length > 0
+        ? experiences.map(e => ({
+            company: e.company,
+            companyLink: e.company_link,
+            roles: e.roles.map(r => ({ title: r.title, years: r.years ?? '', bullets: r.bullets })),
+          }))
+        : d.experience,
+      education: profileEducation.length > 0
+        ? profileEducation.map(e => ({ school: e.school, degree: e.degree, years: e.years }))
+        : d.education,
+      certificates: profileCertificates.length > 0
+        ? profileCertificates.map(c => ({ name: c.name, issuer: c.issuer, year: c.year, url: c.file_url }))
+        : d.certificates,
+      showCertificates: profileCertificates.length > 0 ? true : d.showCertificates,
+      interests: profile.interests ? normalizeInterests(profile.interests) : d.interests,
+      rodo: profile.rodo || d.rodo,
     }));
-  }, [profile, profileLoading, user, editCvId, DRAFT_KEY]);
+  }, [profile, experiences, profileEducation, profileCertificates, profileLoading, user, editCvId, DRAFT_KEY]);
 
   const set = (patch: Partial<CVData>) => setData(d => ({ ...d, ...patch }));
 

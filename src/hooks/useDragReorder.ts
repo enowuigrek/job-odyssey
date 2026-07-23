@@ -97,6 +97,13 @@ export function useDragReorder(onReorder: (from: number, to: number) => void) {
     draggable: true,
     'data-drag-list': listId,
     'data-drag-index': index,
+    // `dragstart` odpala się DOPIERO gdy przeglądarka już uznała gest za
+    // przeciąganie (mousedown + ruch) — preventDefault() tam jest za późno,
+    // żeby oddać ten sam gest zaznaczaniu tekstu. Trzeba wyłączyć draggable
+    // na DOM-ie zanim przeglądarka zdąży to rozpoznać, czyli już w mousedown.
+    onMouseDown: (e: React.MouseEvent<HTMLElement>) => {
+      e.currentTarget.draggable = !(e.target as HTMLElement).closest(INTERACTIVE_SELECTOR);
+    },
     onDragStart: (e: React.DragEvent) => {
       if ((e.target as HTMLElement).closest(INTERACTIVE_SELECTOR)) {
         e.preventDefault();

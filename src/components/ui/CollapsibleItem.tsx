@@ -11,6 +11,7 @@ export function CollapsibleItem({
   onMoveUp,
   onMoveDown,
   draggable = false,
+  onMouseDown,
   onDragStart,
   onDragEnd,
   onDragOver,
@@ -35,6 +36,7 @@ export function CollapsibleItem({
   onMoveDown?: () => void;
   /** Gdy true — element przeciągalny (spread propsów z useDragReorder) */
   draggable?: boolean;
+  onMouseDown?: (e: React.MouseEvent<HTMLDivElement>) => void;
   onDragStart?: (e: React.DragEvent) => void;
   onDragEnd?: (e: React.DragEvent) => void;
   onDragOver?: (e: React.DragEvent) => void;
@@ -55,6 +57,7 @@ export function CollapsibleItem({
         isDragOver ? 'ring-2 ring-primary-500/50' : ''
       }`}
       draggable={draggable}
+      onMouseDown={onMouseDown}
       onDragStart={onDragStart}
       onDragEnd={onDragEnd}
       onDragOver={onDragOver}
