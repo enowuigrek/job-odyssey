@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import {
   User,
   Plus,
@@ -108,6 +108,7 @@ const SECTION_TITLES: Record<string, string> = {
 
 export function ProfilePage() {
   const { section = 'kontakt' } = useParams<{ section: string }>();
+  const navigate = useNavigate();
   const { user } = useAuth();
   const { links: userLinks, addLink, updateLink } = useUserLinks();
 
@@ -319,6 +320,12 @@ export function ProfilePage() {
         icon={User}
         title={sectionTitle}
         description="Profil kandydata"
+        actions={
+          <Button type="button" variant="secondary" onClick={() => navigate('/profil/importuj-cv')}>
+            <Upload className="w-4 h-4 mr-2" />
+            Importuj z CV
+          </Button>
+        }
       />
 
       {/* ── DANE OSOBOWE ─────────────────────────────────────────────────────── */}

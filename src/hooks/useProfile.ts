@@ -99,9 +99,9 @@ export function useProfile() {
 
   // ── Experiences ──────────────────────────────────────────────────────────────
 
-  const addExperience = useCallback(async (exp: { company: string; roles: ProfileExperience['roles'] }) => {
+  const addExperience = useCallback(async (exp: { company: string; roles: ProfileExperience['roles']; sort_order?: number }) => {
     if (!user) return;
-    const sortOrder = experiences.length;
+    const sortOrder = exp.sort_order ?? experiences.length;
     const saved = await upsertExperience(user.id, { ...exp, sort_order: sortOrder });
     setExperiences(prev => [...prev, saved]);
   }, [user, experiences]);
@@ -122,14 +122,14 @@ export function useProfile() {
 
   // ── Projects ─────────────────────────────────────────────────────────────────
 
-  const addProject = useCallback(async (proj: { name: string }) => {
+  const addProject = useCallback(async (proj: { name: string; tagline?: string; description?: string; stack?: string; sort_order?: number }) => {
     if (!user) return;
-    const sortOrder = projects.length;
+    const sortOrder = proj.sort_order ?? projects.length;
     const saved = await upsertProject(user.id, {
       name: proj.name,
-      tagline: '',
-      description: '',
-      stack: '',
+      tagline: proj.tagline ?? '',
+      description: proj.description ?? '',
+      stack: proj.stack ?? '',
       links: [],
       sort_order: sortOrder,
     });
@@ -152,9 +152,9 @@ export function useProfile() {
 
   // ── Tech Categories ──────────────────────────────────────────────────────────
 
-  const addTechCategory = useCallback(async (tech: { category: string; items: string }) => {
+  const addTechCategory = useCallback(async (tech: { category: string; items: string; sort_order?: number }) => {
     if (!user) return;
-    const sortOrder = techCategories.length;
+    const sortOrder = tech.sort_order ?? techCategories.length;
     const saved = await upsertTechCategory(user.id, { ...tech, sort_order: sortOrder });
     setTechCategories(prev => [...prev, saved]);
   }, [user, techCategories]);
@@ -175,9 +175,9 @@ export function useProfile() {
 
   // ── Education ────────────────────────────────────────────────────────────────
 
-  const addEducation = useCallback(async (edu: { school: string; degree: string; years: string }) => {
+  const addEducation = useCallback(async (edu: { school: string; degree: string; years: string; sort_order?: number }) => {
     if (!user) return;
-    const sortOrder = education.length;
+    const sortOrder = edu.sort_order ?? education.length;
     const saved = await upsertEducation(user.id, { ...edu, sort_order: sortOrder });
     setEducation(prev => [...prev, saved]);
   }, [user, education]);
@@ -198,9 +198,9 @@ export function useProfile() {
 
   // ── Certificates ─────────────────────────────────────────────────────────────
 
-  const addCertificate = useCallback(async (cert: { name: string; issuer: string; year: string }) => {
+  const addCertificate = useCallback(async (cert: { name: string; issuer: string; year: string; sort_order?: number }) => {
     if (!user) return;
-    const sortOrder = certificates.length;
+    const sortOrder = cert.sort_order ?? certificates.length;
     const saved = await upsertCertificate(user.id, { ...cert, sort_order: sortOrder });
     setCertificates(prev => [...prev, saved]);
   }, [user, certificates]);

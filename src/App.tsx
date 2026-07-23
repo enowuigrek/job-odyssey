@@ -25,6 +25,7 @@ import {
   CVGeneratorPage,
   CVEditorPage,
   ProfilePage,
+  ImportCvPage,
   AdminPage,
 } from './pages';
 
@@ -44,6 +45,7 @@ function AuthenticatedApp() {
             <Route path="cv" element={<CVPage />} />
             <Route path="links" element={<LinksPage />} />
             <Route path="profil" element={<Navigate to="/profil/kontakt" replace />} />
+            <Route path="profil/importuj-cv" element={<ImportCvPage />} />
             <Route path="profil/:section" element={<ProfilePage />} />
             <Route path="questions" element={<QuestionsPage />} />
             <Route path="stories" element={<StoriesPage />} />

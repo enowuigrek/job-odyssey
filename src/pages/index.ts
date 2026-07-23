@@ -10,4 +10,5 @@ export { LinksPage } from './LinksPage';
 export { CVGeneratorPage } from './CVGeneratorPage';
 export { CVEditorPage } from './CVEditorPage';
 export { ProfilePage } from './ProfilePage';
+export { ImportCvPage } from './ImportCvPage';
 export { AdminPage } from './AdminPage';
