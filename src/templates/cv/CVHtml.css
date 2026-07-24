@@ -211,9 +211,9 @@
 }
 
 .cv-project-stack {
-  font-weight: 300;
+  font-weight: 400;
   font-size: 8.5pt;
-  color: var(--gray);
+  color: var(--black);
   margin: 0 0 2pt;
 }
 
@@ -275,9 +275,14 @@
 
 .cv-exp-role {
   font-size: 9pt;
+  font-weight: 700;
+  margin: 0 0 3pt;
+}
+
+.cv-exp-role-years {
   font-weight: 300;
   font-style: italic;
-  margin: 0 0 3pt;
+  color: var(--gray);
 }
 
 .cv-bullet {

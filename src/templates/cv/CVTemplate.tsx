@@ -8,9 +8,9 @@ import {
   StyleSheet,
   Font,
 } from '@react-pdf/renderer';
-import { CVData, CVLink } from './types';
+import { CVData, CVLink, CVRole } from './types';
 import { TEAL, TEAL_LIGHT, BLACK, GRAY } from './colors';
-import { formatRoleLabel, formatTechCategory, formatInterests } from './format';
+import { formatTechCategory, formatInterests } from './format';
 import { getSectionOrder } from './sectionOrder';
 
 // ---------------------------------------------------------------------------
@@ -161,9 +161,9 @@ const s = StyleSheet.create({
     marginBottom: 3,
   },
   projectStack: {
-    fontWeight: 300,
+    fontWeight: 400,
     fontSize: 8.5,
-    color: GRAY,
+    color: BLACK,
     marginBottom: 2,
   },
   projectNote: {
@@ -209,10 +209,14 @@ const s = StyleSheet.create({
     marginTop: 2,
   },
   expRole: {
-    fontStyle: 'italic',
-    fontWeight: 300,
+    fontWeight: 'bold',
     fontSize: 9,
     marginBottom: 3,
+  },
+  expRoleYears: {
+    fontWeight: 300,
+    fontStyle: 'italic',
+    color: GRAY,
   },
   bullet: {
     flexDirection: 'row',
@@ -315,6 +319,16 @@ function InlineLinks({ links }: { links: CVLink[] }) {
         </React.Fragment>
       ))}
     </View>
+  );
+}
+
+/** Stanowisko pogrubione, lata przy nim jaśniejsze — rozróżnia wagę informacji zamiast jednej linii tym samym stylem. */
+function RoleLabel({ role }: { role: CVRole }) {
+  return (
+    <Text style={s.expRole}>
+      {role.title}
+      {role.years && <Text style={s.expRoleYears}> | {role.years}</Text>}
+    </Text>
   );
 }
 
@@ -426,7 +440,7 @@ export function CVTemplate({ data }: CVTemplateProps) {
                       </View>
                       {exp.roles[0] && (
                         <View style={s.expRoleBlock}>
-                          <Text style={s.expRole}>{formatRoleLabel(exp.roles[0])}</Text>
+                          <RoleLabel role={exp.roles[0]} />
                           {exp.roles[0].bullets.map((bullet, bi) => (
                             <Bullet key={bi} text={bullet} />
                           ))}
@@ -436,7 +450,7 @@ export function CVTemplate({ data }: CVTemplateProps) {
                     {/* Remaining roles can break freely */}
                     {exp.roles.slice(1).map(role => (
                       <View key={role.title} style={s.expRoleBlock} wrap={false}>
-                        <Text style={s.expRole}>{formatRoleLabel(role)}</Text>
+                        <RoleLabel role={role} />
                         {role.bullets.map((bullet, bi) => (
                           <Bullet key={bi} text={bullet} />
                         ))}

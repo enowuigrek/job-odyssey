@@ -9,7 +9,7 @@ import {
 } from 'docx';
 import type { CVData, CVLink } from './types';
 import { TEAL_HEX as TEAL, TEAL_LIGHT_HEX as TEAL_LIGHT, GRAY_HEX as GRAY } from './colors';
-import { formatRoleLabel, formatTechCategory, formatInterests } from './format';
+import { formatTechCategory, formatInterests } from './format';
 import { getSectionOrder } from './sectionOrder';
 
 // ---------------------------------------------------------------------------
@@ -178,7 +178,7 @@ export async function buildCVDocx(data: CVData): Promise<Blob> {
             spacing: { after: 60 },
           }));
           children.push(new Paragraph({
-            children: [run(project.stack, { size: 17, color: GRAY })],
+            children: [run(project.stack, { size: 17 })],
             spacing: { after: project.note ? 40 : 60 },
           }));
           if (project.note) {
@@ -218,7 +218,10 @@ export async function buildCVDocx(data: CVData): Promise<Blob> {
 
           for (const role of exp.roles) {
             children.push(new Paragraph({
-              children: [run(formatRoleLabel(role), { italics: true, size: 18 })],
+              children: [
+                run(role.title, { bold: true, size: 18 }),
+                ...(role.years ? [run(` | ${role.years}`, { italics: true, color: GRAY, size: 18 })] : []),
+              ],
               border: LEFT_BORDER,
               indent: LEFT_INDENT,
               spacing: { before: 40, after: 60 },

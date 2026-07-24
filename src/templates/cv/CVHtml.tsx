@@ -1,7 +1,7 @@
 import { Fragment } from 'react';
 import './CVHtml.css';
 import { CVData, CVLink } from './types';
-import { formatRoleLabel, formatTechCategory, formatInterests } from './format';
+import { formatTechCategory, formatInterests } from './format';
 import { getSectionOrder } from './sectionOrder';
 
 interface Props {
@@ -128,7 +128,10 @@ export function CVHtml({ data, preview = false }: Props) {
                   </div>
                   {exp.roles.map(role => (
                     <div key={role.title} className="cv-exp-role-block">
-                      <div className="cv-exp-role">{formatRoleLabel(role)}</div>
+                      <div className="cv-exp-role">
+                        {role.title}
+                        {role.years && <span className="cv-exp-role-years"> | {role.years}</span>}
+                      </div>
                       {role.bullets.map((bullet, bi) => (
                         <div key={bi} className="cv-bullet">
                           <span className="cv-bullet-dot">•</span>
