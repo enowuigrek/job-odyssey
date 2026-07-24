@@ -18,6 +18,28 @@ if (!('withResolvers' in Promise)) {
   };
 }
 
+// Właściwa przyczyna błędu importu CV w Safari: pdfjs-dist zwraca natywny
+// ReadableStream i robi po nim `for await...of` (getTextContent → streamTextContent).
+// Async-iterowanie po ReadableStream to osobna, jeszcze później dodana do
+// Safari funkcja niż Promise.withResolvers — bez niej `[Symbol.asyncIterator]`
+// jest undefined i próba wywołania go jako funkcji rzuca "undefined is not
+// a function". Standardowy polyfill: iterator zbudowany ręcznie na getReader().
+if (typeof ReadableStream !== 'undefined' && !(Symbol.asyncIterator in ReadableStream.prototype)) {
+  // @ts-expect-error — dopisujemy Symbol.asyncIterator spoza aktualnego lib.dom typings
+  ReadableStream.prototype[Symbol.asyncIterator] = async function* () {
+    const reader = this.getReader();
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) return;
+        yield value;
+      }
+    } finally {
+      reader.releaseLock();
+    }
+  };
+}
+
 initTooltips()
 
 createRoot(document.getElementById('root')!).render(
