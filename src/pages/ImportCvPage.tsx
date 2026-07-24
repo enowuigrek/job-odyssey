@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FileText, Upload, Loader2 } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
@@ -44,6 +44,26 @@ export function ImportCvPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [status, setStatus] = useState<Status>('idle');
   const [error, setError] = useState<string | null>(null);
+
+  // Pasek postępu — bez prawdziwych zdarzeń postępu z API (jedno żądanie,
+  // bez streamingu), więc "odczyt" skacze na stałą wartość, a "analiza"
+  // pełznie w stronę 92% i czeka na faktyczne zakończenie zamiast kłamać 100%.
+  const [progress, setProgress] = useState(0);
+  useEffect(() => {
+    if (status === 'reading') {
+      setProgress(20);
+    } else if (status === 'analyzing') {
+      setProgress(p => Math.max(p, 45));
+      const interval = window.setInterval(() => {
+        setProgress(p => p + (92 - p) * 0.08);
+      }, 400);
+      return () => window.clearInterval(interval);
+    } else if (status === 'review') {
+      setProgress(100);
+    } else {
+      setProgress(0);
+    }
+  }, [status]);
 
   const {
     profile, updateProfile,
@@ -237,12 +257,27 @@ export function ImportCvPage() {
               e.target.value = '';
             }}
           />
-          <Button type="button" onClick={() => fileInputRef.current?.click()} disabled={busy}>
-            {busy ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Upload className="w-4 h-4 mr-2" />}
-            {status === 'reading' ? 'Odczytuję plik…' : status === 'analyzing' ? 'Analizuję CV z AI…' : 'Wybierz plik PDF'}
-          </Button>
-          {status === 'analyzing' && (
-            <p className="text-xs text-slate-400 font-light">To może potrwać do minuty przy bogatym CV — nie zamykaj tej strony.</p>
+          {busy ? (
+            <div className="flex flex-col items-center gap-3 py-6 text-center">
+              <Loader2 className="w-8 h-8 text-primary-400 animate-spin" />
+              <p className="text-sm font-medium text-white">
+                {status === 'reading' ? 'Odczytuję plik…' : 'Analizuję CV z AI…'}
+              </p>
+              <div className="w-full max-w-xs h-1.5 bg-dark-900 overflow-hidden">
+                <div
+                  className="h-full bg-primary-500 transition-[width] duration-500 ease-out"
+                  style={{ width: `${progress}%` }}
+                />
+              </div>
+              {status === 'analyzing' && (
+                <p className="text-xs text-slate-400 font-light">To może potrwać do minuty przy bogatym CV — nie zamykaj tej strony.</p>
+              )}
+            </div>
+          ) : (
+            <Button type="button" onClick={() => fileInputRef.current?.click()}>
+              <Upload className="w-4 h-4 mr-2" />
+              Wybierz plik PDF
+            </Button>
           )}
           {error && <p className="text-sm text-danger-400">{error}</p>}
         </div>
