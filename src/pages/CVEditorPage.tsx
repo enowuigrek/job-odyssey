@@ -390,6 +390,8 @@ export function CVEditorPage() {
       showCertificates: profileCertificates.length > 0 ? true : d.showCertificates,
       interests: profile.interests ? normalizeInterests(profile.interests) : [],
       rodo: profile.rodo || d.rodo,
+      photoUrl: profile.photo_url || undefined,
+      showPhoto: profile.photo_url ? true : d.showPhoto,
     }));
   }, [profile, experiences, profileEducation, profileCertificates, profileLoading, user, editCvId, DRAFT_KEY]);
 
@@ -530,6 +532,15 @@ export function CVEditorPage() {
             <FieldLabel>Podtytuł / stanowisko</FieldLabel>
             <TextInput value={data.subtitle} onChange={v => set({ subtitle: v })} placeholder="Frontend Developer | React" />
           </div>
+          {data.photoUrl && (
+            <div className="md:col-span-2 flex items-center gap-3">
+              <img src={data.photoUrl} alt="" className="w-10 h-10 rounded-full object-cover flex-shrink-0" />
+              <label className="flex items-center gap-2 text-sm text-slate-300 cursor-pointer">
+                <Checkbox checked={data.showPhoto !== false} onChange={() => set({ showPhoto: data.showPhoto === false })} />
+                Pokaż zdjęcie na tym CV
+              </label>
+            </div>
+          )}
         </div>
       )}
       </div>

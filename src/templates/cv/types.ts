@@ -65,6 +65,9 @@ export interface CVData {
   name: string;
   subtitle: string;
   contact: CVContactInfo;
+  /** Publiczny URL przyciętego zdjęcia profilowego (jeśli user je dodał i showPhoto !== false) */
+  photoUrl?: string;
+  showPhoto?: boolean;
   /** Editable header for "PROFIL" section */
   profileTitle?: string;
   profile: string;

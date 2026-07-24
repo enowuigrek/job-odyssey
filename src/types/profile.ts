@@ -19,6 +19,7 @@ export interface CandidateProfile {
   links: ProfileLink[];
   interests: string;
   rodo: string;
+  photo_url?: string;
 }
 
 export interface ProfileDescription {

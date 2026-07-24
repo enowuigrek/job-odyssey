@@ -5,6 +5,7 @@ import {
   Text,
   View,
   Link,
+  Image,
   StyleSheet,
   Font,
 } from '@react-pdf/renderer';
@@ -50,6 +51,21 @@ const s = StyleSheet.create({
     lineHeight: 1.5,
   },
   // ── Header ──────────────────────────────────────────────────────────────
+  headerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+  },
+  headerText: {
+    flex: 1,
+  },
+  photo: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    marginLeft: 16,
+    objectFit: 'cover',
+  },
   name: {
     fontSize: 28,
     fontWeight: 'bold',
@@ -355,15 +371,22 @@ export function CVTemplate({ data }: CVTemplateProps) {
     <Document>
       <Page size="A4" style={s.page}>
         {/* ── Header ──────────────────────────────────────────────── */}
-        <Text style={s.name}>{data.name}</Text>
-        <Text style={s.subtitle}>{data.subtitle}</Text>
+        <View style={s.headerRow}>
+          <View style={s.headerText}>
+            <Text style={s.name}>{data.name}</Text>
+            <Text style={s.subtitle}>{data.subtitle}</Text>
 
-        <View style={s.contactBlock}>
-          <Text style={s.contactLine}>
-            {data.contact.location}, tel: {data.contact.phone}
-          </Text>
-          <Text style={s.contactLine}>e-mail: {data.contact.email}</Text>
-          <InlineLinks links={data.contact.links} />
+            <View style={s.contactBlock}>
+              <Text style={s.contactLine}>
+                {data.contact.location}, tel: {data.contact.phone}
+              </Text>
+              <Text style={s.contactLine}>e-mail: {data.contact.email}</Text>
+              <InlineLinks links={data.contact.links} />
+            </View>
+          </View>
+          {data.showPhoto !== false && data.photoUrl && (
+            <Image src={data.photoUrl} style={s.photo} />
+          )}
         </View>
 
         {/* ── Content sections, in user-defined order ─────────────── */}

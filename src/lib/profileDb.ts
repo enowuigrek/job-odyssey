@@ -33,6 +33,7 @@ export async function getOrCreateProfile(userId: string): Promise<CandidateProfi
       links: (data.links as CandidateProfile['links']) ?? [],
       interests: data.interests as string,
       rodo: data.rodo as string,
+      photo_url: (data.photo_url as string | null) ?? undefined,
     };
   }
 
@@ -54,6 +55,7 @@ export async function getOrCreateProfile(userId: string): Promise<CandidateProfi
     links: [],
     interests: '',
     rodo: '',
+    photo_url: undefined,
   };
 }
 
@@ -70,11 +72,26 @@ export async function upsertProfile(userId: string, data: Omit<CandidateProfile,
         links: data.links,
         interests: data.interests,
         rodo: data.rodo,
+        photo_url: data.photo_url ?? null,
         updated_at: new Date().toISOString(),
       },
       { onConflict: 'user_id' }
     );
   if (error) throw error;
+}
+
+/** Wgrywa zdjęcie profilowe (już przycięte po stronie klienta) do bucketu avatars. */
+export async function uploadProfilePhoto(userId: string, blob: Blob): Promise<string> {
+  const path = `${userId}/${Date.now()}.jpg`;
+
+  const { error } = await supabase.storage
+    .from('avatars')
+    .upload(path, blob, { upsert: true, contentType: 'image/jpeg' });
+
+  if (error) throw error;
+
+  const { data } = supabase.storage.from('avatars').getPublicUrl(path);
+  return data.publicUrl;
 }
 
 // ============================================================

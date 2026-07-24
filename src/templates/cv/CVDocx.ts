@@ -4,8 +4,10 @@ import {
   Paragraph,
   TextRun,
   ExternalHyperlink,
+  ImageRun,
   BorderStyle,
   TabStopType,
+  AlignmentType,
 } from 'docx';
 import type { CVData, CVLink } from './types';
 import { TEAL_HEX as TEAL, TEAL_LIGHT_HEX as TEAL_LIGHT, GRAY_HEX as GRAY } from './colors';
@@ -86,6 +88,30 @@ function hyperlink(link: CVLink, displayText?: string): ExternalHyperlink {
 // ---------------------------------------------------------------------------
 export async function buildCVDocx(data: CVData): Promise<Blob> {
   const children: Paragraph[] = [];
+
+  // ── Zdjęcie ───────────────────────────────────────────────────────────
+  // docx nie wspiera łatwo okrągłego przycinania obrazu (jak w PDF/podglądzie),
+  // więc tu zostaje prostokątne, wyrównane do prawej — nad nazwiskiem, żeby
+  // uniknąć kruchego floating-positioningu strona-względem-marginesów.
+  if (data.showPhoto !== false && data.photoUrl) {
+    try {
+      const photoResponse = await fetch(data.photoUrl);
+      const photoBuffer = await photoResponse.arrayBuffer();
+      children.push(new Paragraph({
+        alignment: AlignmentType.RIGHT,
+        spacing: { after: 160 },
+        children: [
+          new ImageRun({
+            type: 'jpg',
+            data: photoBuffer,
+            transformation: { width: 85, height: 85 },
+          }),
+        ],
+      }));
+    } catch (e) {
+      console.error('Nie udało się dołączyć zdjęcia do DOCX', e);
+    }
+  }
 
   // ── Name ──────────────────────────────────────────────────────────────
   children.push(new Paragraph({

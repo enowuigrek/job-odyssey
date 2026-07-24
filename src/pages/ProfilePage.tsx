@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { PageHeader, CollapsibleItem, Button } from '../components/ui';
 import { FieldLabel, TextInput, TextArea, LinksEditor, BulletsEditor, YearRangePicker, TagListEditor } from '../components/forms/FormPrimitives';
+import { PhotoCropModal } from '../components/profile/PhotoCropModal';
 import { normalizeInterests, formatInterests } from '../templates/cv/format';
 import { useProfile } from '../hooks/useProfile';
 import { useUserLinks } from '../hooks/useUserLinks';
@@ -139,6 +140,8 @@ export function ProfilePage() {
     certificates,
     isLoading,
     updateProfile,
+    updatePhoto,
+    removePhoto,
     addDescription,
     updateDescription,
     removeDescription,
@@ -170,6 +173,11 @@ export function ProfilePage() {
 
   const contact: CandidateProfile = contactDraft ?? profile;
   const interestsRodo = interestsDraft ?? { interests: profile.interests, rodo: profile.rodo };
+
+  // ── Zdjęcie profilowe ────────────────────────────────────────────────────────
+  const photoInputRef = useRef<HTMLInputElement>(null);
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [photoSaving, setPhotoSaving] = useState(false);
 
   // Sync drafts when profile loads
   const profileLoaded = !isLoading;
@@ -244,6 +252,29 @@ export function ProfilePage() {
       setContactSaving(false);
     }
   }, [contactDraft, updateProfile]);
+
+  const handlePhotoCropped = useCallback(async (blob: Blob) => {
+    setPhotoSaving(true);
+    try {
+      await updatePhoto(blob);
+      setPhotoFile(null);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setPhotoSaving(false);
+    }
+  }, [updatePhoto]);
+
+  const handleRemovePhoto = useCallback(async () => {
+    setPhotoSaving(true);
+    try {
+      await removePhoto();
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setPhotoSaving(false);
+    }
+  }, [removePhoto]);
 
   const handleSaveInterests = useCallback(async () => {
     if (!interestsDraft || !contactDraft) return;
@@ -356,6 +387,40 @@ export function ProfilePage() {
       {/* ── DANE OSOBOWE ─────────────────────────────────────────────────────── */}
       {section === 'kontakt' && (
         <div className="fold-card bg-dark-800 p-4 space-y-4">
+          <div className="flex items-center gap-4">
+            <div className="w-20 h-20 rounded-full overflow-hidden bg-dark-900 flex-shrink-0 flex items-center justify-center">
+              {contact.photo_url ? (
+                <img src={contact.photo_url} alt="Zdjęcie profilowe" className="w-full h-full object-cover" />
+              ) : (
+                <User className="w-8 h-8 text-slate-600" />
+              )}
+            </div>
+            <div className="space-y-2">
+              <input
+                ref={photoInputRef}
+                type="file"
+                accept="image/png,image/jpeg,image/webp"
+                className="hidden"
+                onChange={e => {
+                  const f = e.target.files?.[0];
+                  if (f) setPhotoFile(f);
+                  e.target.value = '';
+                }}
+              />
+              <div className="flex gap-2">
+                <Button type="button" variant="secondary" size="sm" onClick={() => photoInputRef.current?.click()} disabled={photoSaving}>
+                  {photoSaving ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : <Upload className="w-3.5 h-3.5 mr-1.5" />}
+                  {contact.photo_url ? 'Zmień zdjęcie' : 'Dodaj zdjęcie'}
+                </Button>
+                {contact.photo_url && (
+                  <Button type="button" variant="ghost" size="sm" onClick={handleRemovePhoto} disabled={photoSaving}>
+                    Usuń
+                  </Button>
+                )}
+              </div>
+              <p className="text-xs text-slate-400 font-light">Widoczne w CV, jeśli włączysz je przy generowaniu.</p>
+            </div>
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
               <FieldLabel light>Imię i nazwisko</FieldLabel>
@@ -904,6 +969,14 @@ export function ProfilePage() {
             <SaveButton onClick={handleSaveInterests} saving={interestsSaving} saved={interestsSaved} />
           </div>
         </div>
+      )}
+
+      {photoFile && (
+        <PhotoCropModal
+          file={photoFile}
+          onCancel={() => setPhotoFile(null)}
+          onConfirm={handlePhotoCropped}
+        />
       )}
     </div>
   );

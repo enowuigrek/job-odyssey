@@ -46,15 +46,22 @@ export function CVHtml({ data, preview = false }: Props) {
   const page = (
     <div className="cv-page cv-root">
       {/* ── Header ──────────────────────────────────────────────── */}
-      <div className="cv-name">{data.name}</div>
-      <div className="cv-subtitle">{data.subtitle}</div>
+      <div className="cv-header-row">
+        <div className="cv-header-text">
+          <div className="cv-name">{data.name}</div>
+          <div className="cv-subtitle">{data.subtitle}</div>
 
-      <div className="cv-contact-block">
-        <p className="cv-contact-line">
-          {data.contact.location}, tel: {data.contact.phone}
-        </p>
-        <p className="cv-contact-line">e-mail: {data.contact.email}</p>
-        <ContactLinks links={data.contact.links} />
+          <div className="cv-contact-block">
+            <p className="cv-contact-line">
+              {data.contact.location}, tel: {data.contact.phone}
+            </p>
+            <p className="cv-contact-line">e-mail: {data.contact.email}</p>
+            <ContactLinks links={data.contact.links} />
+          </div>
+        </div>
+        {data.showPhoto !== false && data.photoUrl && (
+          <img src={data.photoUrl} alt="" className="cv-photo" />
+        )}
       </div>
 
       {/* ── Content sections, in user-defined order ─────────────── */}

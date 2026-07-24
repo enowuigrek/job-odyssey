@@ -12,6 +12,7 @@ import type {
 import {
   getFullProfile,
   upsertProfile,
+  uploadProfilePhoto,
   upsertDescription,
   deleteDescription,
   upsertExperience,
@@ -73,6 +74,20 @@ export function useProfile() {
     await upsertProfile(user.id, data);
     setProfile(prev => ({ ...prev, ...data }));
   }, [user]);
+
+  /** Wgrywa przycięte zdjęcie (blob) i zapisuje jego URL w profilu — jedno wywołanie z UI. */
+  const updatePhoto = useCallback(async (blob: Blob) => {
+    if (!user) return;
+    const url = await uploadProfilePhoto(user.id, blob);
+    await upsertProfile(user.id, { ...profile, photo_url: url });
+    setProfile(prev => ({ ...prev, photo_url: url }));
+  }, [user, profile]);
+
+  const removePhoto = useCallback(async () => {
+    if (!user) return;
+    await upsertProfile(user.id, { ...profile, photo_url: undefined });
+    setProfile(prev => ({ ...prev, photo_url: undefined }));
+  }, [user, profile]);
 
   // ── Descriptions ─────────────────────────────────────────────────────────────
 
@@ -228,6 +243,8 @@ export function useProfile() {
     education,
     isLoading,
     updateProfile,
+    updatePhoto,
+    removePhoto,
     addDescription,
     updateDescription,
     removeDescription,
