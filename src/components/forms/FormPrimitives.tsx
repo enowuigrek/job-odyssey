@@ -70,7 +70,9 @@ export function YearRangePicker({
   // h-8 wymusza tę samą wysokość co input (32px) — <select> ignoruje line-height
   // przy liczeniu wysokości zamkniętej kontrolki (natywny box modelu przeglądarki),
   // więc samo dopasowanie paddingu/line-height do inputu nie wystarczało.
-  const selectClass = `h-8 px-2 py-1.5 bg-dark-900 text-white text-sm ${light ? 'font-light' : ''} focus:outline-none focus:ring-1 focus:ring-primary-500 cursor-pointer`;
+  // rounded-none — <select> ma domyślnie zaokrąglone rogi w niektórych przeglądarkach
+  // (natywny styl kontrolki), niespójne z resztą appki, która nigdzie nie zaokrągla rogów.
+  const selectClass = `h-8 px-2 py-1.5 bg-dark-900 text-white text-sm rounded-none ${light ? 'font-light' : ''} focus:outline-none focus:ring-1 focus:ring-primary-500 cursor-pointer`;
 
   return (
     <div className="flex items-center gap-2">

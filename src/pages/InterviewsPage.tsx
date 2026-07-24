@@ -423,7 +423,7 @@ export function InterviewsPage() {
         fold
         className={`group transition-shadow duration-700 ${isTodayInterview ? 'ring-2 ring-warning-400 bg-warning-500/10' : ''} ${
           moveInfo ? (moveInfo.direction === 'right' ? 'animate-kanban-enter-right' : 'animate-kanban-enter-left') : ''
-        } ${moveInfo ? 'shadow-[0_0_0_2px_#06b6d4,0_0_18px_rgba(6,182,212,0.35)]' : 'shadow-none'}`}
+        } ${moveInfo ? 'shadow-[0_0_22px_rgba(6,182,212,0.5)]' : 'shadow-none'}`}
       >
         <div className="p-0">
           {/* Główna sekcja - klikalna aby rozwinąć */}
@@ -513,12 +513,13 @@ export function InterviewsPage() {
             )}
           </div>
 
-          {/* Rozwinięte szczegóły — płynnie rozwijane i zwijane (grid-rows 0fr↔1fr),
-              plus scale/opacity jak w animate-unfold-card, żeby wyglądało tak samo
-              jak rozwijanie przycisku "+" — działa w obie strony, bo to transition,
-              nie jednokierunkowy keyframe. */}
+          {/* Rozwinięte szczegóły — płynnie rozwijane i zwijane (grid-rows 0fr↔1fr).
+              Próba dołożenia scale/opacity jak w animate-unfold-card na tym samym
+              elemencie psuła animację (dwie nakładające się animacje wysokości
+              na tym samym, jeszcze zmieniającym rozmiar kontenerze) — z powrotem
+              sam grid-rows, który realnie działał płynnie. */}
           <div className={`grid transition-[grid-template-rows] duration-200 ease-out ${isExpanded ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
-            <div className={`overflow-hidden origin-top transition-[transform,opacity] duration-200 ease-out ${isExpanded ? 'scale-y-100 opacity-100' : 'scale-y-[0.35] opacity-40'}`}>
+            <div className="overflow-hidden">
             <div className="px-3 pb-3 border-t border-dark-600">
               {/* Szybka zmiana statusu */}
               <div className="mt-3 mb-3">
