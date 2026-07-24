@@ -284,7 +284,7 @@ export function SettingsPage() {
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
               <div>
                 <p className="text-sm font-medium text-slate-300">Usuń konto</p>
-                <p className="text-xs text-slate-500 mt-0.5">Trwale usuwa konto i wszystkie dane</p>
+                <p className="text-xs text-slate-400 mt-0.5">Trwale usuwa konto i wszystkie dane</p>
               </div>
               <Button
                 variant="danger"

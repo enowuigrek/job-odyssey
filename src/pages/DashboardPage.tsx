@@ -245,7 +245,7 @@ export function DashboardPage() {
                 <p className="font-semibold text-slate-400">
                   Brak zaplanowanych rozmów
                 </p>
-                <p className="text-sm text-slate-500 mt-1">
+                <p className="text-sm text-slate-400 mt-1">
                   Dodaj rozmowę, gdy otrzymasz zaproszenie
                 </p>
               </div>
@@ -327,7 +327,7 @@ export function DashboardPage() {
           </div>
           <CardBody className="p-0">
             {recentApplications.length === 0 ? (
-              <p className="text-slate-500 text-center py-8">
+              <p className="text-slate-400 text-center py-8">
                 Brak aplikacji. Dodaj pierwszą!
               </p>
             ) : (
@@ -367,7 +367,7 @@ export function DashboardPage() {
           </div>
           <CardBody className="p-0">
             {upcomingInterviews.length === 0 ? (
-              <p className="text-slate-500 text-center py-8">
+              <p className="text-slate-400 text-center py-8">
                 Brak zaplanowanych rozmów
               </p>
             ) : (
@@ -428,7 +428,7 @@ export function DashboardPage() {
           </div>
           <CardBody>
             {state.applications.length === 0 ? (
-              <p className="text-slate-500 text-center py-8">
+              <p className="text-slate-400 text-center py-8">
                 Brak danych do wyświetlenia
               </p>
             ) : (
@@ -464,7 +464,7 @@ export function DashboardPage() {
           </div>
           <CardBody>
             {state.interviews.length === 0 ? (
-              <p className="text-slate-500 text-center py-8">
+              <p className="text-slate-400 text-center py-8">
                 Brak danych do wyświetlenia
               </p>
             ) : (

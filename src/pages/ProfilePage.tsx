@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   User,
@@ -10,7 +10,8 @@ import {
   ExternalLink,
 } from 'lucide-react';
 import { PageHeader, CollapsibleItem, Button } from '../components/ui';
-import { FieldLabel, TextInput, TextArea, LinksEditor, BulletsEditor, YearRangePicker } from '../components/forms/FormPrimitives';
+import { FieldLabel, TextInput, TextArea, LinksEditor, BulletsEditor, YearRangePicker, TagListEditor } from '../components/forms/FormPrimitives';
+import { normalizeInterests, formatInterests } from '../templates/cv/format';
 import { useProfile } from '../hooks/useProfile';
 import { useUserLinks } from '../hooks/useUserLinks';
 import { useDragReorder } from '../hooks/useDragReorder';
@@ -61,6 +62,21 @@ async function reorderItems<T extends { id: string; sort_order: number }>(
   );
 }
 
+/** Id ostatnio dodanego elementu listy (po wzroście długości) — do auto-rozwinięcia nowej karty. */
+function useAutoExpandOnAdd<T extends { id: string }>(list: T[]): string | null {
+  const prevLength = useRef(list.length);
+  const [autoExpandId, setAutoExpandId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (list.length > prevLength.current) {
+      setAutoExpandId(list[list.length - 1]?.id ?? null);
+    }
+    prevLength.current = list.length;
+  }, [list]);
+
+  return autoExpandId;
+}
+
 // ── Small UI building blocks ───────────────────────────────────────────────────
 
 function SaveButton({
@@ -102,6 +118,7 @@ const SECTION_TITLES: Record<string, string> = {
   wyksztalcenie: 'Wykształcenie',
   certyfikaty: 'Certyfikaty',
   zainteresowania: 'Zainteresowania',
+  rodo: 'Klauzula RODO',
 };
 
 // ── Main component ─────────────────────────────────────────────────────────────
@@ -198,6 +215,14 @@ export function ProfilePage() {
   const tech = localTech ?? techCategories;
   const edu = localEducation ?? education;
   const certs = localCertificates ?? certificates;
+
+  // Nowo dodana karta rozwija się od razu, żeby można było ją wypełnić bez dodatkowego kliknięcia.
+  const autoExpandDescId = useAutoExpandOnAdd(descs);
+  const autoExpandExpId = useAutoExpandOnAdd(exps);
+  const autoExpandProjId = useAutoExpandOnAdd(projs);
+  const autoExpandTechId = useAutoExpandOnAdd(tech);
+  const autoExpandEduId = useAutoExpandOnAdd(edu);
+  const autoExpandCertId = useAutoExpandOnAdd(certs);
 
   const descriptionsDrag = useDragReorder((from, to) => reorderItems(descs, from, to, setLocalDescriptions, updateDescription));
   const experiencesDrag = useDragReorder((from, to) => reorderItems(exps, from, to, setLocalExperiences, updateExperience));
@@ -381,7 +406,7 @@ export function ProfilePage() {
       {/* ── OPISY PROFILU ────────────────────────────────────────────────────── */}
       {section === 'opisy' && (
         <div className="space-y-3">
-          <p className="text-xs text-slate-500 font-light">
+          <p className="text-xs text-slate-400 font-light">
             Nazwane opisy do różnych pozycji — np. "Frontend Dev", "AI Dev". Wybierane przy generowaniu CV.
           </p>
           {descs.map((desc, di) => (
@@ -389,6 +414,7 @@ export function ProfilePage() {
               key={desc.id}
               label={desc.name}
               labelPlaceholder="np. Frontend Dev"
+              defaultOpen={desc.id === autoExpandDescId}
               onLabelChange={v => setLocalDescriptions(prev =>
                 (prev ?? descs).map(d => d.id === desc.id ? { ...d, name: v } : d)
               )}
@@ -441,6 +467,7 @@ export function ProfilePage() {
               key={exp.id}
               label={exp.company}
               labelPlaceholder="NAZWA FIRMY"
+              defaultOpen={exp.id === autoExpandExpId}
               onLabelChange={v => setLocalExperiences(prev =>
                 (prev ?? exps).map(e => e.id === exp.id ? { ...e, company: v } : e)
               )}
@@ -587,6 +614,7 @@ export function ProfilePage() {
               key={proj.id}
               label={proj.name}
               labelPlaceholder="NAZWA PROJEKTU"
+              defaultOpen={proj.id === autoExpandProjId}
               onLabelChange={v => setLocalProjects(prev =>
                 (prev ?? projs).map(p => p.id === proj.id ? { ...p, name: v } : p)
               )}
@@ -597,16 +625,6 @@ export function ProfilePage() {
               {...projectsDrag.getItemProps(proji)}
             >
               <div className="space-y-3">
-                <div>
-                  <FieldLabel light>Tagline</FieldLabel>
-                  <TextInput light
-                    value={proj.tagline}
-                    onChange={v => setLocalProjects(prev =>
-                      (prev ?? projs).map(p => p.id === proj.id ? { ...p, tagline: v } : p)
-                    )}
-                    placeholder="Jedno zdanie..."
-                  />
-                </div>
                 <div>
                   <FieldLabel light>Opis</FieldLabel>
                   <TextArea light
@@ -677,6 +695,7 @@ export function ProfilePage() {
               key={t.id}
               label={t.category}
               labelPlaceholder="Frontend"
+              defaultOpen={t.id === autoExpandTechId}
               onLabelChange={v => setLocalTech(prev =>
                 (prev ?? tech).map(x => x.id === t.id ? { ...x, category: v } : x)
               )}
@@ -726,6 +745,7 @@ export function ProfilePage() {
               key={e.id}
               label={e.school}
               labelPlaceholder="UCZELNIA"
+              defaultOpen={e.id === autoExpandEduId}
               onLabelChange={v => setLocalEducation(prev =>
                 (prev ?? edu).map(x => x.id === e.id ? { ...x, school: v } : x)
               )}
@@ -781,7 +801,7 @@ export function ProfilePage() {
       {/* ── CERTYFIKATY ──────────────────────────────────────────────────────── */}
       {section === 'certyfikaty' && (
         <div className="space-y-3">
-          <p className="text-xs text-slate-500 font-light">
+          <p className="text-xs text-slate-400 font-light">
             Certyfikaty z plikiem stają się klikalnym linkiem w CV — rekruter może otworzyć plik, a Ty dostaniesz powiadomienie.
           </p>
           <input
@@ -801,6 +821,7 @@ export function ProfilePage() {
               key={cert.id}
               label={cert.name}
               labelPlaceholder="AWS Certified Developer"
+              defaultOpen={cert.id === autoExpandCertId}
               onLabelChange={v => setLocalCertificates(prev =>
                 (prev ?? certs).map(c => c.id === cert.id ? { ...c, name: v } : c)
               )}
@@ -886,17 +907,27 @@ export function ProfilePage() {
         </div>
       )}
 
-      {/* ── ZAINTERESOWANIA + RODO ───────────────────────────────────────────── */}
+      {/* ── ZAINTERESOWANIA ──────────────────────────────────────────────────── */}
       {section === 'zainteresowania' && (
         <div className="fold-card bg-dark-800 p-4 space-y-4">
           <div>
             <FieldLabel light>Zainteresowania</FieldLabel>
-            <TextInput light
-              value={interestsRodo.interests}
-              onChange={v => setInterestsDraft(d => ({ ...(d ?? interestsRodo), interests: v }))}
-              placeholder="Kawa • Muzyka • Sport…"
+            <TagListEditor light
+              items={normalizeInterests(interestsRodo.interests)}
+              onChange={v => setInterestsDraft(d => ({ ...(d ?? interestsRodo), interests: formatInterests(v) }))}
+              addLabel="Dodaj zainteresowanie"
+              placeholder="np. Muzyka"
             />
           </div>
+          <div className="flex justify-end pt-2">
+            <SaveButton onClick={handleSaveInterests} saving={interestsSaving} saved={interestsSaved} />
+          </div>
+        </div>
+      )}
+
+      {/* ── KLAUZULA RODO ────────────────────────────────────────────────────── */}
+      {section === 'rodo' && (
+        <div className="fold-card bg-dark-800 p-4 space-y-4">
           <div>
             <FieldLabel light>Klauzula RODO</FieldLabel>
             <TextArea light

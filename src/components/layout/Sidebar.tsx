@@ -43,6 +43,7 @@ const profileSubItems = [
   { section: 'wyksztalcenie', label: 'Wykształcenie' },
   { section: 'certyfikaty', label: 'Certyfikaty' },
   { section: 'zainteresowania', label: 'Zainteresowania' },
+  { section: 'rodo', label: 'Klauzula RODO' },
 ];
 
 const PROFILE_EXPANDED_KEY = 'jo-sidebar-profile-expanded';

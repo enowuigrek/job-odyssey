@@ -535,24 +535,6 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator {
 .divide-dark-600 > :not([hidden]) ~ :not([hidden]) { border-color: var(--color-dark-600); }
 
 /* ============================================
-   Papierowy duszek przeciągania (kanban) — karta trzymana
-   krzywo, delikatnie buja się wokół kursora; przy upuszczeniu
-   prostuje się i znika (patrz src/lib/paperDragGhost.ts)
-   ============================================ */
-.paper-drag-ghost {
-  position: fixed;
-  left: 0;
-  top: 0;
-  margin: 0;
-  z-index: 100;
-  pointer-events: none;
-  opacity: 0.95;
-  /* Cień mieści się w 24px marginesu clip-pathu zagiętej kartki;
-     przechył sterowany z JS (kierunek ruchu kursora), bez keyframes */
-  box-shadow: 0 12px 20px -8px rgba(0, 0, 0, 0.7);
-}
-
-/* ============================================
    Tooltip appki (data-tip + src/lib/tooltip.ts) — zamiast
    natywnych title: w stylu appki i pojawia się szybciej
    ============================================ */
@@ -587,6 +569,29 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator {
 .animate-unfold-card {
   transform-origin: top;
   animation: unfold-card 200ms ease-out;
+}
+
+/* ============================================
+   Karta kanbanu wjeżdżająca do nowej kolumny po zmianie
+   statusu (Aplikacje/Rozmowy) — kierunek zależny od tego,
+   czy nowy status jest dalej/bliżej w kolejności kolumn.
+   Podświetlenie zostaje chwilę dłużej i gaśnie płynnie,
+   żeby nie zgubić karty wśród innych po przełożeniu.
+   ============================================ */
+@keyframes kanban-card-enter-right {
+  from { opacity: 0; transform: translateX(18px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+@keyframes kanban-card-enter-left {
+  from { opacity: 0; transform: translateX(-18px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.animate-kanban-enter-right {
+  animation: kanban-card-enter-right 260ms ease-out;
+}
+.animate-kanban-enter-left {
+  animation: kanban-card-enter-left 260ms ease-out;
 }
 
 /* ============================================

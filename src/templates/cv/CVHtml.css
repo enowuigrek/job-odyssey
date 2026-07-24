@@ -35,6 +35,15 @@
   font-style: italic;
 }
 
+/*
+ * Wszystkie wielkości (font-size/margin/padding/letter-spacing) tutaj muszą
+ * być zgodne z liczbami (jednostki ≈ pt) w CVTemplate.tsx (StyleSheet `s`) —
+ * to jest podgląd na ekranie tego samego layoutu, który generuje się do PDF.
+ * Kolory już są zsynchronizowane ręcznie (patrz colors.ts) — te same zasady:
+ * .css nie może importować z .ts, więc przy zmianie jednego trzeba poprawić
+ * drugie.
+ */
+
 /* ── Variables ─────────────────────────────────────────────────── */
 .cv-root {
   --teal: #2D7D7D;
@@ -56,12 +65,12 @@
 .cv-page {
   width: 210mm;
   min-height: 297mm;
-  padding: 17mm 20mm 22mm;
+  padding: 32pt 44pt 46pt;
   font-family: 'Inter', sans-serif;
   font-weight: 400;
   font-size: 9pt;
   color: var(--black);
-  line-height: 1.55;
+  line-height: 1.5;
   background: white;
   box-sizing: border-box;
   display: flex;
@@ -75,10 +84,11 @@
 
 /* ── Header ─────────────────────────────────────────────────────── */
 .cv-name {
-  font-size: 20pt;
+  font-size: 28pt;
   font-weight: 700;
-  letter-spacing: 0.04em;
-  margin: 0 0 6pt;
+  letter-spacing: 0.3pt;
+  line-height: 1;
+  margin: 0 0 8pt;
   color: var(--black);
 }
 
@@ -86,8 +96,9 @@
   font-size: 10.5pt;
   font-weight: 300;
   font-style: italic;
+  line-height: 1;
   color: #4a9a9a;
-  margin: 0 0 14pt;
+  margin: 0 0 16pt;
 }
 
 .cv-contact-block {
@@ -100,34 +111,10 @@
   font-size: 8.5pt;
   font-weight: 300;
   font-style: italic;
-  margin: 0 0 2.5pt;
+  margin: 0 0 2pt;
 }
 
-/* ── Contact icon links (stacked) ──────────────────────────────── */
-.cv-icon-links {
-  display: flex;
-  flex-direction: column;
-  gap: 3pt;
-  margin-top: 5pt;
-}
-
-.cv-icon-link {
-  display: flex;
-  align-items: center;
-  gap: 6pt;
-  font-size: 8.5pt;
-  font-weight: 300;
-  font-style: italic;
-  text-decoration: none;
-  color: var(--teal);
-}
-
-.cv-icon-link svg {
-  flex-shrink: 0;
-  color: var(--teal);
-}
-
-/* Legacy inline links (project/exp) */
+/* ── Inline links (contact/project) — pipe-separated, zgodne z InlineLinks w PDF ── */
 .cv-links-row {
   display: flex;
   flex-wrap: wrap;
@@ -146,21 +133,21 @@
 
 .cv-links-sep {
   color: var(--gray);
-  margin: 0 6pt;
+  margin: 0 5pt;
 }
 
 /* ── Section headers ────────────────────────────────────────────── */
 .cv-section-header {
   border-bottom: 1.25pt solid var(--teal);
   padding-bottom: 3pt;
-  margin-top: 20pt;
-  margin-bottom: 9pt;
+  margin-top: 18pt;
+  margin-bottom: 8pt;
 }
 
 .cv-section-title {
   font-size: 11pt;
   font-weight: 300;
-  letter-spacing: 0.18em;
+  letter-spacing: 2pt;
   color: var(--teal);
   margin: 0;
 }
@@ -168,14 +155,14 @@
 /* ── Body text ──────────────────────────────────────────────────── */
 .cv-body {
   font-size: 9pt;
-  margin: 0 0 6pt;
+  margin: 0 0 5pt;
 }
 
 /* ── Technologies ───────────────────────────────────────────────── */
 .cv-tech-row {
   display: flex;
   align-items: baseline;
-  margin-bottom: 6pt;
+  margin-bottom: 5.5pt;
   font-size: 9pt;
 }
 
@@ -183,7 +170,7 @@
   font-weight: 300;
   font-style: italic;
   color: var(--teal);
-  width: 145pt;
+  width: 140pt;
   flex-shrink: 0;
 }
 
@@ -199,8 +186,8 @@
 .cv-project-name {
   font-size: 9.5pt;
   font-weight: 700;
-  letter-spacing: 0.05em;
-  margin: 0 0 2pt;
+  letter-spacing: 0.4pt;
+  margin: 0 0 1.5pt;
 }
 
 .cv-project-tagline {
@@ -208,26 +195,26 @@
   font-weight: 300;
   font-style: italic;
   color: var(--teal);
-  margin: 0 0 6pt;
+  margin: 0 0 4pt;
 }
 
 .cv-project-body {
   border-left: 2.5pt solid var(--teal);
-  padding-left: 10pt;
-  margin-top: 4pt;
+  padding-left: 9pt;
+  margin-top: 3pt;
   margin-bottom: 4pt;
 }
 
 .cv-project-desc {
   font-size: 9pt;
-  margin: 0 0 6pt;
+  margin: 0 0 3pt;
 }
 
 .cv-project-stack {
   font-weight: 300;
   font-size: 8.5pt;
   color: var(--gray);
-  margin: 0 0 4pt;
+  margin: 0 0 2pt;
 }
 
 .cv-project-note {
@@ -235,7 +222,7 @@
   font-style: italic;
   font-size: 8.5pt;
   color: var(--gray);
-  margin: 0 0 5pt;
+  margin: 0 0 3pt;
 }
 
 .cv-project-links {
@@ -257,9 +244,9 @@
 .cv-exp-company-row {
   display: flex;
   align-items: baseline;
-  gap: 7pt;
-  margin-top: 14pt;
-  margin-bottom: 3pt;
+  gap: 6pt;
+  margin-top: 10pt;
+  margin-bottom: 2pt;
   flex-wrap: wrap;
   break-after: avoid;
   page-break-after: avoid;
@@ -281,22 +268,22 @@
 
 .cv-exp-role-block {
   border-left: 2.5pt solid var(--teal);
-  padding-left: 10pt;
-  margin-bottom: 8pt;
-  margin-top: 3pt;
+  padding-left: 9pt;
+  margin-bottom: 5pt;
+  margin-top: 2pt;
 }
 
 .cv-exp-role {
   font-size: 9pt;
   font-weight: 300;
   font-style: italic;
-  margin: 0 0 4pt;
+  margin: 0 0 3pt;
 }
 
 .cv-bullet {
   display: flex;
   align-items: baseline;
-  margin-bottom: 3pt;
+  margin-bottom: 2.5pt;
   font-size: 9pt;
 }
 
@@ -311,22 +298,22 @@
 
 /* ── Education ──────────────────────────────────────────────────── */
 .cv-edu-block {
-  margin-bottom: 9pt;
+  margin-bottom: 7pt;
 }
 
 .cv-edu-school {
   font-size: 9.5pt;
   font-weight: 700;
-  margin: 0 0 2pt;
+  margin: 0 0 1pt;
   break-after: avoid;
   page-break-after: avoid;
 }
 
 .cv-edu-detail-block {
   border-left: 2.5pt solid var(--teal);
-  padding-left: 10pt;
-  margin-top: 3pt;
-  margin-bottom: 4pt;
+  padding-left: 9pt;
+  margin-top: 2pt;
+  margin-bottom: 2pt;
 }
 
 .cv-edu-detail {
@@ -373,7 +360,7 @@
   font-size: 7.5pt;
   font-style: italic;
   color: var(--gray);
-  margin-top: 24pt;
+  margin: 0;
 }
 
 /* ── Print ──────────────────────────────────────────────────────── */
@@ -400,7 +387,7 @@
     width: 210mm;
     min-height: auto;
     box-shadow: none;
-    padding: 16mm 18mm 20mm;
+    padding: 32pt 44pt 46pt;
   }
 
   .cv-project {

@@ -37,7 +37,6 @@ import {
   getTrackingLinksForApplication,
 } from '../lib/db';
 import { getCVDataById, prepareTrackedCV, collectCvLinks } from '../lib/generateCV';
-import { startPaperGhost, endPaperGhost } from '../lib/paperDragGhost';
 import { normalizeUrlKey } from '../lib/trackUrl';
 import { CVTemplate } from '../templates/cv/CVTemplate';
 import { CVHtml } from '../templates/cv/CVHtml';
@@ -152,6 +151,10 @@ export function ApplicationsPage() {
   const { confirm, ConfirmDialog } = useConfirm();
   const [draggedApp, setDraggedApp] = useState<JobApplication | null>(null);
   const [dragOverStatus, setDragOverStatus] = useState<ApplicationStatus | null>(null);
+  // Karta, która właśnie zmieniła status — wjeżdża do nowej kolumny i chwilę
+  // się podświetla, żeby nie zgubić jej wśród innych po przełożeniu.
+  const [justMoved, setJustMoved] = useState<{ id: string; direction: 'left' | 'right' } | null>(null);
+  const justMovedTimeoutRef = useRef<number | null>(null);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const filtersRef = useRef<HTMLDivElement>(null);
 
@@ -505,6 +508,15 @@ export function ApplicationsPage() {
     );
 
   const handleStatusChange = (app: JobApplication, newStatus: ApplicationStatus, skipInterviewPrompt = false) => {
+    if (app.status !== newStatus) {
+      const direction: 'left' | 'right' =
+        kanbanColumns.indexOf(newStatus) > kanbanColumns.indexOf(app.status) ? 'right' : 'left';
+      setExpandedId(id => (id === app.id ? null : id));
+      setJustMoved({ id: app.id, direction });
+      if (justMovedTimeoutRef.current) window.clearTimeout(justMovedTimeoutRef.current);
+      justMovedTimeoutRef.current = window.setTimeout(() => setJustMoved(null), 1600);
+    }
+
     dispatch({
       type: 'UPDATE_APPLICATION',
       payload: {
@@ -523,24 +535,15 @@ export function ApplicationsPage() {
     setExpandedId(expandedId === id ? null : id);
   };
 
-  // Drag & drop handlers - używamy dataTransfer.setData dla niezawodności
+  // Drag & drop — proste natywne DnD (bez customowego "duszka" z fizyką,
+  // który utrudniał złapanie karty); przeglądarka rysuje domyślny obraz
+  // przeciągania, wizualną informację zwrotną daje tylko opacity/ring.
   const handleDragStart = (e: React.DragEvent, app: JobApplication) => {
     setDraggedApp(app);
-    e.dataTransfer.setData('application/json', JSON.stringify(app));
-    e.dataTransfer.setData('text/plain', app.id);
     e.dataTransfer.effectAllowed = 'move';
-    startPaperGhost(e, e.currentTarget as HTMLElement);
-    // Dodaj nieco opóźnienia żeby element był widoczny podczas przeciągania
-    const target = e.currentTarget as HTMLElement;
-    requestAnimationFrame(() => {
-      target.style.opacity = '0.5';
-    });
   };
 
-  const handleDragEnd = (e: React.DragEvent) => {
-    const target = e.currentTarget as HTMLElement;
-    target.style.opacity = '1';
-    endPaperGhost();
+  const handleDragEnd = () => {
     setDraggedApp(null);
     setDragOverStatus(null);
   };
@@ -566,12 +569,8 @@ export function ApplicationsPage() {
     e.preventDefault();
     e.stopPropagation();
 
-    // Pobierz dane z dataTransfer jako backup
-    const appId = e.dataTransfer.getData('text/plain');
-    const appToMove = draggedApp || state.applications.find(a => a.id === appId);
-
-    if (appToMove && appToMove.status !== newStatus) {
-      handleStatusChange(appToMove, newStatus);
+    if (draggedApp && draggedApp.status !== newStatus) {
+      handleStatusChange(draggedApp, newStatus);
     }
     setDraggedApp(null);
     setDragOverStatus(null);
@@ -581,6 +580,7 @@ export function ApplicationsPage() {
   const ApplicationCard = ({ app, compact = false, draggable = false }: { app: JobApplication; compact?: boolean; draggable?: boolean }) => {
     const isExpanded = expandedId === app.id;
     const interviews = state.interviews.filter((i) => i.applicationId === app.id);
+    const moveInfo = justMoved?.id === app.id ? justMoved : null;
 
     const handleExpandClick = (e: React.MouseEvent) => {
       e.stopPropagation();
@@ -588,7 +588,12 @@ export function ApplicationsPage() {
     };
 
     const cardContent = (
-      <Card fold className="group">
+      <Card
+        fold
+        className={`group transition-shadow duration-700 ${
+          moveInfo ? (moveInfo.direction === 'right' ? 'animate-kanban-enter-right' : 'animate-kanban-enter-left') : ''
+        } ${moveInfo ? 'shadow-[0_0_0_2px_#06b6d4,0_0_18px_rgba(6,182,212,0.35)]' : 'shadow-none'}`}
+      >
         <div className="p-0">
           {/* Główna sekcja - klikalna aby rozwinąć */}
           <div
@@ -680,9 +685,12 @@ export function ApplicationsPage() {
             )}
           </div>
 
-          {/* Rozwinięte szczegóły — płynnie rozwijane i zwijane (grid-rows 0fr↔1fr) */}
+          {/* Rozwinięte szczegóły — płynnie rozwijane i zwijane (grid-rows 0fr↔1fr),
+              plus scale/opacity jak w animate-unfold-card, żeby wyglądało tak samo
+              jak rozwijanie przycisku "+" — działa w obie strony, bo to transition,
+              nie jednokierunkowy keyframe. */}
           <div className={`grid transition-[grid-template-rows] duration-200 ease-out ${isExpanded ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
-            <div className="overflow-hidden">
+            <div className={`overflow-hidden origin-top transition-[transform,opacity] duration-200 ease-out ${isExpanded ? 'scale-y-100 opacity-100' : 'scale-y-[0.35] opacity-40'}`}>
             <div className="px-4 pb-4 border-t border-dark-600">
               {/* Szybka zmiana statusu */}
               <div className="mt-3 mb-3">
@@ -801,7 +809,7 @@ export function ApplicationsPage() {
           draggable
           onDragStart={(e) => handleDragStart(e, app)}
           onDragEnd={handleDragEnd}
-          className="cursor-grab active:cursor-grabbing"
+          className={`cursor-grab active:cursor-grabbing transition-opacity ${draggedApp?.id === app.id ? 'opacity-40' : ''}`}
         >
           {cardContent}
         </div>
@@ -1000,8 +1008,10 @@ export function ApplicationsPage() {
                   >
                     {applicationsByStatus[status].length === 0 && dragOverStatus !== status ? (
                       <div className="flex flex-col gap-1">
-                        <div className="w-full py-6 border-2 border-dashed border-dark-600 flex items-center justify-center">
-                          <span className="text-xs text-slate-500">Brak aplikacji</span>
+                        {/* min-h dopasowany do wysokości jednej karty (compact) — żeby
+                            przycisk "+" wypadał w tym samym miejscu co w kolumnach z treścią */}
+                        <div className="w-full min-h-[86px] border-2 border-dashed border-dark-600 flex items-center justify-center">
+                          <span className="text-xs text-slate-400">Brak aplikacji</span>
                         </div>
                         {renderInlineAdd(status)}
                       </div>
@@ -1144,7 +1154,7 @@ export function ApplicationsPage() {
                 <p className="text-xs text-danger-400 bg-danger-500/10 px-3 py-2 whitespace-pre-wrap">{pdfError}</p>
               )}
 
-              <p className="text-[11px] text-slate-500">
+              <p className="text-[11px] text-slate-400">
                 Generuje CV z linkami śledzącymi dla tej aplikacji.
               </p>
             </div>

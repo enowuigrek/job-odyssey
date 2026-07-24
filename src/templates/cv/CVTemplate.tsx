@@ -357,7 +357,7 @@ export function CVTemplate({ data }: CVTemplateProps) {
           <React.Fragment key={key}>
             {key === 'profile' && (
               <>
-                <SectionHeader title={(data.profileTitle || 'PROFIL').toUpperCase()} />
+                <SectionHeader title={(data.profileTitle || 'OPIS').toUpperCase()} />
                 <Text style={s.body}>{data.profile}</Text>
                 {data.showApproach !== false && data.approach ? (
                   <>

@@ -96,7 +96,7 @@ export function LinksPage() {
 
         {/* Dodaj nowy link */}
         <div className="bg-dark-700/40 p-3 border border-dashed border-dark-600 space-y-2">
-          <p className="text-xs text-slate-500">Dodaj link do CV</p>
+          <p className="text-xs text-slate-400">Dodaj link do CV</p>
           <div className="flex gap-2">
             <select
               value={newLink.type}

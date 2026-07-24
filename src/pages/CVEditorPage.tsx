@@ -361,15 +361,18 @@ export function CVEditorPage() {
     autoFilledProfile.current = true;
     setData(d => ({
       ...d,
-      name: profile.name || d.name,
+      // Bez profilu zostawiamy PUSTE pola zamiast przykładowych danych z
+      // defaultCVData (fikcyjne imię/firma/uczelnia) — łatwo by je przeoczyć
+      // i wysłać CV z cudzymi danymi kontaktowymi.
+      name: profile.name || '',
       contact: {
         ...d.contact,
-        location: profile.location || d.contact.location,
-        phone: profile.phone || d.contact.phone,
-        email: profile.email || user?.email || d.contact.email,
+        location: profile.location || '',
+        phone: profile.phone || '',
+        email: profile.email || user?.email || '',
         links: profile.links.length > 0
           ? profile.links.map(l => ({ label: l.label, url: l.url }))
-          : d.contact.links,
+          : [],
       },
       experience: experiences.length > 0
         ? experiences.map(e => ({
@@ -377,15 +380,15 @@ export function CVEditorPage() {
             companyLink: e.company_link,
             roles: e.roles.map(r => ({ title: r.title, years: r.years ?? '', bullets: r.bullets })),
           }))
-        : d.experience,
+        : [],
       education: profileEducation.length > 0
         ? profileEducation.map(e => ({ school: e.school, degree: e.degree, years: e.years }))
-        : d.education,
+        : [],
       certificates: profileCertificates.length > 0
         ? profileCertificates.map(c => ({ name: c.name, issuer: c.issuer, year: c.year, url: c.file_url }))
         : d.certificates,
       showCertificates: profileCertificates.length > 0 ? true : d.showCertificates,
-      interests: profile.interests ? normalizeInterests(profile.interests) : d.interests,
+      interests: profile.interests ? normalizeInterests(profile.interests) : [],
       rodo: profile.rodo || d.rodo,
     }));
   }, [profile, experiences, profileEducation, profileCertificates, profileLoading, user, editCvId, DRAFT_KEY]);
@@ -566,7 +569,7 @@ export function CVEditorPage() {
       {/* ── Profil ───────────────────────────────────────────────────── */}
       <DraggableSection order={orderOf('profile')} dragProps={sectionDrag.getItemProps(orderOf('profile'))} expanded={!collapsed['profile']}>
         <SectionHeading
-          title={data.profileTitle || 'Profil'}
+          title={data.profileTitle || 'Opis'}
           onRename={v => set({ profileTitle: v })}
           collapsed={collapsed['profile']}
           onToggleCollapse={() => toggle('profile')}
@@ -893,7 +896,7 @@ export function CVEditorPage() {
       />
       {!collapsed['custom'] && (
         <div className="px-4 pb-4">
-          <p className="text-xs text-slate-500 mb-3">Dowolne sekcje z własnym nagłówkiem — np. Języki, Wolontariat, Osiągnięcia.</p>
+          <p className="text-xs text-slate-400 mb-3">Dowolne sekcje z własnym nagłówkiem — np. Języki, Wolontariat, Osiągnięcia.</p>
           {(data.customSections ?? []).map((sec, si) => (
             <ItemCard key={sec.id} onRemove={() => set({ customSections: removeAt(data.customSections ?? [], si) })}>
               <div className="space-y-2 pr-6">

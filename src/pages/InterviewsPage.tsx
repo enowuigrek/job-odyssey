@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useCallback } from 'react';
+import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { useSearchParams, useNavigate, useLocation } from 'react-router-dom';
 import {
   Plus,
@@ -19,7 +19,6 @@ import {
 import { useApp } from '../contexts/AppContext';
 import { KanbanStatusTabs } from '../components/kanban/KanbanStatusTabs';
 import { useKanbanCarousel } from '../hooks/useKanbanCarousel';
-import { startPaperGhost, endPaperGhost } from '../lib/paperDragGhost';
 import {
   Button,
   Input,
@@ -62,6 +61,10 @@ export function InterviewsPage() {
   const { confirm, ConfirmDialog } = useConfirm();
   const [draggedInterview, setDraggedInterview] = useState<Interview | null>(null);
   const [dragOverStatus, setDragOverStatus] = useState<InterviewStatus | null>(null);
+  // Karta, która właśnie zmieniła status — wjeżdża do nowej kolumny i chwilę
+  // się podświetla, żeby nie zgubić jej wśród innych po przełożeniu.
+  const [justMoved, setJustMoved] = useState<{ id: string; direction: 'left' | 'right' } | null>(null);
+  const justMovedTimeoutRef = useRef<number | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [filtersOpen, setFiltersOpen] = useState(false);
 
@@ -344,6 +347,15 @@ export function InterviewsPage() {
     );
 
   const handleStatusChange = (interview: Interview, newStatus: InterviewStatus) => {
+    if (interview.status !== newStatus) {
+      const direction: 'left' | 'right' =
+        kanbanColumns.indexOf(newStatus) > kanbanColumns.indexOf(interview.status) ? 'right' : 'left';
+      setExpandedId(id => (id === interview.id ? null : id));
+      setJustMoved({ id: interview.id, direction });
+      if (justMovedTimeoutRef.current) window.clearTimeout(justMovedTimeoutRef.current);
+      justMovedTimeoutRef.current = window.setTimeout(() => setJustMoved(null), 1600);
+    }
+
     dispatch({
       type: 'UPDATE_INTERVIEW',
       payload: {
@@ -353,23 +365,15 @@ export function InterviewsPage() {
     });
   };
 
-  // Drag & drop handlers - używamy dataTransfer.setData dla niezawodności
+  // Drag & drop — proste natywne DnD (bez customowego "duszka" z fizyką,
+  // który utrudniał złapanie karty); przeglądarka rysuje domyślny obraz
+  // przeciągania, wizualną informację zwrotną daje tylko opacity/ring.
   const handleDragStart = (e: React.DragEvent, interview: Interview) => {
     setDraggedInterview(interview);
-    e.dataTransfer.setData('application/json', JSON.stringify(interview));
-    e.dataTransfer.setData('text/plain', interview.id);
     e.dataTransfer.effectAllowed = 'move';
-    startPaperGhost(e, e.currentTarget as HTMLElement);
-    const target = e.currentTarget as HTMLElement;
-    requestAnimationFrame(() => {
-      target.style.opacity = '0.5';
-    });
   };
 
-  const handleDragEnd = (e: React.DragEvent) => {
-    const target = e.currentTarget as HTMLElement;
-    target.style.opacity = '1';
-    endPaperGhost();
+  const handleDragEnd = () => {
     setDraggedInterview(null);
     setDragOverStatus(null);
   };
@@ -394,11 +398,8 @@ export function InterviewsPage() {
     e.preventDefault();
     e.stopPropagation();
 
-    const interviewId = e.dataTransfer.getData('text/plain');
-    const interviewToMove = draggedInterview || state.interviews.find(i => i.id === interviewId);
-
-    if (interviewToMove && interviewToMove.status !== newStatus) {
-      handleStatusChange(interviewToMove, newStatus);
+    if (draggedInterview && draggedInterview.status !== newStatus) {
+      handleStatusChange(draggedInterview, newStatus);
     }
     setDraggedInterview(null);
     setDragOverStatus(null);
@@ -410,6 +411,7 @@ export function InterviewsPage() {
     const interviewDate = parseISO(interview.scheduledDate);
     const isExpanded = expandedId === interview.id;
     const isTodayInterview = isToday(interviewDate) && interview.status === 'scheduled';
+    const moveInfo = justMoved?.id === interview.id ? justMoved : null;
 
     const handleExpandClick = (e: React.MouseEvent) => {
       e.stopPropagation();
@@ -417,7 +419,12 @@ export function InterviewsPage() {
     };
 
     const cardContent = (
-      <Card fold className={`group ${isTodayInterview ? 'ring-2 ring-warning-400 bg-warning-500/10' : ''}`}>
+      <Card
+        fold
+        className={`group transition-shadow duration-700 ${isTodayInterview ? 'ring-2 ring-warning-400 bg-warning-500/10' : ''} ${
+          moveInfo ? (moveInfo.direction === 'right' ? 'animate-kanban-enter-right' : 'animate-kanban-enter-left') : ''
+        } ${moveInfo ? 'shadow-[0_0_0_2px_#06b6d4,0_0_18px_rgba(6,182,212,0.35)]' : 'shadow-none'}`}
+      >
         <div className="p-0">
           {/* Główna sekcja - klikalna aby rozwinąć */}
           <div
@@ -506,9 +513,12 @@ export function InterviewsPage() {
             )}
           </div>
 
-          {/* Rozwinięte szczegóły — płynnie rozwijane i zwijane (grid-rows 0fr↔1fr) */}
+          {/* Rozwinięte szczegóły — płynnie rozwijane i zwijane (grid-rows 0fr↔1fr),
+              plus scale/opacity jak w animate-unfold-card, żeby wyglądało tak samo
+              jak rozwijanie przycisku "+" — działa w obie strony, bo to transition,
+              nie jednokierunkowy keyframe. */}
           <div className={`grid transition-[grid-template-rows] duration-200 ease-out ${isExpanded ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
-            <div className="overflow-hidden">
+            <div className={`overflow-hidden origin-top transition-[transform,opacity] duration-200 ease-out ${isExpanded ? 'scale-y-100 opacity-100' : 'scale-y-[0.35] opacity-40'}`}>
             <div className="px-3 pb-3 border-t border-dark-600">
               {/* Szybka zmiana statusu */}
               <div className="mt-3 mb-3">
@@ -614,7 +624,7 @@ export function InterviewsPage() {
           draggable
           onDragStart={(e) => handleDragStart(e, interview)}
           onDragEnd={handleDragEnd}
-          className="cursor-grab active:cursor-grabbing"
+          className={`cursor-grab active:cursor-grabbing transition-opacity ${draggedInterview?.id === interview.id ? 'opacity-40' : ''}`}
         >
           {cardContent}
         </div>
@@ -662,7 +672,7 @@ export function InterviewsPage() {
       </div>
 
       {state.applications.length === 0 && (
-        <p className="text-sm text-slate-500 px-1 py-3">
+        <p className="text-sm text-slate-400 px-1 py-3">
           Najpierw dodaj aplikację, żeby móc dodać rozmowę kwalifikacyjną.
         </p>
       )}
@@ -819,8 +829,10 @@ export function InterviewsPage() {
                   >
                     {interviewsByStatus[status].length === 0 && dragOverStatus !== status ? (
                       <div className={`flex flex-col gap-1 ${state.applications.length === 0 ? 'opacity-40' : ''}`}>
-                        <div className="w-full py-6 border-2 border-dashed border-dark-600 flex items-center justify-center">
-                          <span className="text-xs text-slate-500">Brak rozmów</span>
+                        {/* min-h dopasowany do wysokości jednej karty (compact) — żeby
+                            przycisk "+" wypadał w tym samym miejscu co w kolumnach z treścią */}
+                        <div className="w-full min-h-[86px] border-2 border-dashed border-dark-600 flex items-center justify-center">
+                          <span className="text-xs text-slate-400">Brak rozmów</span>
                         </div>
                         {renderInlineAdd(status)}
                       </div>

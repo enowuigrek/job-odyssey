@@ -23,6 +23,7 @@ export function TextInput({
   onChange,
   placeholder,
   className = '',
+  light = false,
 }: {
   value: string;
   onChange: (v: string) => void;
@@ -35,7 +36,7 @@ export function TextInput({
       value={value}
       onChange={e => onChange(e.target.value)}
       placeholder={placeholder}
-      className={`w-full px-3 py-1.5 bg-dark-900 text-white text-sm placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-primary-500 ${className}`}
+      className={`w-full px-3 py-1.5 bg-dark-900 text-white text-sm placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-primary-500 ${light ? 'font-light' : ''} ${className}`}
     />
   );
 }
@@ -59,13 +60,17 @@ function formatYearRange(from: string, to: string): string {
 export function YearRangePicker({
   value,
   onChange,
+  light = false,
 }: {
   value: string;
   onChange: (v: string) => void;
   light?: boolean;
 }) {
   const { from, to } = parseYearRange(value);
-  const selectClass = `px-2 py-1.5 bg-dark-900 text-white text-sm focus:outline-none focus:ring-1 focus:ring-primary-500 cursor-pointer`;
+  // h-8 wymusza tę samą wysokość co input (32px) — <select> ignoruje line-height
+  // przy liczeniu wysokości zamkniętej kontrolki (natywny box modelu przeglądarki),
+  // więc samo dopasowanie paddingu/line-height do inputu nie wystarczało.
+  const selectClass = `h-8 px-2 py-1.5 bg-dark-900 text-white text-sm ${light ? 'font-light' : ''} focus:outline-none focus:ring-1 focus:ring-primary-500 cursor-pointer`;
 
   return (
     <div className="flex items-center gap-2">
@@ -96,6 +101,7 @@ export function TextArea({
   onChange,
   placeholder,
   rows = 4,
+  light = false,
 }: {
   value: string;
   onChange: (v: string) => void;
@@ -112,7 +118,7 @@ export function TextArea({
       onChange={e => onChange(e.target.value)}
       placeholder={placeholder}
       rows={rows}
-      className={`w-full px-3 py-2 bg-dark-900 text-white text-sm placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-primary-500 resize-none overflow-hidden`}
+      className={`w-full px-3 py-2 bg-dark-900 text-white text-sm placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-primary-500 resize-none overflow-hidden ${light ? 'font-light' : ''}`}
     />
   );
 }
@@ -125,6 +131,7 @@ interface LabelUrl {
 export function LinksEditor<T extends LabelUrl>({
   links,
   onChange,
+  light = false,
 }: {
   links: T[];
   onChange: (links: T[]) => void;
@@ -138,13 +145,13 @@ export function LinksEditor<T extends LabelUrl>({
             value={link.label}
             onChange={e => onChange(updateAt(links, i, { ...link, label: e.target.value }))}
             placeholder="Etykieta"
-            className={`w-28 px-2 py-1.5 bg-dark-900 text-white text-sm placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-primary-500 flex-shrink-0`}
+            className={`w-28 px-2 py-1.5 bg-dark-900 text-white text-sm placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-primary-500 flex-shrink-0 ${light ? 'font-light' : ''}`}
           />
           <input
             value={link.url}
             onChange={e => onChange(updateAt(links, i, { ...link, url: e.target.value }))}
             placeholder="https://..."
-            className={`flex-1 px-2 py-1.5 bg-dark-900 text-white text-sm placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-primary-500 min-w-0`}
+            className={`flex-1 px-2 py-1.5 bg-dark-900 text-white text-sm placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-primary-500 min-w-0 ${light ? 'font-light' : ''}`}
           />
           <button
             type="button"
@@ -166,10 +173,12 @@ function BulletRow({
   bullet,
   onChange,
   onRemove,
+  light = false,
 }: {
   bullet: string;
   onChange: (v: string) => void;
   onRemove: () => void;
+  light?: boolean;
 }) {
   const ref = useAutoResizeTextarea(bullet);
 
@@ -182,7 +191,7 @@ function BulletRow({
         onChange={e => onChange(e.target.value)}
         rows={1}
         placeholder="Opis..."
-        className={`flex-1 px-2 py-1.5 bg-dark-900 text-white text-sm placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-primary-500 resize-none overflow-hidden min-w-0`}
+        className={`flex-1 px-2 py-1.5 bg-dark-900 text-white text-sm placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-primary-500 resize-none overflow-hidden min-w-0 ${light ? 'font-light' : ''}`}
       />
       <button
         type="button"
@@ -198,6 +207,7 @@ function BulletRow({
 export function BulletsEditor({
   bullets,
   onChange,
+  light = false,
 }: {
   bullets: string[];
   onChange: (b: string[]) => void;
@@ -211,6 +221,7 @@ export function BulletsEditor({
           bullet={bullet}
           onChange={v => onChange(updateAt(bullets, i, v))}
           onRemove={() => onChange(removeAt(bullets, i))}
+          light={light}
         />
       ))}
       <Button variant="primary" size="sm" type="button" onClick={() => onChange([...bullets, ''])} className="mt-1">
@@ -226,6 +237,7 @@ export function TagListEditor({
   onChange,
   addLabel,
   placeholder,
+  light = false,
 }: {
   items: string[];
   onChange: (items: string[]) => void;
@@ -241,7 +253,7 @@ export function TagListEditor({
             value={item}
             onChange={e => onChange(updateAt(items, i, e.target.value))}
             placeholder={placeholder}
-            className={`flex-1 px-2 py-1.5 bg-dark-900 text-white text-sm placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-primary-500 min-w-0`}
+            className={`flex-1 px-2 py-1.5 bg-dark-900 text-white text-sm placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-primary-500 min-w-0 ${light ? 'font-light' : ''}`}
           />
           <button
             type="button"

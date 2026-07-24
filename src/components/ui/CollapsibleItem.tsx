@@ -66,9 +66,10 @@ export function CollapsibleItem({
       data-drag-list={dataDragList}
       data-drag-index={dataDragIndex}
     >
-      {/* pr-8 po rozwinięciu — ikony nie wjeżdżają w zagięty róg kartki */}
+      {/* pr-8 zawsze (nie tylko po rozwinięciu) — inaczej kosz skacze w bok przy
+          otwieraniu/zamykaniu, bo zmieniałby się dostępny padding rzędu */}
       <div
-        className={`flex items-center gap-2 pl-3 py-2.5 cursor-pointer select-none ${open ? 'pr-8' : 'pr-3'}`}
+        className="flex items-center gap-2 pl-3 py-2.5 pr-8 cursor-pointer select-none"
         onClick={() => setOpen(v => !v)}
       >
         {draggable && (
@@ -89,7 +90,7 @@ export function CollapsibleItem({
             onChange={e => onLabelChange(e.target.value)}
             onClick={e => e.stopPropagation()}
             placeholder={labelPlaceholder ?? 'Nazwa'}
-            className="flex-1 min-w-0 bg-transparent text-sm font-semibold text-white placeholder-slate-500 focus:outline-none border-b border-transparent focus:border-primary-500"
+            className="flex-1 min-w-0 bg-dark-900 px-2 py-0.5 text-sm font-semibold text-white placeholder-slate-500 focus:outline-none"
           />
         ) : (
           <span className="text-sm font-semibold text-white flex-1 truncate">

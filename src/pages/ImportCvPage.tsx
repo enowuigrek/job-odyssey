@@ -214,7 +214,7 @@ export function ImportCvPage() {
 
       {status !== 'review' && status !== 'saving' && (
         <div className="fold-card bg-dark-800 p-4 space-y-4">
-          <p className="text-xs text-slate-500 font-light">
+          <p className="text-xs text-slate-400 font-light">
             Wgraj plik PDF ze swoim CV — AI spróbuje wypełnić nim Twój profil kandydata. Zanim cokolwiek się zapisze, zobaczysz i będziesz mógł/mogła poprawić wykryte dane.
           </p>
           <input
@@ -233,7 +233,7 @@ export function ImportCvPage() {
             {status === 'reading' ? 'Odczytuję plik…' : status === 'analyzing' ? 'Analizuję CV z AI…' : 'Wybierz plik PDF'}
           </Button>
           {status === 'analyzing' && (
-            <p className="text-xs text-slate-500 font-light">To może potrwać do minuty przy bogatym CV — nie zamykaj tej strony.</p>
+            <p className="text-xs text-slate-400 font-light">To może potrwać do minuty przy bogatym CV — nie zamykaj tej strony.</p>
           )}
           {error && <p className="text-sm text-danger-400">{error}</p>}
         </div>

@@ -398,7 +398,7 @@ export function TrackingLinksModal({ isOpen, onClose, application, onFirstClick 
                 <div className="py-6 text-center">
                   <MousePointerClick className="w-10 h-10 text-slate-600 mx-auto mb-3" />
                   <p className="text-slate-400">Brak kliknięć</p>
-                  <p className="text-sm text-slate-500 mt-1">
+                  <p className="text-sm text-slate-400 mt-1">
                     Pobierz otagowany PDF i wyślij rekruterowi.<br />
                     Otwórz link w przeglądarce (ikona <ExternalLink className="w-3 h-3 inline" /> w zakładce Linki) żeby przetestować.
                   </p>
@@ -453,7 +453,7 @@ export function TrackingLinksModal({ isOpen, onClose, application, onFirstClick 
 
                   {/* Timeline kliknięć */}
                   <div className="mt-4 pt-4 border-t border-dark-600">
-                    <p className="text-xs text-slate-500 mb-2">Historia kliknięć:</p>
+                    <p className="text-xs text-slate-400 mb-2">Historia kliknięć:</p>
                     <div className="space-y-1">
                       {clicks.map(click => {
                         const link = existingLinks.find(l => l.token === click.token);

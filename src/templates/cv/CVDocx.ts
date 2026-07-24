@@ -131,7 +131,7 @@ export async function buildCVDocx(data: CVData): Promise<Blob> {
   for (const key of getSectionOrder(data)) {
     switch (key) {
       case 'profile':
-        children.push(sectionHeader((data.profileTitle || 'PROFIL').toUpperCase()));
+        children.push(sectionHeader((data.profileTitle || 'OPIS').toUpperCase()));
         children.push(new Paragraph({
           children: [run(data.profile, { size: 18 })],
           spacing: { after: 100 },
