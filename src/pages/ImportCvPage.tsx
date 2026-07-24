@@ -91,9 +91,18 @@ export function ImportCvPage() {
         return;
       }
     } catch (e) {
-      console.error(e);
+      // pdfjs-dist rzuca typowane wyjątki (e.name) — rozróżniamy najczęstsze
+      // realne przypadki zamiast jednego niemówiącego nic komunikatu.
+      const name = e instanceof Error ? e.name : '';
+      console.error('[import-cv] PDF extraction failed', name, e);
       setStatus('error');
-      setError('Nie udało się odczytać pliku PDF.');
+      if (name === 'PasswordException') {
+        setError('Ten plik PDF jest zabezpieczony hasłem — usuń hasło i spróbuj ponownie.');
+      } else if (name === 'InvalidPDFException') {
+        setError('Ten plik nie jest prawidłowym PDF-em (może być uszkodzony).');
+      } else {
+        setError('Nie udało się odczytać pliku PDF — spróbuj ponownie albo innego pliku.');
+      }
       return;
     }
 
