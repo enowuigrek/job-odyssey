@@ -2,7 +2,7 @@ import { useState, useEffect, createElement, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import type { ReactElement } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Plus, Trash2, Save, Eye, EyeOff, ArrowLeft, FileEdit, Pencil, Check, Loader2, ChevronDown, ChevronRight, Database, GripVertical, X } from 'lucide-react';
+import { Plus, Trash2, Save, Eye, EyeOff, ArrowLeft, FileEdit, Pencil, Check, Loader2, ChevronDown, ChevronRight, Database, GripVertical, X, Columns2 } from 'lucide-react';
 import { pdf } from '@react-pdf/renderer';
 import type { DocumentProps } from '@react-pdf/renderer';
 import { Button, PageHeader, CollapsibleItem, Checkbox, Modal } from '../components/ui';
@@ -336,6 +336,10 @@ export function CVEditorPage() {
   const [draftSaved, setDraftSaved] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
+  // Widok dzielony (beta, na razie opcjonalny) — formularz i podgląd obok siebie zamiast na zmianę
+  const [splitView, setSplitView] = useState(false);
+  const formVisible = !showPreview || splitView;
+  const previewVisible = showPreview || splitView;
   const [limitError, setLimitError] = useState<string | null>(null);
   const [showSaveAsModal, setShowSaveAsModal] = useState(false);
   const [saveAsName, setSaveAsName] = useState('');
@@ -488,8 +492,8 @@ export function CVEditorPage() {
   const handlePreview = () => setShowPreview(v => !v);
 
   return (
-    <div className={showPreview ? 'pb-20' : 'flex flex-col gap-3 pb-28'}>
-      {!showPreview && (
+    <div className={splitView ? 'flex flex-col md:flex-row gap-4 items-start pb-24' : showPreview ? 'pb-20' : 'flex flex-col gap-3 pb-28'}>
+      {formVisible && (<div className={splitView ? 'w-full md:w-[320px] shrink-0 flex flex-col gap-3' : 'contents'}>
       <PageHeader
         icon={FileEdit}
         title={editCvId ? 'Edytuj CV' : 'Nowe CV'}
@@ -502,9 +506,7 @@ export function CVEditorPage() {
           </button>
         }
       />
-      )}
 
-      {!showPreview && (<>
       {/* CV name — required */}
       <div className="bg-dark-800 p-4">
         <FieldLabel>Nazwa CV (widoczna w Bazie CV) *</FieldLabel>
@@ -971,10 +973,14 @@ export function CVEditorPage() {
         )}
       </div>
 
-      </>)}
+      </div>)}
 
       {/* ── Preview ───────────────────────────────────────────────────── */}
-      {showPreview && <CVHtml data={data} preview />}
+      {previewVisible && (
+        <div className={splitView ? 'flex-1 min-w-0 w-full overflow-x-auto' : undefined}>
+          <CVHtml data={data} preview />
+        </div>
+      )}
 
       {/* ── Limit wersji próbnej ─────────────────────────────────────────── */}
       {limitError && (
@@ -993,14 +999,27 @@ export function CVEditorPage() {
         <span className="text-sm text-slate-400 flex-1 truncate hidden sm:block">
           {cvName || <span className="text-slate-600">Brak nazwy CV</span>}
         </span>
-        {/* Podgląd */}
+        {/* Widok dzielony (beta) — formularz i podgląd obok siebie, tylko desktop */}
         <button
-          onClick={handlePreview}
-          className="fold-btn flex items-center gap-1.5 px-3 py-2 bg-dark-700 text-slate-300 text-sm transition-colors cursor-pointer"
+          onClick={() => setSplitView(v => !v)}
+          title="Widok dzielony — formularz i podgląd obok siebie (beta)"
+          className={`fold-btn hidden md:flex items-center gap-1.5 px-3 py-2 text-sm transition-colors cursor-pointer ${
+            splitView ? 'bg-primary-500/20 text-primary-400' : 'bg-dark-700 text-slate-300'
+          }`}
         >
-          {showPreview ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-          <span className="hidden sm:inline">{showPreview ? 'Zamknij' : 'Podgląd'}</span>
+          <Columns2 className="w-4 h-4" />
+          <span className="hidden lg:inline">Widok dzielony</span>
         </button>
+        {/* Podgląd */}
+        {!splitView && (
+          <button
+            onClick={handlePreview}
+            className="fold-btn flex items-center gap-1.5 px-3 py-2 bg-dark-700 text-slate-300 text-sm transition-colors cursor-pointer"
+          >
+            {showPreview ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+            <span className="hidden sm:inline">{showPreview ? 'Zamknij' : 'Podgląd'}</span>
+          </button>
+        )}
         {/* Zapisz szkic */}
         <button
           onClick={handleDraftSave}
