@@ -22,6 +22,7 @@ import { useProfile } from '../hooks/useProfile';
 import { useAuth } from '../contexts/AuthContext';
 import { useApp } from '../contexts/AppContext';
 import { useUserSettings } from '../contexts/UserSettingsContext';
+import { useSidebar } from '../contexts/SidebarContext';
 import { useDragReorder } from '../hooks/useDragReorder';
 import { updateAt, removeAt, moveAt } from '../utils/array';
 import { TRIAL_CV_LIMIT, TRIAL_LIMIT_MESSAGE_CV } from '../lib/planLimits';
@@ -343,6 +344,10 @@ export function CVEditorPage() {
   // Kolumna formularza w widoku dzielonym jest za wąska na 2-3 kolumny — zwijamy do jednej
   const gridCols2 = splitView ? 'grid-cols-1' : 'grid-cols-1 md:grid-cols-2';
   const gridCols3 = splitView ? 'grid-cols-1' : 'grid-cols-1 md:grid-cols-3';
+
+  // Fixed paski na dole muszą dopasować się do realnej szerokości sidebara (w-64/w-16)
+  const { collapsed: sidebarCollapsed } = useSidebar();
+  const fixedBarLeft = sidebarCollapsed ? 'md:left-16' : 'md:left-64';
   const [limitError, setLimitError] = useState<string | null>(null);
   const [showSaveAsModal, setShowSaveAsModal] = useState(false);
   const [saveAsName, setSaveAsName] = useState('');
@@ -987,7 +992,7 @@ export function CVEditorPage() {
 
       {/* ── Limit wersji próbnej ─────────────────────────────────────────── */}
       {limitError && (
-        <div className="fixed bottom-14 left-0 right-0 md:left-64 px-4 z-40">
+        <div className={`fixed bottom-14 left-0 right-0 ${fixedBarLeft} px-4 z-40`}>
           <div className="bg-warning-500/10 border border-warning-500/30 text-warning-300 text-sm px-4 py-2 flex items-center justify-between gap-3">
             <span>{limitError}</span>
             <button onClick={() => setLimitError(null)} className="text-warning-400 hover:text-warning-300 transition-colors cursor-pointer flex-shrink-0">
@@ -998,7 +1003,7 @@ export function CVEditorPage() {
       )}
 
       {/* ── Bottom bar (always visible) ────────────────────────────────── */}
-      <div className="fixed bottom-0 left-0 right-0 md:left-64 bg-dark-900 border-t border-dark-700 px-4 py-3 flex items-center gap-2 z-40">
+      <div className={`fixed bottom-0 left-0 right-0 ${fixedBarLeft} bg-dark-900 border-t border-dark-700 px-4 py-3 flex items-center gap-2 z-40`}>
         <span className="text-sm text-slate-400 flex-1 truncate hidden sm:block">
           {cvName || <span className="text-slate-600">Brak nazwy CV</span>}
         </span>

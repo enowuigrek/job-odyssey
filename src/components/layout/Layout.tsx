@@ -6,6 +6,7 @@ import { MobileHeader } from './MobileHeader';
 import { AccountMenu } from './AccountMenu';
 import { WelcomeModal } from '../ui/WelcomeModal';
 import { PageLoading } from '../ui/PageLoading';
+import { SidebarProvider } from '../../contexts/SidebarContext';
 
 const dragStyle = { WebkitAppRegion: 'drag' } as React.CSSProperties;
 
@@ -21,40 +22,42 @@ export function Layout() {
   const currentFab = fabPages[location.pathname];
 
   return (
-    <div className="flex h-screen bg-dark-900 overflow-hidden">
-      {/* Sidebar - tylko desktop */}
-      <div className="hidden md:block">
-        <Sidebar />
+    <SidebarProvider>
+      <div className="flex h-screen bg-dark-900 overflow-hidden">
+        {/* Sidebar - tylko desktop */}
+        <div className="hidden md:block">
+          <Sidebar />
+        </div>
+        <main className="flex-1 flex flex-col overflow-hidden">
+          {/* Górny pasek desktop — wskaźnik zalogowanego konta w prawym górnym rogu */}
+          <div style={dragStyle} className="h-14 flex-shrink-0 hidden md:flex items-center justify-end px-6">
+            <AccountMenu />
+          </div>
+          {/* Mobile header z hamburger + bell */}
+          <MobileHeader />
+          {/* pb-20 na mobile zostawia miejsce dla bottom nav */}
+          <div className="flex-1 overflow-auto p-4 pt-2 md:p-8 md:pt-0 md:pb-8 pb-32">
+            <Suspense fallback={<PageLoading />}>
+              <Outlet />
+            </Suspense>
+          </div>
+        </main>
+        {/* Mobile FAB — fixed nad bottom nav */}
+        {currentFab && (
+          <button
+            onClick={() => {
+              // Dispatch custom event that pages listen for
+              window.dispatchEvent(new CustomEvent('fab-click', { detail: location.pathname }));
+            }}
+            className="md:hidden fixed bottom-[72px] right-4 z-50 bg-primary-500 text-slate-900 px-4 py-2.5 shadow-lg shadow-primary-500/30 text-sm font-medium active:scale-95 transition-transform cursor-pointer"
+          >
+            {currentFab.label}
+          </button>
+        )}
+        {/* Mobile bottom nav - ukryta na md+ */}
+        <MobileNav />
+        <WelcomeModal />
       </div>
-      <main className="flex-1 flex flex-col overflow-hidden">
-        {/* Górny pasek desktop — wskaźnik zalogowanego konta w prawym górnym rogu */}
-        <div style={dragStyle} className="h-14 flex-shrink-0 hidden md:flex items-center justify-end px-6">
-          <AccountMenu />
-        </div>
-        {/* Mobile header z hamburger + bell */}
-        <MobileHeader />
-        {/* pb-20 na mobile zostawia miejsce dla bottom nav */}
-        <div className="flex-1 overflow-auto p-4 pt-2 md:p-8 md:pt-0 md:pb-8 pb-32">
-          <Suspense fallback={<PageLoading />}>
-            <Outlet />
-          </Suspense>
-        </div>
-      </main>
-      {/* Mobile FAB — fixed nad bottom nav */}
-      {currentFab && (
-        <button
-          onClick={() => {
-            // Dispatch custom event that pages listen for
-            window.dispatchEvent(new CustomEvent('fab-click', { detail: location.pathname }));
-          }}
-          className="md:hidden fixed bottom-[72px] right-4 z-50 bg-primary-500 text-slate-900 px-4 py-2.5 shadow-lg shadow-primary-500/30 text-sm font-medium active:scale-95 transition-transform cursor-pointer"
-        >
-          {currentFab.label}
-        </button>
-      )}
-      {/* Mobile bottom nav - ukryta na md+ */}
-      <MobileNav />
-      <WelcomeModal />
-    </div>
+    </SidebarProvider>
   );
 }

@@ -23,6 +23,7 @@ import { CountBadge } from '../ui/CountBadge';
 import { useClickNotifications } from '../../hooks/useClickNotifications';
 import { useAuth } from '../../contexts/AuthContext';
 import { useApp } from '../../contexts/AppContext';
+import { useSidebar } from '../../contexts/SidebarContext';
 import { format, parseISO } from 'date-fns';
 import { pl } from 'date-fns/locale';
 
@@ -49,7 +50,7 @@ const profileSubItems = [
 const PROFILE_EXPANDED_KEY = 'jo-sidebar-profile-expanded';
 
 export function Sidebar() {
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const { collapsed: isCollapsed, setCollapsed: setIsCollapsed } = useSidebar();
   const [labelsVisible, setLabelsVisible] = useState(true);
   const [showNotifications, setShowNotifications] = useState(false);
   const [profileExpanded, setProfileExpanded] = useState(() => {
