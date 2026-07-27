@@ -18,6 +18,7 @@ import { useUserLinks } from '../hooks/useUserLinks';
 import { useDragReorder } from '../hooks/useDragReorder';
 import { uploadCertificateFile } from '../lib/profileDb';
 import { useAuth } from '../contexts/AuthContext';
+import { useProfileBasics } from '../contexts/ProfileBasicsContext';
 import { updateAt, removeAt } from '../utils/array';
 import type {
   CandidateProfile,
@@ -162,6 +163,8 @@ export function ProfilePage() {
     removeCertificate,
   } = useProfile();
 
+  const { refresh: refreshAccountBasics } = useProfileBasics();
+
   // ── Contact / interests draft ────────────────────────────────────────────────
   const [contactDraft, setContactDraft] = useState<CandidateProfile | null>(null);
   const [contactSaving, setContactSaving] = useState(false);
@@ -176,7 +179,7 @@ export function ProfilePage() {
 
   // ── Zdjęcie profilowe ────────────────────────────────────────────────────────
   const photoInputRef = useRef<HTMLInputElement>(null);
-  const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [photoCropSource, setPhotoCropSource] = useState<File | string | null>(null);
   const [photoSaving, setPhotoSaving] = useState(false);
 
   // Sync drafts when profile loads
@@ -248,33 +251,36 @@ export function ProfilePage() {
       await updateProfile(contactDraft);
       setContactSaved(true);
       setTimeout(() => setContactSaved(false), 2000);
+      refreshAccountBasics();
     } finally {
       setContactSaving(false);
     }
-  }, [contactDraft, updateProfile]);
+  }, [contactDraft, updateProfile, refreshAccountBasics]);
 
   const handlePhotoCropped = useCallback(async (blob: Blob) => {
     setPhotoSaving(true);
     try {
       await updatePhoto(blob);
-      setPhotoFile(null);
+      setPhotoCropSource(null);
+      refreshAccountBasics();
     } catch (e) {
       console.error(e);
     } finally {
       setPhotoSaving(false);
     }
-  }, [updatePhoto]);
+  }, [updatePhoto, refreshAccountBasics]);
 
   const handleRemovePhoto = useCallback(async () => {
     setPhotoSaving(true);
     try {
       await removePhoto();
+      refreshAccountBasics();
     } catch (e) {
       console.error(e);
     } finally {
       setPhotoSaving(false);
     }
-  }, [removePhoto]);
+  }, [removePhoto, refreshAccountBasics]);
 
   const handleSaveInterests = useCallback(async () => {
     if (!interestsDraft || !contactDraft) return;
@@ -403,7 +409,7 @@ export function ProfilePage() {
                 className="hidden"
                 onChange={e => {
                   const f = e.target.files?.[0];
-                  if (f) setPhotoFile(f);
+                  if (f) setPhotoCropSource(f);
                   e.target.value = '';
                 }}
               />
@@ -412,6 +418,11 @@ export function ProfilePage() {
                   {photoSaving ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : <Upload className="w-3.5 h-3.5 mr-1.5" />}
                   {contact.photo_url ? 'Zmień zdjęcie' : 'Dodaj zdjęcie'}
                 </Button>
+                {contact.photo_url && (
+                  <Button type="button" variant="ghost" size="sm" onClick={() => setPhotoCropSource(contact.photo_url!)} disabled={photoSaving}>
+                    Edytuj kadrowanie
+                  </Button>
+                )}
                 {contact.photo_url && (
                   <Button type="button" variant="ghost" size="sm" onClick={handleRemovePhoto} disabled={photoSaving}>
                     Usuń
@@ -971,10 +982,10 @@ export function ProfilePage() {
         </div>
       )}
 
-      {photoFile && (
+      {photoCropSource && (
         <PhotoCropModal
-          file={photoFile}
-          onCancel={() => setPhotoFile(null)}
+          source={photoCropSource}
+          onCancel={() => setPhotoCropSource(null)}
           onConfirm={handlePhotoCropped}
         />
       )}

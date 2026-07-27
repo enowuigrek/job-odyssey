@@ -60,9 +60,8 @@ const s = StyleSheet.create({
     flex: 1,
   },
   photo: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+    width: 52,
+    height: 52,
     marginLeft: 16,
     objectFit: 'cover',
   },

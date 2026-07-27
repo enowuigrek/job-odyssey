@@ -95,9 +95,8 @@
 }
 
 .cv-photo {
-  width: 64pt;
-  height: 64pt;
-  border-radius: 50%;
+  width: 52pt;
+  height: 52pt;
   margin-left: 16pt;
   object-fit: cover;
   flex-shrink: 0;

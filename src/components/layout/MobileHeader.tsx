@@ -16,6 +16,7 @@ import {
   FileOutput,
 } from 'lucide-react';
 import { CountBadge } from '../ui/CountBadge';
+import { AccountMenu } from './AccountMenu';
 import { useClickNotifications } from '../../hooks/useClickNotifications';
 import { useAuth } from '../../contexts/AuthContext';
 import { useApp } from '../../contexts/AppContext';
@@ -77,8 +78,10 @@ export function MobileHeader() {
       {/* Logo */}
       <span className="text-sm font-bold text-white tracking-wide uppercase">Job Odyssey</span>
 
-      {/* Right side: bell + hamburger */}
+      {/* Right side: konto + bell + hamburger */}
       <div className="flex items-center gap-1">
+        <AccountMenu showName={false} className="px-1" />
+
         {/* Bell */}
         <div ref={bellRef} className="relative">
           <button

@@ -104,7 +104,7 @@ export async function buildCVDocx(data: CVData): Promise<Blob> {
           new ImageRun({
             type: 'jpg',
             data: photoBuffer,
-            transformation: { width: 85, height: 85 },
+            transformation: { width: 69, height: 69 },
           }),
         ],
       }));

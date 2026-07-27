@@ -3,9 +3,11 @@ import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { AppProvider } from './contexts/AppContext';
 import { UserSettingsProvider } from './contexts/UserSettingsContext';
+import { ProfileBasicsProvider } from './contexts/ProfileBasicsContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { Layout } from './components/layout/Layout';
 import { CookieConsentBanner } from './components/layout/CookieConsentBanner';
+import { PasswordRecoveryModal } from './components/ui';
 import { LoginPage } from './pages/LoginPage';
 import { LandingPage } from './pages/LandingPage';
 import { CVPrintPage } from './pages/CVPrintPage';
@@ -32,29 +34,31 @@ import {
 function AuthenticatedApp() {
   return (
     <UserSettingsProvider>
-      <AppProvider>
-        <Routes>
-          {/* Bare print page — no layout, no nav */}
-          <Route path="cv-print" element={<CVPrintPage />} />
-          <Route path="/" element={<Layout />}>
-            <Route index element={<DashboardPage />} />
-            <Route path="applications" element={<ApplicationsPage />} />
-            <Route path="interviews" element={<InterviewsPage />} />
-            <Route path="cv-generator" element={<CVGeneratorPage />} />
-            <Route path="cv-editor" element={<CVEditorPage />} />
-            <Route path="cv" element={<CVPage />} />
-            <Route path="links" element={<LinksPage />} />
-            <Route path="profil" element={<Navigate to="/profil/kontakt" replace />} />
-            <Route path="profil/importuj-cv" element={<ImportCvPage />} />
-            <Route path="profil/:section" element={<ProfilePage />} />
-            <Route path="questions" element={<QuestionsPage />} />
-            <Route path="stories" element={<StoriesPage />} />
-            <Route path="settings" element={<SettingsPage />} />
-            <Route path="admin" element={<AdminPage />} />
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Route>
-        </Routes>
-      </AppProvider>
+      <ProfileBasicsProvider>
+        <AppProvider>
+          <Routes>
+            {/* Bare print page — no layout, no nav */}
+            <Route path="cv-print" element={<CVPrintPage />} />
+            <Route path="/" element={<Layout />}>
+              <Route index element={<DashboardPage />} />
+              <Route path="applications" element={<ApplicationsPage />} />
+              <Route path="interviews" element={<InterviewsPage />} />
+              <Route path="cv-generator" element={<CVGeneratorPage />} />
+              <Route path="cv-editor" element={<CVEditorPage />} />
+              <Route path="cv" element={<CVPage />} />
+              <Route path="links" element={<LinksPage />} />
+              <Route path="profil" element={<Navigate to="/profil/kontakt" replace />} />
+              <Route path="profil/importuj-cv" element={<ImportCvPage />} />
+              <Route path="profil/:section" element={<ProfilePage />} />
+              <Route path="questions" element={<QuestionsPage />} />
+              <Route path="stories" element={<StoriesPage />} />
+              <Route path="settings" element={<SettingsPage />} />
+              <Route path="admin" element={<AdminPage />} />
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Route>
+          </Routes>
+        </AppProvider>
+      </ProfileBasicsProvider>
     </UserSettingsProvider>
   );
 }
@@ -97,6 +101,8 @@ function AppRoutes() {
           }
         />
       </Routes>
+      {/* Formularz nowego hasła po wejściu z linku resetującego (event PASSWORD_RECOVERY) */}
+      <PasswordRecoveryModal />
       <CookieConsentBanner />
     </HashRouter>
   );

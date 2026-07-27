@@ -80,6 +80,22 @@ export async function upsertProfile(userId: string, data: Omit<CandidateProfile,
   if (error) throw error;
 }
 
+/** Lekki odczyt samego imienia/nazwiska i zdjęcia — do globalnego wskaźnika konta, bez ciągnięcia całego profilu. */
+export async function getProfileBasics(userId: string): Promise<{ name: string; photo_url?: string }> {
+  const { data, error } = await supabase
+    .from('candidate_profile')
+    .select('name, photo_url')
+    .eq('user_id', userId)
+    .maybeSingle();
+
+  if (error) throw error;
+
+  return {
+    name: (data?.name as string) ?? '',
+    photo_url: (data?.photo_url as string | null) ?? undefined,
+  };
+}
+
 /** Wgrywa zdjęcie profilowe (już przycięte po stronie klienta) do bucketu avatars. */
 export async function uploadProfilePhoto(userId: string, blob: Blob): Promise<string> {
   const path = `${userId}/${Date.now()}.jpg`;

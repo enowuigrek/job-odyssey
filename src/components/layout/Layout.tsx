@@ -2,6 +2,7 @@ import { Outlet, useLocation } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import { MobileNav } from './MobileNav';
 import { MobileHeader } from './MobileHeader';
+import { AccountMenu } from './AccountMenu';
 import { WelcomeModal } from '../ui/WelcomeModal';
 
 const dragStyle = { WebkitAppRegion: 'drag' } as React.CSSProperties;
@@ -24,8 +25,10 @@ export function Layout() {
         <Sidebar />
       </div>
       <main className="flex-1 flex flex-col overflow-hidden">
-        {/* Titlebar drag region - Electron, tylko desktop */}
-        <div style={dragStyle} className="h-10 flex-shrink-0 hidden md:block" />
+        {/* Górny pasek desktop — wskaźnik zalogowanego konta w prawym górnym rogu */}
+        <div style={dragStyle} className="h-14 flex-shrink-0 hidden md:flex items-center justify-end px-6">
+          <AccountMenu />
+        </div>
         {/* Mobile header z hamburger + bell */}
         <MobileHeader />
         {/* pb-20 na mobile zostawia miejsce dla bottom nav */}

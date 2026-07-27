@@ -5,13 +5,14 @@ import { Modal, Button } from '../ui';
 import { getCroppedImageBlob } from '../../lib/cropImage';
 
 interface PhotoCropModalProps {
-  file: File;
+  /** Nowo wybrany plik (upload) albo URL już zapisanego zdjęcia (edycja kadrowania bez ponownego wgrywania). */
+  source: File | string;
   onCancel: () => void;
   onConfirm: (blob: Blob) => void;
 }
 
-/** Modal do kadrowania zdjęcia profilowego — przeciąganie i zoom, wynik zawsze kwadratowy (pod okrągłe wyświetlanie w CV). */
-export function PhotoCropModal({ file, onCancel, onConfirm }: PhotoCropModalProps) {
+/** Modal do kadrowania zdjęcia profilowego — przeciąganie i zoom, wynik zawsze kwadratowy. */
+export function PhotoCropModal({ source, onCancel, onConfirm }: PhotoCropModalProps) {
   const [imageSrc, setImageSrc] = useState<string | null>(null);
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
@@ -20,10 +21,14 @@ export function PhotoCropModal({ file, onCancel, onConfirm }: PhotoCropModalProp
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const url = URL.createObjectURL(file);
+    if (typeof source === 'string') {
+      setImageSrc(source);
+      return;
+    }
+    const url = URL.createObjectURL(source);
     setImageSrc(url);
     return () => URL.revokeObjectURL(url);
-  }, [file]);
+  }, [source]);
 
   const onCropComplete = useCallback((_area: Area, pixels: Area) => {
     setCroppedAreaPixels(pixels);
@@ -54,7 +59,6 @@ export function PhotoCropModal({ file, onCancel, onConfirm }: PhotoCropModalProp
               crop={crop}
               zoom={zoom}
               aspect={1}
-              cropShape="round"
               showGrid={false}
               onCropChange={setCrop}
               onZoomChange={setZoom}
