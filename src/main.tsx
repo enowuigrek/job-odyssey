@@ -40,6 +40,22 @@ if (typeof ReadableStream !== 'undefined' && !(Symbol.asyncIterator in ReadableS
   };
 }
 
+// Po każdym deployu hashe chunków się zmieniają. Jeśli ktoś ma otwartą starą
+// zakładkę (stary index.html) i dopiero teraz pierwszy raz nawiguje na
+// stronę doładowywaną leniwie (React.lazy), przeglądarka próbuje dociągnąć
+// chunk pod adresem sprzed kolejnego deployu — ten plik już nie istnieje na
+// serwerze (nadpisany), więc dynamiczny import pada z "Importing a module
+// script failed" i appka zostaje pusta. Vite emituje na to zdarzenie
+// 'vite:preloadError' — łapiemy je i odświeżamy, żeby ściągnąć świeży
+// index.html z poprawnymi odnośnikami zamiast zostawiać czarny ekran.
+// Guard przed pętlą przeładowań na wypadek innej przyczyny błędu.
+window.addEventListener('vite:preloadError', () => {
+  const key = 'jo-reloaded-after-preload-error';
+  if (sessionStorage.getItem(key)) return;
+  sessionStorage.setItem(key, '1');
+  window.location.reload();
+});
+
 initTooltips()
 
 createRoot(document.getElementById('root')!).render(
