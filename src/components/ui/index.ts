@@ -12,3 +12,4 @@ export { useConfirm } from './ConfirmDialog';
 export { CollapsibleItem } from './CollapsibleItem';
 export { Checkbox } from './Checkbox';
 export { PasswordRecoveryModal } from './PasswordRecoveryModal';
+export { PageLoading } from './PageLoading';

@@ -1,9 +1,11 @@
+import { Suspense } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import { MobileNav } from './MobileNav';
 import { MobileHeader } from './MobileHeader';
 import { AccountMenu } from './AccountMenu';
 import { WelcomeModal } from '../ui/WelcomeModal';
+import { PageLoading } from '../ui/PageLoading';
 
 const dragStyle = { WebkitAppRegion: 'drag' } as React.CSSProperties;
 
@@ -33,7 +35,9 @@ export function Layout() {
         <MobileHeader />
         {/* pb-20 na mobile zostawia miejsce dla bottom nav */}
         <div className="flex-1 overflow-auto p-4 pt-2 md:p-8 md:pt-0 md:pb-8 pb-32">
-          <Outlet />
+          <Suspense fallback={<PageLoading />}>
+            <Outlet />
+          </Suspense>
         </div>
       </main>
       {/* Mobile FAB — fixed nad bottom nav */}
