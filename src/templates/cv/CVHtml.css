@@ -387,6 +387,22 @@
   margin: 0;
 }
 
+/* ── Edycja bezpośrednio w podglądzie (tylko generator CV, editable=true) ── */
+.cv-editable {
+  cursor: text;
+  outline: none;
+  border-radius: 2px;
+}
+
+.cv-editable:hover {
+  background: rgba(45, 125, 125, 0.08);
+}
+
+.cv-editable:focus {
+  background: rgba(45, 125, 125, 0.12);
+  box-shadow: 0 0 0 1px var(--teal);
+}
+
 /* ── Print ──────────────────────────────────────────────────────── */
 @media print {
   @page {

@@ -340,6 +340,9 @@ export function CVEditorPage() {
   const [splitView, setSplitView] = useState(false);
   const formVisible = !showPreview || splitView;
   const previewVisible = showPreview || splitView;
+  // Kolumna formularza w widoku dzielonym jest za wąska na 2-3 kolumny — zwijamy do jednej
+  const gridCols2 = splitView ? 'grid-cols-1' : 'grid-cols-1 md:grid-cols-2';
+  const gridCols3 = splitView ? 'grid-cols-1' : 'grid-cols-1 md:grid-cols-3';
   const [limitError, setLimitError] = useState<string | null>(null);
   const [showSaveAsModal, setShowSaveAsModal] = useState(false);
   const [saveAsName, setSaveAsName] = useState('');
@@ -525,7 +528,7 @@ export function CVEditorPage() {
         onToggleCollapse={() => toggle('header')}
       />
       {!collapsed['header'] && (
-        <div className="px-4 pb-4 grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div className={`px-4 pb-4 grid ${gridCols2} gap-3`}>
           <div>
             <FieldLabel>Imię i nazwisko</FieldLabel>
             <TextInput value={data.name} onChange={v => set({ name: v })} placeholder="IMIĘ NAZWISKO" />
@@ -556,7 +559,7 @@ export function CVEditorPage() {
       />
       {!collapsed['contact'] && (
         <div className="px-4 pb-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+          <div className={`grid ${gridCols3} gap-3 mb-4`}>
             <div>
               <FieldLabel>Lokalizacja</FieldLabel>
               <TextInput value={data.contact.location} onChange={v => set({ contact: { ...data.contact, location: v } })} placeholder="Miasto" />
@@ -757,7 +760,7 @@ export function CVEditorPage() {
                     >
                       <Trash2 className="w-3 h-3" />
                     </button>
-                    <div className="pr-6 mb-3 grid grid-cols-1 md:grid-cols-2 gap-2">
+                    <div className={`pr-6 mb-3 grid ${gridCols2} gap-2`}>
                       <div>
                         <FieldLabel>Stanowisko</FieldLabel>
                         <TextInput
@@ -821,7 +824,7 @@ export function CVEditorPage() {
               onRemove={() => set({ education: removeAt(data.education, edi) })}
               {...educationDrag.getItemProps(edi)}
             >
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+              <div className={`grid ${gridCols2} gap-2`}>
                 <div>
                   <FieldLabel>Kierunek</FieldLabel>
                   <TextInput value={edu.degree} onChange={v => set({ education: updateAt(data.education, edi, { ...edu, degree: v }) })} placeholder="Informatyka" />
@@ -866,7 +869,7 @@ export function CVEditorPage() {
               onRemove={() => set({ certificates: removeAt(data.certificates ?? [], ci) })}
               {...certificatesDrag.getItemProps(ci)}
             >
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+              <div className={`grid ${gridCols3} gap-2`}>
                 <div className="md:col-span-2">
                   <FieldLabel>Wystawca</FieldLabel>
                   <TextInput
@@ -978,7 +981,7 @@ export function CVEditorPage() {
       {/* ── Preview ───────────────────────────────────────────────────── */}
       {previewVisible && (
         <div className={splitView ? 'flex-1 min-w-0 w-full overflow-x-auto' : undefined}>
-          <CVHtml data={data} preview />
+          <CVHtml data={data} preview editable onChange={set} />
         </div>
       )}
 

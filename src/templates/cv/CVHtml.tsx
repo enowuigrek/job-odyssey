@@ -8,6 +8,50 @@ interface Props {
   data: CVData;
   /** Wrap in a screen preview container (grey background, centered) */
   preview?: boolean;
+  /** Pozwól edytować proste pola tekstowe bezpośrednio w podglądzie (nagłówek, opis, RODO) */
+  editable?: boolean;
+  onChange?: (patch: Partial<CVData>) => void;
+}
+
+/** Prosty tekst edytowalny w podglądzie — poza trybem editable renderuje się identycznie jak zwykły tekst. */
+function EditableText({
+  value,
+  onCommit,
+  editable,
+  multiline = false,
+}: {
+  value: string;
+  onCommit: (v: string) => void;
+  editable?: boolean;
+  multiline?: boolean;
+}) {
+  if (!editable) return <>{value}</>;
+  return (
+    <span
+      contentEditable
+      suppressContentEditableWarning
+      className="cv-editable"
+      onBlur={e => onCommit((e.currentTarget.textContent ?? '').trim())}
+      onFocus={e => {
+        // Pola jednoliniowe (imię, telefon…) zwykle chce się nadpisać w całości —
+        // zaznacz całą zawartość od razu, jak w typowym "kliknij i edytuj".
+        if (multiline) return;
+        const range = document.createRange();
+        range.selectNodeContents(e.currentTarget);
+        const sel = window.getSelection();
+        sel?.removeAllRanges();
+        sel?.addRange(range);
+      }}
+      onKeyDown={e => {
+        if (!multiline && e.key === 'Enter') {
+          e.preventDefault();
+          e.currentTarget.blur();
+        }
+      }}
+    >
+      {value}
+    </span>
+  );
 }
 
 /** Pipe-separated inline links — musi zostać zgodne z InlineLinks w CVTemplate.tsx (PDF). */
@@ -41,21 +85,28 @@ function ProjectLinks({ links }: { links: CVLink[] }) {
   );
 }
 
-export function CVHtml({ data, preview = false }: Props) {
+export function CVHtml({ data, preview = false, editable = false, onChange }: Props) {
   const sectionOrder = getSectionOrder(data);
   const page = (
     <div className="cv-page cv-root">
       {/* ── Header ──────────────────────────────────────────────── */}
       <div className="cv-header-row">
         <div className="cv-header-text">
-          <div className="cv-name">{data.name}</div>
-          <div className="cv-subtitle">{data.subtitle}</div>
+          <div className="cv-name">
+            <EditableText value={data.name} editable={editable} onCommit={v => onChange?.({ name: v })} />
+          </div>
+          <div className="cv-subtitle">
+            <EditableText value={data.subtitle} editable={editable} onCommit={v => onChange?.({ subtitle: v })} />
+          </div>
 
           <div className="cv-contact-block">
             <p className="cv-contact-line">
-              {data.contact.location}, tel: {data.contact.phone}
+              <EditableText value={data.contact.location} editable={editable} onCommit={v => onChange?.({ contact: { ...data.contact, location: v } })} />
+              , tel: <EditableText value={data.contact.phone} editable={editable} onCommit={v => onChange?.({ contact: { ...data.contact, phone: v } })} />
             </p>
-            <p className="cv-contact-line">e-mail: {data.contact.email}</p>
+            <p className="cv-contact-line">
+              e-mail: <EditableText value={data.contact.email} editable={editable} onCommit={v => onChange?.({ contact: { ...data.contact, email: v } })} />
+            </p>
             <ContactLinks links={data.contact.links} />
           </div>
         </div>
@@ -72,13 +123,17 @@ export function CVHtml({ data, preview = false }: Props) {
               <div className="cv-section-header">
                 <h2 className="cv-section-title">{(data.profileTitle || 'OPIS').toUpperCase()}</h2>
               </div>
-              <p className="cv-body">{data.profile}</p>
+              <p className="cv-body">
+                <EditableText value={data.profile} editable={editable} multiline onCommit={v => onChange?.({ profile: v })} />
+              </p>
               {data.showApproach !== false && data.approach ? (
                 <>
                   <div className="cv-section-header">
                     <h2 className="cv-section-title">{(data.approachTitle || 'PODEJŚCIE DO PRACY').toUpperCase()}</h2>
                   </div>
-                  <p className="cv-body">{data.approach}</p>
+                  <p className="cv-body">
+                    <EditableText value={data.approach} editable={editable} multiline onCommit={v => onChange?.({ approach: v })} />
+                  </p>
                 </>
               ) : null}
             </>
@@ -173,7 +228,16 @@ export function CVHtml({ data, preview = false }: Props) {
               <div className="cv-section-header">
                 <h2 className="cv-section-title">{sec.title.toUpperCase()}</h2>
               </div>
-              <p className="cv-body">{sec.content}</p>
+              <p className="cv-body">
+                <EditableText
+                  value={sec.content}
+                  editable={editable}
+                  multiline
+                  onCommit={v => onChange?.({
+                    customSections: (data.customSections ?? []).map(s => s.id === sec.id ? { ...s, content: v } : s),
+                  })}
+                />
+              </p>
             </div>
           ))}
 
@@ -213,7 +277,9 @@ export function CVHtml({ data, preview = false }: Props) {
 
       {/* ── RODO — always last, spacer pins it to the page bottom ── */}
       <div className="cv-rodo-spacer" />
-      <p className="cv-rodo">{data.rodo}</p>
+      <p className="cv-rodo">
+        <EditableText value={data.rodo} editable={editable} multiline onCommit={v => onChange?.({ rodo: v })} />
+      </p>
     </div>
   );
 
