@@ -11,10 +11,8 @@ import {
   ExternalLink,
   Trash2,
   Edit,
-  ChevronUp,
   LayoutGrid,
   List,
-  GripVertical,
   MessageSquare,
   MousePointerClick,
   FileDown,
@@ -30,7 +28,10 @@ import { useUserSettings } from '../contexts/UserSettingsContext';
 import { TRIAL_APPLICATION_LIMIT, TRIAL_LIMIT_MESSAGE_APPLICATION } from '../lib/planLimits';
 import { TrackingLinksModal } from '../components/tracking/TrackingLinksModal';
 import { KanbanStatusTabs } from '../components/kanban/KanbanStatusTabs';
+import { KanbanColumn } from '../components/kanban/KanbanColumn';
+import { KanbanCard } from '../components/kanban/KanbanCard';
 import { useKanbanCarousel } from '../hooks/useKanbanCarousel';
+import { useKanbanBoard } from '../hooks/useKanbanBoard';
 import { useUserLinks } from '../hooks/useUserLinks';
 import {
   createTrackingLinks,
@@ -44,7 +45,6 @@ import type { CVData } from '../templates/cv/types';
 import {
   Button,
   Input,
-  Card,
   Badge,
   Modal,
   EmptyState,
@@ -146,15 +146,22 @@ export function ApplicationsPage() {
   const [statusFilters, setStatusFilters] = useState<ApplicationStatus[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingApplication, setEditingApplication] = useState<JobApplication | null>(null);
-  const [expandedId, setExpandedId] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'list' | 'kanban'>('kanban');
   const { confirm, ConfirmDialog } = useConfirm();
-  const [draggedApp, setDraggedApp] = useState<JobApplication | null>(null);
-  const [dragOverStatus, setDragOverStatus] = useState<ApplicationStatus | null>(null);
-  // Karta, która właśnie zmieniła status — wjeżdża do nowej kolumny i chwilę
-  // się podświetla, żeby nie zgubić jej wśród innych po przełożeniu.
-  const [justMoved, setJustMoved] = useState<{ id: string; direction: 'left' | 'right' } | null>(null);
-  const justMovedTimeoutRef = useRef<number | null>(null);
+  const {
+    expandedId,
+    setExpandedId,
+    toggleExpand,
+    dragOverStatus,
+    draggedItem: draggedApp,
+    justMoved,
+    triggerMoveHighlight,
+    handleDragStart: handleCardDragStart,
+    handleDragEnd,
+    handleDragOver,
+    handleDragLeave,
+    handleDrop: handleColumnDrop,
+  } = useKanbanBoard<JobApplication, ApplicationStatus>(kanbanColumns);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const filtersRef = useRef<HTMLDivElement>(null);
 
@@ -508,14 +515,7 @@ export function ApplicationsPage() {
     );
 
   const handleStatusChange = (app: JobApplication, newStatus: ApplicationStatus, skipInterviewPrompt = false) => {
-    if (app.status !== newStatus) {
-      const direction: 'left' | 'right' =
-        kanbanColumns.indexOf(newStatus) > kanbanColumns.indexOf(app.status) ? 'right' : 'left';
-      setExpandedId(id => (id === app.id ? null : id));
-      setJustMoved({ id: app.id, direction });
-      if (justMovedTimeoutRef.current) window.clearTimeout(justMovedTimeoutRef.current);
-      justMovedTimeoutRef.current = window.setTimeout(() => setJustMoved(null), 1600);
-    }
+    triggerMoveHighlight(app, newStatus);
 
     dispatch({
       type: 'UPDATE_APPLICATION',
@@ -531,49 +531,13 @@ export function ApplicationsPage() {
     }
   };
 
-  const toggleExpand = (id: string) => {
-    setExpandedId(expandedId === id ? null : id);
-  };
-
-  // Drag & drop — proste natywne DnD (bez customowego "duszka" z fizyką,
-  // który utrudniał złapanie karty); przeglądarka rysuje domyślny obraz
-  // przeciągania, wizualną informację zwrotną daje tylko opacity/ring.
   const handleDragStart = (e: React.DragEvent, app: JobApplication) => {
-    setDraggedApp(app);
+    handleCardDragStart(app);
     e.dataTransfer.effectAllowed = 'move';
   };
 
-  const handleDragEnd = () => {
-    setDraggedApp(null);
-    setDragOverStatus(null);
-  };
-
-  const handleDragOver = (e: React.DragEvent, status: ApplicationStatus) => {
-    e.preventDefault();
-    e.stopPropagation();
-    e.dataTransfer.dropEffect = 'move';
-    setDragOverStatus(status);
-  };
-
-  const handleDragLeave = (e: React.DragEvent) => {
-    e.preventDefault();
-    // Tylko resetuj jeśli opuszczamy do elementu poza kontenerem
-    const relatedTarget = e.relatedTarget as HTMLElement;
-    const currentTarget = e.currentTarget as HTMLElement;
-    if (!currentTarget.contains(relatedTarget)) {
-      setDragOverStatus(null);
-    }
-  };
-
   const handleDrop = (e: React.DragEvent, newStatus: ApplicationStatus) => {
-    e.preventDefault();
-    e.stopPropagation();
-
-    if (draggedApp && draggedApp.status !== newStatus) {
-      handleStatusChange(draggedApp, newStatus);
-    }
-    setDraggedApp(null);
-    setDragOverStatus(null);
+    handleColumnDrop(e, newStatus, handleStatusChange);
   };
 
   // Komponent karty aplikacji używany w obu widokach
@@ -582,242 +546,154 @@ export function ApplicationsPage() {
     const interviews = state.interviews.filter((i) => i.applicationId === app.id);
     const moveInfo = justMoved?.id === app.id ? justMoved : null;
 
-    const handleExpandClick = (e: React.MouseEvent) => {
-      e.stopPropagation();
-      toggleExpand(app.id);
-    };
-
-    const cardContent = (
-      <Card
-        fold
-        className={`group transition-shadow duration-700 ${
-          moveInfo ? (moveInfo.direction === 'right' ? 'animate-kanban-enter-right' : 'animate-kanban-enter-left') : ''
-        } ${moveInfo ? 'shadow-[0_0_22px_rgba(6,182,212,0.5)]' : 'shadow-none'}`}
-      >
-        <div className="p-0">
-          {/* Główna sekcja - klikalna aby rozwinąć */}
-          <div
-            className={`${compact ? 'px-2.5 py-2.5' : 'p-4'} cursor-pointer`}
-            onClick={handleExpandClick}
+    // Te same akcje pod zwiniętą i rozwiniętą kartą — jedna definicja, dwa miejsca użycia
+    const actionIcons = (
+      <>
+        {app.jobUrl && (
+          <a
+            href={app.jobUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={(e) => e.stopPropagation()}
+            className="p-1 text-slate-600 hover:text-primary-400 transition-colors cursor-pointer"
+            title="Otwórz ofertę"
           >
-          <div className="flex items-center gap-1">
-              {draggable && (
-                <div className="mr-1 text-slate-400 flex-shrink-0 cursor-grab active:cursor-grabbing" onClick={(e) => e.stopPropagation()}>
-                  <GripVertical className="w-4 h-4" />
-                </div>
-              )}
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-0.5">
-                  <SourceIcon url={app.jobUrl} className="w-4 h-4 flex-shrink-0" />
-                  <h3 className="font-semibold text-white text-sm truncate">
-                    {app.companyName}
-                  </h3>
-                  {!compact && (
-                    <Badge variant={getStatusBadgeVariant(app.status)}>
-                      {getStatusLabel(app.status)}
-                    </Badge>
-                  )}
-                </div>
-                {app.position && (
-                  <div className="text-xs text-slate-400 truncate">
-                    {app.position}
-                  </div>
-                )}
-              </div>
-
-              {/* Chevron */}
-              <div className="flex items-center justify-center w-6 h-6 text-slate-500 flex-shrink-0">
-                {isExpanded ? (
-                  <ChevronUp className="w-4 h-4" />
-                ) : (
-                  <ChevronDown className="w-4 h-4" />
-                )}
-              </div>
-            </div>
-
-            {/* Ikony akcji na stałe pod treścią karty, po prawej */}
-            {compact && !isExpanded && (
-              <div className="flex items-center justify-end gap-0.5 mt-1.5">
-                {app.jobUrl && (
-                  <a
-                    href={app.jobUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={(e) => e.stopPropagation()}
-                    className="p-1 text-slate-600 hover:text-primary-400 transition-colors cursor-pointer"
-                    title="Otwórz ofertę"
-                  >
-                    <ExternalLink className="w-3.5 h-3.5" />
-                  </a>
-                )}
-                <button
-                  onClick={(e) => { e.stopPropagation(); setTrackingApp(app); }}
-                  className="p-1 text-slate-600 hover:text-success-400 transition-colors cursor-pointer"
-                  title="Śledź CV"
-                >
-                  <MousePointerClick className="w-3.5 h-3.5" />
-                </button>
-                {app.cvId && getCVDataById(app.cvId) && (
-                  <button
-                    onClick={(e) => { e.stopPropagation(); downloadTaggedPdf(app); }}
-                    disabled={generatingTaggedFor === app.id}
-                    className="p-1 text-slate-600 hover:text-success-400 transition-colors cursor-pointer disabled:opacity-50"
-                    title="Pobierz otagowane CV"
-                  >
-                    <FileDown className="w-3.5 h-3.5" />
-                  </button>
-                )}
-                <button
-                  onClick={(e) => { e.stopPropagation(); openModal(app); }}
-                  className="p-1 text-slate-600 hover:text-primary-400 transition-colors cursor-pointer"
-                  title="Edytuj"
-                >
-                  <Edit className="w-3.5 h-3.5" />
-                </button>
-                <button
-                  onClick={(e) => { e.stopPropagation(); handleDelete(app.id); }}
-                  className="p-1 text-slate-600 hover:text-danger-400 transition-colors cursor-pointer"
-                  title="Usuń"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            )}
-          </div>
-
-          {/* Rozwinięte szczegóły — płynnie rozwijane i zwijane (grid-rows 0fr↔1fr).
-              Próba dołożenia scale/opacity jak w animate-unfold-card na tym samym
-              elemencie psuła animację (dwie nakładające się animacje wysokości
-              na tym samym, jeszcze zmieniającym rozmiar kontenerze) — z powrotem
-              sam grid-rows, który realnie działał płynnie. */}
-          <div className={`grid transition-[grid-template-rows] duration-200 ease-out ${isExpanded ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
-            <div className="overflow-hidden">
-            <div className="px-4 pb-4 border-t border-dark-600">
-              {/* Szybka zmiana statusu */}
-              <div className="mt-3 mb-3">
-                <Select
-                  label="Zmień status"
-                  dense
-                  options={statusOptions}
-                  value={app.status}
-                  onChange={(e) => {
-                    handleStatusChange(app, e.target.value as ApplicationStatus);
-                  }}
-                />
-              </div>
-
-              {/* Szczegóły */}
-              <div className="space-y-3 text-sm">
-                {app.appliedDate && (
-                  <div className="flex items-center gap-2 text-slate-400">
-                    <Calendar className="w-4 h-4" />
-                    {format(parseISO(app.appliedDate), 'd MMMM yyyy', { locale: pl })}
-                  </div>
-                )}
-
-                {app.source && (
-                  <div className="text-slate-400">
-                    <span className="text-slate-500">Źródło:</span> {app.source}
-                  </div>
-                )}
-
-                {app.notes && (
-                  <div className="text-slate-400 whitespace-pre-wrap bg-dark-700/50 p-3 mt-2">
-                    {app.notes}
-                  </div>
-                )}
-
-                {/* Powiązane rozmowy */}
-                {interviews.length > 0 && (
-                  <div className="mt-4 pt-4 border-t border-dark-600">
-                    <p className="text-xs text-slate-400 mb-2">Rozmowy ({interviews.length}):</p>
-                    <div className="space-y-2">
-                      {interviews.map((interview) => (
-                        <div
-                          key={interview.id}
-                          className="flex items-center justify-between text-xs bg-dark-700/50 p-2 cursor-pointer transition-colors"
-                          onClick={(e) => { e.stopPropagation(); navigate('/interviews', { state: { openFor: interview.id } }); }}
-                        >
-                          <span className="text-slate-300">
-                            {format(parseISO(interview.scheduledDate), 'd MMM yyyy, HH:mm', { locale: pl })}
-                          </span>
-                          <Badge variant={interview.status === 'positive' ? 'success' : interview.status === 'negative' ? 'danger' : interview.status === 'waiting' ? 'warning' : 'info'} size="sm">
-                            {interview.status === 'scheduled' ? 'Zaplanowana' : interview.status === 'waiting' ? 'Oczekiwanie' : interview.status === 'positive' ? 'Pozytywna' : 'Negatywna'}
-                          </Badge>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Akcje — icon-only, po prawej, ten sam rozmiar co na zwiniętej karcie */}
-              <div className="flex items-center justify-end gap-0.5 mt-4 pt-4 border-t border-dark-600">
-                {app.jobUrl && (
-                  <a
-                    href={app.jobUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={(e) => e.stopPropagation()}
-                    className="p-1 text-slate-600 hover:text-primary-400 transition-colors cursor-pointer"
-                    title="Otwórz ofertę"
-                  >
-                    <ExternalLink className="w-3.5 h-3.5" />
-                  </a>
-                )}
-                <button
-                  onClick={(e) => { e.stopPropagation(); setTrackingApp(app); }}
-                  className="p-1 text-slate-600 hover:text-success-400 transition-colors cursor-pointer"
-                  title="Śledź CV"
-                >
-                  <MousePointerClick className="w-3.5 h-3.5" />
-                </button>
-                {app.cvId && getCVDataById(app.cvId) && (
-                  <button
-                    onClick={(e) => { e.stopPropagation(); downloadTaggedPdf(app); }}
-                    disabled={generatingTaggedFor === app.id}
-                    className="p-1 text-slate-600 hover:text-success-400 transition-colors cursor-pointer disabled:opacity-50"
-                    title="Pobierz otagowane CV"
-                  >
-                    <FileDown className="w-3.5 h-3.5" />
-                  </button>
-                )}
-                <button
-                  onClick={(e) => { e.stopPropagation(); openModal(app); }}
-                  className="p-1 text-slate-600 hover:text-primary-400 transition-colors cursor-pointer"
-                  title="Edytuj"
-                >
-                  <Edit className="w-3.5 h-3.5" />
-                </button>
-                <button
-                  onClick={(e) => { e.stopPropagation(); handleDelete(app.id); }}
-                  className="p-1 text-slate-600 hover:text-danger-400 transition-colors cursor-pointer"
-                  title="Usuń"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            </div>
-            </div>
-          </div>
-        </div>
-      </Card>
+            <ExternalLink className="w-3.5 h-3.5" />
+          </a>
+        )}
+        <button
+          onClick={(e) => { e.stopPropagation(); setTrackingApp(app); }}
+          className="p-1 text-slate-600 hover:text-success-400 transition-colors cursor-pointer"
+          title="Śledź CV"
+        >
+          <MousePointerClick className="w-3.5 h-3.5" />
+        </button>
+        {app.cvId && getCVDataById(app.cvId) && (
+          <button
+            onClick={(e) => { e.stopPropagation(); downloadTaggedPdf(app); }}
+            disabled={generatingTaggedFor === app.id}
+            className="p-1 text-slate-600 hover:text-success-400 transition-colors cursor-pointer disabled:opacity-50"
+            title="Pobierz otagowane CV"
+          >
+            <FileDown className="w-3.5 h-3.5" />
+          </button>
+        )}
+        <button
+          onClick={(e) => { e.stopPropagation(); openModal(app); }}
+          className="p-1 text-slate-600 hover:text-primary-400 transition-colors cursor-pointer"
+          title="Edytuj"
+        >
+          <Edit className="w-3.5 h-3.5" />
+        </button>
+        <button
+          onClick={(e) => { e.stopPropagation(); handleDelete(app.id); }}
+          className="p-1 text-slate-600 hover:text-danger-400 transition-colors cursor-pointer"
+          title="Usuń"
+        >
+          <Trash2 className="w-3.5 h-3.5" />
+        </button>
+      </>
     );
 
-    if (draggable) {
-      return (
-        <div
-          draggable
-          onDragStart={(e) => handleDragStart(e, app)}
-          onDragEnd={handleDragEnd}
-          className={`cursor-grab active:cursor-grabbing transition-opacity ${draggedApp?.id === app.id ? 'opacity-40' : ''}`}
-        >
-          {cardContent}
-        </div>
-      );
-    }
+    return (
+      <KanbanCard
+        compact={compact}
+        draggable={draggable}
+        isDragging={draggedApp?.id === app.id}
+        isExpanded={isExpanded}
+        onToggleExpand={() => toggleExpand(app.id)}
+        onDragStart={(e) => handleDragStart(e, app)}
+        onDragEnd={handleDragEnd}
+        moveDirection={moveInfo?.direction}
+        header={
+          <>
+            <div className="flex items-center gap-2 mb-0.5">
+              <SourceIcon url={app.jobUrl} className="w-4 h-4 flex-shrink-0" />
+              <h3 className="font-semibold text-white text-sm truncate">
+                {app.companyName}
+              </h3>
+              {!compact && (
+                <Badge variant={getStatusBadgeVariant(app.status)}>
+                  {getStatusLabel(app.status)}
+                </Badge>
+              )}
+            </div>
+            {app.position && (
+              <div className="text-xs text-slate-400 truncate">
+                {app.position}
+              </div>
+            )}
+          </>
+        }
+        compactActions={actionIcons}
+        expandedContent={
+          <div className="px-4 pb-4 border-t border-dark-600">
+            {/* Szybka zmiana statusu */}
+            <div className="mt-3 mb-3">
+              <Select
+                label="Zmień status"
+                dense
+                options={statusOptions}
+                value={app.status}
+                onChange={(e) => {
+                  handleStatusChange(app, e.target.value as ApplicationStatus);
+                }}
+              />
+            </div>
 
-    return cardContent;
+            {/* Szczegóły */}
+            <div className="space-y-3 text-sm">
+              {app.appliedDate && (
+                <div className="flex items-center gap-2 text-slate-400">
+                  <Calendar className="w-4 h-4" />
+                  {format(parseISO(app.appliedDate), 'd MMMM yyyy', { locale: pl })}
+                </div>
+              )}
+
+              {app.source && (
+                <div className="text-slate-400">
+                  <span className="text-slate-500">Źródło:</span> {app.source}
+                </div>
+              )}
+
+              {app.notes && (
+                <div className="text-slate-400 whitespace-pre-wrap bg-dark-700/50 p-3 mt-2">
+                  {app.notes}
+                </div>
+              )}
+
+              {/* Powiązane rozmowy */}
+              {interviews.length > 0 && (
+                <div className="mt-4 pt-4 border-t border-dark-600">
+                  <p className="text-xs text-slate-400 mb-2">Rozmowy ({interviews.length}):</p>
+                  <div className="space-y-2">
+                    {interviews.map((interview) => (
+                      <div
+                        key={interview.id}
+                        className="flex items-center justify-between text-xs bg-dark-700/50 p-2 cursor-pointer transition-colors"
+                        onClick={(e) => { e.stopPropagation(); navigate('/interviews', { state: { openFor: interview.id } }); }}
+                      >
+                        <span className="text-slate-300">
+                          {format(parseISO(interview.scheduledDate), 'd MMM yyyy, HH:mm', { locale: pl })}
+                        </span>
+                        <Badge variant={interview.status === 'positive' ? 'success' : interview.status === 'negative' ? 'danger' : interview.status === 'waiting' ? 'warning' : 'info'} size="sm">
+                          {interview.status === 'scheduled' ? 'Zaplanowana' : interview.status === 'waiting' ? 'Oczekiwanie' : interview.status === 'positive' ? 'Pozytywna' : 'Negatywna'}
+                        </Badge>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Akcje — icon-only, po prawej, ten sam rozmiar co na zwiniętej karcie */}
+            <div className="flex items-center justify-end gap-0.5 mt-4 pt-4 border-t border-dark-600">
+              {actionIcons}
+            </div>
+          </div>
+        }
+      />
+    );
   };
 
   return (
@@ -986,50 +862,33 @@ export function ApplicationsPage() {
             >
             <div className="flex gap-3 h-full pb-4">
               {visibleColumns.map((status) => (
-                <div
+                <KanbanColumn
                   key={status}
-                  data-kanban-status={status}
-                  className="w-full md:w-80 flex-shrink-0 flex flex-col h-full snap-start px-4 md:px-0"
+                  status={status}
+                  badgeVariant={getStatusBadgeVariant(status)}
+                  badgeLabel={getStatusLabel(status)}
+                  count={applicationsByStatus[status].length}
                   onDragOver={(e) => handleDragOver(e, status)}
                   onDragLeave={handleDragLeave}
                   onDrop={(e) => handleDrop(e, status)}
+                  isDragOver={dragOverStatus === status}
+                  isEmpty={applicationsByStatus[status].length === 0}
+                  emptyLabel="Brak aplikacji"
+                  emptyGhostHeader={
+                    <>
+                      <div className="flex items-center gap-2 mb-0.5">
+                        <div className="w-4 h-4 flex-shrink-0" />
+                        <h3 className="font-semibold text-sm truncate">Firma</h3>
+                      </div>
+                      <div className="text-xs truncate">Stanowisko</div>
+                    </>
+                  }
+                  inlineAdd={renderInlineAdd(status)}
                 >
-                  <div className="bg-dark-800 p-3 mb-2 flex items-center justify-between flex-shrink-0">
-                    <div className="flex items-center gap-2">
-                      <Badge variant={getStatusBadgeVariant(status)} size="sm">
-                        {getStatusLabel(status)}
-                      </Badge>
-                      <span className="text-xs text-slate-500">({applicationsByStatus[status].length})</span>
-                    </div>
-                  </div>
-                  <div
-                    className={`flex-1 overflow-y-auto kanban-scroll space-y-1.5 min-h-[200px] p-1.5 transition-colors ${
-                      dragOverStatus === status ? 'bg-primary-500/10 border-2 border-dashed border-primary-500/50' : 'border-2 border-transparent'
-                    }`}
-                  >
-                    {applicationsByStatus[status].length === 0 && dragOverStatus !== status ? (
-                      <div className="flex flex-col gap-1">
-                        {/* min-h dopasowany do wysokości jednej karty (compact) — żeby
-                            przycisk "+" wypadał w tym samym miejscu co w kolumnach z treścią */}
-                        <div className="w-full min-h-[86px] border-2 border-dashed border-dark-600 flex items-center justify-center">
-                          <span className="text-xs text-slate-400">Brak aplikacji</span>
-                        </div>
-                        {renderInlineAdd(status)}
-                      </div>
-                    ) : applicationsByStatus[status].length === 0 ? (
-                      <div className="text-center py-8 text-slate-500 text-sm border-2 border-dashed border-primary-500/50">
-                        Upuść tutaj
-                      </div>
-                    ) : (
-                      <>
-                        {applicationsByStatus[status].map((app) => (
-                          <ApplicationCard key={app.id} app={app} compact draggable />
-                        ))}
-                        {renderInlineAdd(status)}
-                      </>
-                    )}
-                  </div>
-                </div>
+                  {applicationsByStatus[status].map((app) => (
+                    <ApplicationCard key={app.id} app={app} compact draggable />
+                  ))}
+                </KanbanColumn>
               ))}
             </div>
             </div>

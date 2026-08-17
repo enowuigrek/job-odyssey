@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useSearchParams, useNavigate, useLocation } from 'react-router-dom';
 import {
   Plus,
@@ -9,20 +9,20 @@ import {
   Edit,
   LayoutGrid,
   List,
-  GripVertical,
   ChevronDown,
-  ChevronUp,
   MapPin,
   ExternalLink,
   MessageSquare,
 } from 'lucide-react';
 import { useApp } from '../contexts/AppContext';
 import { KanbanStatusTabs } from '../components/kanban/KanbanStatusTabs';
+import { KanbanColumn } from '../components/kanban/KanbanColumn';
+import { KanbanCard } from '../components/kanban/KanbanCard';
 import { useKanbanCarousel } from '../hooks/useKanbanCarousel';
+import { useKanbanBoard } from '../hooks/useKanbanBoard';
 import {
   Button,
   Input,
-  Card,
   Badge,
   Modal,
   EmptyState,
@@ -59,13 +59,20 @@ export function InterviewsPage() {
   const [editingInterview, setEditingInterview] = useState<Interview | null>(null);
   const [viewMode, setViewMode] = useState<'list' | 'kanban'>('kanban');
   const { confirm, ConfirmDialog } = useConfirm();
-  const [draggedInterview, setDraggedInterview] = useState<Interview | null>(null);
-  const [dragOverStatus, setDragOverStatus] = useState<InterviewStatus | null>(null);
-  // Karta, która właśnie zmieniła status — wjeżdża do nowej kolumny i chwilę
-  // się podświetla, żeby nie zgubić jej wśród innych po przełożeniu.
-  const [justMoved, setJustMoved] = useState<{ id: string; direction: 'left' | 'right' } | null>(null);
-  const justMovedTimeoutRef = useRef<number | null>(null);
-  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const {
+    expandedId,
+    setExpandedId,
+    toggleExpand,
+    dragOverStatus,
+    draggedItem: draggedInterview,
+    justMoved,
+    triggerMoveHighlight,
+    handleDragStart: handleCardDragStart,
+    handleDragEnd,
+    handleDragOver,
+    handleDragLeave,
+    handleDrop: handleColumnDrop,
+  } = useKanbanBoard<Interview, InterviewStatus>(kanbanColumns);
   const [filtersOpen, setFiltersOpen] = useState(false);
 
   // Rozwiń rozmowę jeśli przyszliśmy z innej strony
@@ -76,11 +83,7 @@ export function InterviewsPage() {
       setViewMode('list');
       navigate('/interviews', { replace: true, state: {} });
     }
-  }, [location.state, navigate]);
-
-  const toggleExpand = (id: string) => {
-    setExpandedId(expandedId === id ? null : id);
-  };
+  }, [location.state, navigate, setExpandedId]);
 
   const [formData, setFormData] = useState({
     applicationId: '',
@@ -347,14 +350,7 @@ export function InterviewsPage() {
     );
 
   const handleStatusChange = (interview: Interview, newStatus: InterviewStatus) => {
-    if (interview.status !== newStatus) {
-      const direction: 'left' | 'right' =
-        kanbanColumns.indexOf(newStatus) > kanbanColumns.indexOf(interview.status) ? 'right' : 'left';
-      setExpandedId(id => (id === interview.id ? null : id));
-      setJustMoved({ id: interview.id, direction });
-      if (justMovedTimeoutRef.current) window.clearTimeout(justMovedTimeoutRef.current);
-      justMovedTimeoutRef.current = window.setTimeout(() => setJustMoved(null), 1600);
-    }
+    triggerMoveHighlight(interview, newStatus);
 
     dispatch({
       type: 'UPDATE_INTERVIEW',
@@ -365,44 +361,13 @@ export function InterviewsPage() {
     });
   };
 
-  // Drag & drop — proste natywne DnD (bez customowego "duszka" z fizyką,
-  // który utrudniał złapanie karty); przeglądarka rysuje domyślny obraz
-  // przeciągania, wizualną informację zwrotną daje tylko opacity/ring.
   const handleDragStart = (e: React.DragEvent, interview: Interview) => {
-    setDraggedInterview(interview);
+    handleCardDragStart(interview);
     e.dataTransfer.effectAllowed = 'move';
   };
 
-  const handleDragEnd = () => {
-    setDraggedInterview(null);
-    setDragOverStatus(null);
-  };
-
-  const handleDragOver = (e: React.DragEvent, status: InterviewStatus) => {
-    e.preventDefault();
-    e.stopPropagation();
-    e.dataTransfer.dropEffect = 'move';
-    setDragOverStatus(status);
-  };
-
-  const handleDragLeave = (e: React.DragEvent) => {
-    e.preventDefault();
-    const relatedTarget = e.relatedTarget as HTMLElement;
-    const currentTarget = e.currentTarget as HTMLElement;
-    if (!currentTarget.contains(relatedTarget)) {
-      setDragOverStatus(null);
-    }
-  };
-
   const handleDrop = (e: React.DragEvent, newStatus: InterviewStatus) => {
-    e.preventDefault();
-    e.stopPropagation();
-
-    if (draggedInterview && draggedInterview.status !== newStatus) {
-      handleStatusChange(draggedInterview, newStatus);
-    }
-    setDraggedInterview(null);
-    setDragOverStatus(null);
+    handleColumnDrop(e, newStatus, handleStatusChange);
   };
 
   // Komponent karty rozmowy
@@ -413,226 +378,178 @@ export function InterviewsPage() {
     const isTodayInterview = isToday(interviewDate) && interview.status === 'scheduled';
     const moveInfo = justMoved?.id === interview.id ? justMoved : null;
 
-    const handleExpandClick = (e: React.MouseEvent) => {
-      e.stopPropagation();
-      toggleExpand(interview.id);
-    };
-
-    const cardContent = (
-      <Card
-        fold
-        className={`group transition-shadow duration-700 ${isTodayInterview ? 'ring-2 ring-warning-400 bg-warning-500/10' : ''} ${
-          moveInfo ? (moveInfo.direction === 'right' ? 'animate-kanban-enter-right' : 'animate-kanban-enter-left') : ''
-        } ${moveInfo ? 'shadow-[0_0_22px_rgba(6,182,212,0.5)]' : 'shadow-none'}`}
-      >
-        <div className="p-0">
-          {/* Główna sekcja - klikalna aby rozwinąć */}
-          <div
-            className={`${compact ? 'px-2.5 py-2.5' : 'p-4'} cursor-pointer`}
-            onClick={handleExpandClick}
-          >
-            <div className="flex items-center gap-1">
-              {draggable && (
-                <div className="mr-1 text-slate-400 flex-shrink-0 cursor-grab active:cursor-grabbing" onClick={(e) => e.stopPropagation()}>
-                  <GripVertical className="w-4 h-4" />
-                </div>
+    return (
+      <KanbanCard
+        compact={compact}
+        draggable={draggable}
+        isDragging={draggedInterview?.id === interview.id}
+        isExpanded={isExpanded}
+        onToggleExpand={() => toggleExpand(interview.id)}
+        onDragStart={(e) => handleDragStart(e, interview)}
+        onDragEnd={handleDragEnd}
+        moveDirection={moveInfo?.direction}
+        className={isTodayInterview ? 'ring-2 ring-warning-400 bg-warning-500/10' : ''}
+        header={
+          <>
+            <div className="flex items-center gap-2 mb-0.5">
+              <h3 className="font-semibold text-white text-sm truncate">
+                {app?.companyName || 'Nieznana firma'}
+              </h3>
+              {isTodayInterview && (
+                <span className="px-2 py-0.5 text-xs font-bold bg-warning-500 text-slate-900 uppercase">
+                  Dziś
+                </span>
               )}
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-0.5">
-                  <h3 className="font-semibold text-white text-sm truncate">
-                    {app?.companyName || 'Nieznana firma'}
-                  </h3>
-                  {isTodayInterview && (
-                    <span className="px-2 py-0.5 text-xs font-bold bg-warning-500 text-slate-900 uppercase">
-                      Dziś
-                    </span>
-                  )}
-                </div>
-                <p className="text-slate-300 text-xs mb-1 truncate">
-                  {app?.position}
-                </p>
-                <div className="flex items-center gap-2 text-xs text-slate-400">
-                  <span className="flex items-center gap-1">
-                    <Calendar className="w-3.5 h-3.5" />
-                    {format(interviewDate, 'd MMM', { locale: pl })}
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <Clock className="w-3.5 h-3.5" />
-                    {format(interviewDate, 'HH:mm')}
-                  </span>
-                </div>
-                {!compact && (
-                  <div className="mt-2">
-                    <Badge variant={getInterviewStatusBadgeVariant(interview.status)}>
-                      {getInterviewStatusLabel(interview.status)}
-                    </Badge>
-                  </div>
-                )}
-              </div>
-
-              {/* Chevron */}
-              <div className="flex items-center justify-center w-6 h-6 text-slate-500 flex-shrink-0">
-                {isExpanded ? (
-                  <ChevronUp className="w-4 h-4" />
-                ) : (
-                  <ChevronDown className="w-4 h-4" />
-                )}
-              </div>
             </div>
-
-            {/* Ikony akcji na stałe pod treścią karty, po prawej */}
-            {compact && !isExpanded && (
-              <div className="flex items-center justify-end gap-0.5 mt-1.5">
-                {interview.location && interview.location.startsWith('http') && (
-                  <a
-                    href={interview.location}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={(e) => e.stopPropagation()}
-                    className="p-1 text-slate-600 hover:text-primary-400 transition-colors cursor-pointer"
-                    title="Otwórz link"
-                  >
-                    <ExternalLink className="w-3.5 h-3.5" />
-                  </a>
-                )}
-                <button
-                  onClick={(e) => { e.stopPropagation(); openModal(interview); }}
-                  className="p-1 text-slate-600 hover:text-primary-400 transition-colors cursor-pointer"
-                  title="Edytuj"
-                >
-                  <Edit className="w-3.5 h-3.5" />
-                </button>
-                <button
-                  onClick={(e) => { e.stopPropagation(); handleDelete(interview.id); }}
-                  className="p-1 text-slate-600 hover:text-danger-400 transition-colors cursor-pointer"
-                  title="Usuń"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                </button>
+            <p className="text-slate-300 text-xs mb-1 truncate">
+              {app?.position}
+            </p>
+            <div className="flex items-center gap-2 text-xs text-slate-400">
+              <span className="flex items-center gap-1">
+                <Calendar className="w-3.5 h-3.5" />
+                {format(interviewDate, 'd MMM', { locale: pl })}
+              </span>
+              <span className="flex items-center gap-1">
+                <Clock className="w-3.5 h-3.5" />
+                {format(interviewDate, 'HH:mm')}
+              </span>
+            </div>
+            {!compact && (
+              <div className="mt-2">
+                <Badge variant={getInterviewStatusBadgeVariant(interview.status)}>
+                  {getInterviewStatusLabel(interview.status)}
+                </Badge>
               </div>
             )}
-          </div>
+          </>
+        }
+        compactActions={
+          <>
+            {interview.location && interview.location.startsWith('http') && (
+              <a
+                href={interview.location}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()}
+                className="p-1 text-slate-600 hover:text-primary-400 transition-colors cursor-pointer"
+                title="Otwórz link"
+              >
+                <ExternalLink className="w-3.5 h-3.5" />
+              </a>
+            )}
+            <button
+              onClick={(e) => { e.stopPropagation(); openModal(interview); }}
+              className="p-1 text-slate-600 hover:text-primary-400 transition-colors cursor-pointer"
+              title="Edytuj"
+            >
+              <Edit className="w-3.5 h-3.5" />
+            </button>
+            <button
+              onClick={(e) => { e.stopPropagation(); handleDelete(interview.id); }}
+              className="p-1 text-slate-600 hover:text-danger-400 transition-colors cursor-pointer"
+              title="Usuń"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+            </button>
+          </>
+        }
+        expandedContent={
+          <div className="px-3 pb-3 border-t border-dark-600">
+            {/* Szybka zmiana statusu */}
+            <div className="mt-3 mb-3">
+              <Select
+                label="Zmień status"
+                dense
+                options={statusOptions}
+                value={interview.status}
+                onChange={(e) => {
+                  handleStatusChange(interview, e.target.value as InterviewStatus);
+                }}
+              />
+            </div>
 
-          {/* Rozwinięte szczegóły — płynnie rozwijane i zwijane (grid-rows 0fr↔1fr).
-              Próba dołożenia scale/opacity jak w animate-unfold-card na tym samym
-              elemencie psuła animację (dwie nakładające się animacje wysokości
-              na tym samym, jeszcze zmieniającym rozmiar kontenerze) — z powrotem
-              sam grid-rows, który realnie działał płynnie. */}
-          <div className={`grid transition-[grid-template-rows] duration-200 ease-out ${isExpanded ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
-            <div className="overflow-hidden">
-            <div className="px-3 pb-3 border-t border-dark-600">
-              {/* Szybka zmiana statusu */}
-              <div className="mt-3 mb-3">
-                <Select
-                  label="Zmień status"
-                  dense
-                  options={statusOptions}
-                  value={interview.status}
-                  onChange={(e) => {
-                    handleStatusChange(interview, e.target.value as InterviewStatus);
-                  }}
-                />
-              </div>
+            {/* Szczegóły */}
+            <div className="space-y-2 text-xs">
+              {interview.duration && (
+                <div className="flex items-center gap-2 text-slate-400">
+                  <Clock className="w-3.5 h-3.5" />
+                  Czas trwania: {interview.duration} min
+                </div>
+              )}
 
-              {/* Szczegóły */}
-              <div className="space-y-2 text-xs">
-                {interview.duration && (
-                  <div className="flex items-center gap-2 text-slate-400">
-                    <Clock className="w-3.5 h-3.5" />
-                    Czas trwania: {interview.duration} min
-                  </div>
-                )}
-
-                {interview.location && (
-                  <div className="flex items-center gap-2 text-slate-400">
-                    <MapPin className="w-3.5 h-3.5" />
-                    <a
-                      href={interview.location.startsWith('http') ? interview.location : undefined}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      onClick={(e) => e.stopPropagation()}
-                      className={interview.location.startsWith('http') ? 'text-primary-400 hover:underline' : ''}
-                    >
-                      {interview.location.startsWith('http') ? 'Link do spotkania' : interview.location}
-                    </a>
-                  </div>
-                )}
-
-                {interview.whatWentWell && (
-                  <div className="text-slate-400 bg-success-500/10 p-2 mt-2">
-                    <span className="text-success-400 font-medium">Co poszło dobrze:</span>
-                    <p className="mt-1 whitespace-pre-wrap">{interview.whatWentWell}</p>
-                  </div>
-                )}
-
-                {interview.whatWentWrong && (
-                  <div className="text-slate-400 bg-warning-500/10 p-2 mt-2">
-                    <span className="text-warning-400 font-medium">Co mogło pójść lepiej:</span>
-                    <p className="mt-1 whitespace-pre-wrap">{interview.whatWentWrong}</p>
-                  </div>
-                )}
-
-                {interview.notes && (
-                  <div className="text-slate-400 whitespace-pre-wrap bg-dark-700/50 p-2 mt-2">
-                    {interview.notes}
-                  </div>
-                )}
-              </div>
-
-              {/* Akcje — po prawej, ten sam rozmiar co na zwiniętej karcie */}
-              <div className="flex items-center justify-end gap-0.5 mt-3 pt-3 border-t border-dark-600">
-                {interview.location && interview.location.startsWith('http') && (
+              {interview.location && (
+                <div className="flex items-center gap-2 text-slate-400">
+                  <MapPin className="w-3.5 h-3.5" />
                   <a
-                    href={interview.location}
+                    href={interview.location.startsWith('http') ? interview.location : undefined}
                     target="_blank"
                     rel="noopener noreferrer"
                     onClick={(e) => e.stopPropagation()}
-                    className="flex items-center gap-1 px-1 py-1 text-xs text-slate-400 hover:text-primary-400 transition-colors cursor-pointer"
+                    className={interview.location.startsWith('http') ? 'text-primary-400 hover:underline' : ''}
                   >
-                    <ExternalLink className="w-3.5 h-3.5" />
-                    Otwórz link
+                    {interview.location.startsWith('http') ? 'Link do spotkania' : interview.location}
                   </a>
-                )}
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    openModal(interview);
-                  }}
-                  className="p-1 text-slate-600 hover:text-primary-400 cursor-pointer"
-                >
-                  <Edit className="w-3.5 h-3.5" />
-                </button>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleDelete(interview.id);
-                  }}
-                  className="p-1 text-slate-600 hover:text-danger-400 cursor-pointer"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                </button>
-              </div>
+                </div>
+              )}
+
+              {interview.whatWentWell && (
+                <div className="text-slate-400 bg-success-500/10 p-2 mt-2">
+                  <span className="text-success-400 font-medium">Co poszło dobrze:</span>
+                  <p className="mt-1 whitespace-pre-wrap">{interview.whatWentWell}</p>
+                </div>
+              )}
+
+              {interview.whatWentWrong && (
+                <div className="text-slate-400 bg-warning-500/10 p-2 mt-2">
+                  <span className="text-warning-400 font-medium">Co mogło pójść lepiej:</span>
+                  <p className="mt-1 whitespace-pre-wrap">{interview.whatWentWrong}</p>
+                </div>
+              )}
+
+              {interview.notes && (
+                <div className="text-slate-400 whitespace-pre-wrap bg-dark-700/50 p-2 mt-2">
+                  {interview.notes}
+                </div>
+              )}
             </div>
+
+            {/* Akcje — po prawej, ten sam rozmiar co na zwiniętej karcie */}
+            <div className="flex items-center justify-end gap-0.5 mt-3 pt-3 border-t border-dark-600">
+              {interview.location && interview.location.startsWith('http') && (
+                <a
+                  href={interview.location}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={(e) => e.stopPropagation()}
+                  className="flex items-center gap-1 px-1 py-1 text-xs text-slate-400 hover:text-primary-400 transition-colors cursor-pointer"
+                >
+                  <ExternalLink className="w-3.5 h-3.5" />
+                  Otwórz link
+                </a>
+              )}
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  openModal(interview);
+                }}
+                className="p-1 text-slate-600 hover:text-primary-400 cursor-pointer"
+              >
+                <Edit className="w-3.5 h-3.5" />
+              </button>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDelete(interview.id);
+                }}
+                className="p-1 text-slate-600 hover:text-danger-400 cursor-pointer"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+              </button>
             </div>
           </div>
-        </div>
-      </Card>
+        }
+      />
     );
-
-    if (draggable) {
-      return (
-        <div
-          draggable
-          onDragStart={(e) => handleDragStart(e, interview)}
-          onDragEnd={handleDragEnd}
-          className={`cursor-grab active:cursor-grabbing transition-opacity ${draggedInterview?.id === interview.id ? 'opacity-40' : ''}`}
-        >
-          {cardContent}
-        </div>
-      );
-    }
-
-    return cardContent;
   };
 
   return (
@@ -807,50 +724,43 @@ export function InterviewsPage() {
             >
             <div className="flex gap-3 h-full pb-4">
               {visibleColumns.map((status) => (
-                <div
+                <KanbanColumn
                   key={status}
-                  data-kanban-status={status}
-                  className="w-full md:w-80 flex-shrink-0 flex flex-col h-full snap-start px-4 md:px-0"
+                  status={status}
+                  badgeVariant={getInterviewStatusBadgeVariant(status)}
+                  badgeLabel={getInterviewStatusLabel(status)}
+                  count={interviewsByStatus[status].length}
                   onDragOver={(e) => handleDragOver(e, status)}
                   onDragLeave={handleDragLeave}
                   onDrop={(e) => handleDrop(e, status)}
+                  isDragOver={dragOverStatus === status}
+                  isEmpty={interviewsByStatus[status].length === 0}
+                  emptyLabel="Brak rozmów"
+                  emptyDimmed={state.applications.length === 0}
+                  emptyGhostHeader={
+                    <>
+                      <div className="flex items-center gap-2 mb-0.5">
+                        <h3 className="font-semibold text-sm truncate">Firma</h3>
+                      </div>
+                      <p className="text-xs mb-1 truncate">Stanowisko</p>
+                      <div className="flex items-center gap-2 text-xs">
+                        <span className="flex items-center gap-1">
+                          <Calendar className="w-3.5 h-3.5" />
+                          1 sty
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Clock className="w-3.5 h-3.5" />
+                          00:00
+                        </span>
+                      </div>
+                    </>
+                  }
+                  inlineAdd={renderInlineAdd(status)}
                 >
-                  <div className="bg-dark-800 p-3 mb-2 flex items-center justify-between flex-shrink-0">
-                    <div className="flex items-center gap-2">
-                      <Badge variant={getInterviewStatusBadgeVariant(status)} size="sm">
-                        {getInterviewStatusLabel(status)}
-                      </Badge>
-                      <span className="text-xs text-slate-500">({interviewsByStatus[status].length})</span>
-                    </div>
-                  </div>
-                  <div
-                    className={`flex-1 overflow-y-auto kanban-scroll space-y-1.5 min-h-[200px] p-1.5 transition-colors ${
-                      dragOverStatus === status ? 'bg-primary-500/10 border-2 border-dashed border-primary-500/50' : 'border-2 border-transparent'
-                    }`}
-                  >
-                    {interviewsByStatus[status].length === 0 && dragOverStatus !== status ? (
-                      <div className={`flex flex-col gap-1 ${state.applications.length === 0 ? 'opacity-40' : ''}`}>
-                        {/* min-h dopasowany do wysokości jednej karty (compact) — żeby
-                            przycisk "+" wypadał w tym samym miejscu co w kolumnach z treścią */}
-                        <div className="w-full min-h-[86px] border-2 border-dashed border-dark-600 flex items-center justify-center">
-                          <span className="text-xs text-slate-400">Brak rozmów</span>
-                        </div>
-                        {renderInlineAdd(status)}
-                      </div>
-                    ) : interviewsByStatus[status].length === 0 ? (
-                      <div className="text-center py-8 text-slate-500 text-sm border-2 border-dashed border-primary-500/50">
-                        Upuść tutaj
-                      </div>
-                    ) : (
-                      <>
-                        {interviewsByStatus[status].map((interview) => (
-                          <InterviewCard key={interview.id} interview={interview} compact draggable />
-                        ))}
-                        {renderInlineAdd(status)}
-                      </>
-                    )}
-                  </div>
-                </div>
+                  {interviewsByStatus[status].map((interview) => (
+                    <InterviewCard key={interview.id} interview={interview} compact draggable />
+                  ))}
+                </KanbanColumn>
               ))}
             </div>
             </div>
