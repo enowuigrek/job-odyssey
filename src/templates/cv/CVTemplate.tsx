@@ -223,7 +223,6 @@ const s = StyleSheet.create({
     paddingLeft: 9,
     marginBottom: 5,
     marginTop: 2,
-    alignSelf: 'flex-start',
   },
   expRole: {
     fontWeight: 'bold',
