@@ -169,6 +169,7 @@ const s = StyleSheet.create({
     paddingLeft: 9,
     marginTop: 3,
     marginBottom: 4,
+    alignSelf: 'flex-start',
   },
   projectDesc: {
     fontWeight: 300,
@@ -176,7 +177,7 @@ const s = StyleSheet.create({
     marginBottom: 3,
   },
   projectStack: {
-    fontWeight: 400,
+    fontWeight: 'bold',
     fontSize: 8.5,
     color: BLACK,
     marginBottom: 2,
@@ -222,6 +223,7 @@ const s = StyleSheet.create({
     paddingLeft: 9,
     marginBottom: 5,
     marginTop: 2,
+    alignSelf: 'flex-start',
   },
   expRole: {
     fontWeight: 'bold',
@@ -262,6 +264,7 @@ const s = StyleSheet.create({
     paddingLeft: 9,
     marginTop: 2,
     marginBottom: 2,
+    alignSelf: 'flex-start',
   },
   eduDetail: {
     fontWeight: 300,
@@ -319,6 +322,67 @@ function SectionHeader({ title }: { title: string }) {
     <View style={s.sectionHeader}>
       <Text style={s.sectionTitle}>{title}</Text>
     </View>
+  );
+}
+
+function TechRow({ tech }: { tech: CVData['technologies'][number] }) {
+  return (
+    <View style={s.techRow}>
+      <Text style={s.techLabel}>{formatTechCategory(tech.category)}</Text>
+      <Text style={s.techValue}>{tech.items}</Text>
+    </View>
+  );
+}
+
+function EduEntry({ edu }: { edu: CVData['education'][number] }) {
+  return (
+    <View style={s.eduBlock}>
+      <Text style={s.eduSchool}>{edu.school}</Text>
+      <View style={s.eduDetailBlock}>
+        <Text style={s.eduDetail}>{edu.degree} | {edu.years}</Text>
+      </View>
+    </View>
+  );
+}
+
+function CertRow({ cert }: { cert: NonNullable<CVData['certificates']>[number] }) {
+  return (
+    <View style={s.certRow}>
+      {cert.url ? (
+        <Link src={cert.trackedUrl ?? cert.url} style={s.certName}>
+          {cert.name}
+        </Link>
+      ) : (
+        <Text style={{ ...s.certName, color: BLACK }}>{cert.name}</Text>
+      )}
+      <Text style={s.certMeta}>
+        {cert.issuer}{cert.issuer && cert.year ? ' · ' : ''}{cert.year}
+      </Text>
+    </View>
+  );
+}
+
+function ProjectEntry({ project }: { project: CVData['projects'][number] }) {
+  return (
+    <>
+      <Text style={s.projectName}>{project.name}</Text>
+      <Text style={s.projectTagline}>{project.tagline}</Text>
+      <View style={s.projectBody}>
+        <Text style={s.projectDesc}>{project.description}</Text>
+        <Text style={s.projectStack}>{project.stack}</Text>
+        {project.note && <Text style={s.projectNote}>{project.note}</Text>}
+        <View style={s.projectLinksRow}>
+          {project.links.map((link, li) => (
+            <React.Fragment key={link.label}>
+              {li > 0 && <Text style={s.separatorText}>|</Text>}
+              <Link src={link.trackedUrl ?? link.url} style={s.linkInline}>
+                {link.url.replace(/^https?:\/\//, '')}
+              </Link>
+            </React.Fragment>
+          ))}
+        </View>
+      </View>
+    </>
   );
 }
 
@@ -393,55 +457,58 @@ export function CVTemplate({ data }: CVTemplateProps) {
           <React.Fragment key={key}>
             {key === 'profile' && (
               <>
-                <SectionHeader title={(data.profileTitle || 'OPIS').toUpperCase()} />
-                <Text style={s.body}>{data.profile}</Text>
+                {/* Nagłówek + tekst razem — zapobiega osieroconemu nagłówkowi na dole strony */}
+                <View wrap={false}>
+                  <SectionHeader title={(data.profileTitle || 'OPIS').toUpperCase()} />
+                  <Text style={s.body}>{data.profile}</Text>
+                </View>
                 {data.showApproach !== false && data.approach ? (
-                  <>
+                  <View wrap={false}>
                     <SectionHeader title={(data.approachTitle || 'PODEJŚCIE DO PRACY').toUpperCase()} />
                     <Text style={s.body}>{data.approach}</Text>
-                  </>
+                  </View>
                 ) : null}
               </>
             )}
 
             {key === 'technologies' && data.showTechnologies !== false && (
               <>
-                <SectionHeader title={(data.technologiesTitle || 'TECHNOLOGIE I NARZĘDZIA').toUpperCase()} />
-                {data.technologies.map(tech => (
-                  <View key={tech.category} style={s.techRow}>
-                    <Text style={s.techLabel}>{formatTechCategory(tech.category)}</Text>
-                    <Text style={s.techValue}>{tech.items}</Text>
-                  </View>
-                ))}
+                {data.technologies.length > 0 ? (
+                  <>
+                    <View wrap={false}>
+                      <SectionHeader title={(data.technologiesTitle || 'TECHNOLOGIE I NARZĘDZIA').toUpperCase()} />
+                      <TechRow tech={data.technologies[0]} />
+                    </View>
+                    {data.technologies.slice(1).map(tech => (
+                      <TechRow key={tech.category} tech={tech} />
+                    ))}
+                  </>
+                ) : (
+                  <SectionHeader title={(data.technologiesTitle || 'TECHNOLOGIE I NARZĘDZIA').toUpperCase()} />
+                )}
               </>
             )}
 
             {key === 'projects' && data.showProjects !== false && (
               <>
-                <SectionHeader title="WYBRANE PROJEKTY" />
-                {data.projects.map(project => (
-                  <View key={project.name} wrap={false}>
-                    <Text style={s.projectName}>{project.name}</Text>
-                    <Text style={s.projectTagline}>{project.tagline}</Text>
-                    <View style={s.projectBody}>
-                    <Text style={s.projectDesc}>{project.description}</Text>
-                    <Text style={s.projectStack}>{project.stack}</Text>
-                    {project.note && <Text style={s.projectNote}>{project.note}</Text>}
-                    <View style={s.projectLinksRow}>
-                      {project.links.map((link, li) => (
-                        <React.Fragment key={link.label}>
-                          {li > 0 && <Text style={s.separatorText}>|</Text>}
-                          <Link src={link.trackedUrl ?? link.url} style={s.linkInline}>
-                            {link.label === 'GitHub' || link.label.endsWith('GitHub')
-                              ? 'GitHub'
-                              : link.url.replace(/^https?:\/\//, '')}
-                          </Link>
-                        </React.Fragment>
-                      ))}
+                {data.projects.length > 0 ? (
+                  <>
+                    {/* Nagłówek sekcji + pierwszy projekt razem — zapobiega osieroconemu
+                        nagłówkowi na dole strony (ten sam wzorzec co firma + pierwsza rola
+                        w Doświadczeniu) */}
+                    <View wrap={false}>
+                      <SectionHeader title="WYBRANE PROJEKTY" />
+                      <ProjectEntry project={data.projects[0]} />
                     </View>
-                    </View>
-                  </View>
-                ))}
+                    {data.projects.slice(1).map(project => (
+                      <View key={project.name} wrap={false}>
+                        <ProjectEntry project={project} />
+                      </View>
+                    ))}
+                  </>
+                ) : (
+                  <SectionHeader title="WYBRANE PROJEKTY" />
+                )}
               </>
             )}
 
@@ -485,20 +552,24 @@ export function CVTemplate({ data }: CVTemplateProps) {
 
             {key === 'education' && (
               <>
-                <SectionHeader title="WYKSZTAŁCENIE" />
-                {data.education.map(edu => (
-                  <View key={edu.school} style={s.eduBlock}>
-                    <Text style={s.eduSchool}>{edu.school}</Text>
-                    <View style={s.eduDetailBlock}>
-                      <Text style={s.eduDetail}>{edu.degree} | {edu.years}</Text>
+                {data.education.length > 0 ? (
+                  <>
+                    <View wrap={false}>
+                      <SectionHeader title="WYKSZTAŁCENIE" />
+                      <EduEntry edu={data.education[0]} />
                     </View>
-                  </View>
-                ))}
+                    {data.education.slice(1).map(edu => (
+                      <EduEntry key={edu.school} edu={edu} />
+                    ))}
+                  </>
+                ) : (
+                  <SectionHeader title="WYKSZTAŁCENIE" />
+                )}
               </>
             )}
 
             {key === 'custom' && data.customSections && data.customSections.map(sec => (
-              <View key={sec.id}>
+              <View key={sec.id} wrap={false}>
                 <SectionHeader title={sec.title.toUpperCase()} />
                 <Text style={s.body}>{sec.content}</Text>
               </View>
@@ -506,29 +577,22 @@ export function CVTemplate({ data }: CVTemplateProps) {
 
             {key === 'certificates' && data.showCertificates !== false && data.certificates && data.certificates.length > 0 && (
               <>
-                <SectionHeader title={(data.certificatesTitle || 'Certyfikaty').toUpperCase()} />
-                {data.certificates.map((cert, ci) => (
-                  <View key={ci} style={s.certRow}>
-                    {cert.url ? (
-                      <Link src={cert.trackedUrl ?? cert.url} style={s.certName}>
-                        {cert.name}
-                      </Link>
-                    ) : (
-                      <Text style={{ ...s.certName, color: BLACK }}>{cert.name}</Text>
-                    )}
-                    <Text style={s.certMeta}>
-                      {cert.issuer}{cert.issuer && cert.year ? ' · ' : ''}{cert.year}
-                    </Text>
-                  </View>
+                {/* Nagłówek + pierwszy certyfikat razem — zapobiega osieroconemu nagłówkowi na dole strony */}
+                <View wrap={false}>
+                  <SectionHeader title={(data.certificatesTitle || 'Certyfikaty').toUpperCase()} />
+                  <CertRow cert={data.certificates[0]} />
+                </View>
+                {data.certificates.slice(1).map((cert, ci) => (
+                  <CertRow key={ci} cert={cert} />
                 ))}
               </>
             )}
 
             {key === 'interests' && (
-              <>
+              <View wrap={false}>
                 <SectionHeader title="ZAINTERESOWANIA" />
                 <Text style={s.interests}>{formatInterests(data.interests)}</Text>
-              </>
+              </View>
             )}
 
           </React.Fragment>

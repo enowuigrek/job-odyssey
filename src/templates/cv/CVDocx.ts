@@ -204,7 +204,7 @@ export async function buildCVDocx(data: CVData): Promise<Blob> {
             spacing: { after: 60 },
           }));
           children.push(new Paragraph({
-            children: [run(project.stack, { size: 17 })],
+            children: [run(project.stack, { bold: true, size: 17 })],
             spacing: { after: project.note ? 40 : 60 },
           }));
           if (project.note) {
@@ -217,11 +217,7 @@ export async function buildCVDocx(data: CVData): Promise<Blob> {
           const projLinkChildren: (TextRun | ExternalHyperlink)[] = [];
           project.links.forEach((l, i) => {
             if (i > 0) projLinkChildren.push(run('   |   ', { color: GRAY, size: 17 }));
-            const label =
-              l.label === 'GitHub' || l.label.endsWith('GitHub')
-                ? 'GitHub'
-                : l.url.replace(/^https?:\/\//, '');
-            projLinkChildren.push(hyperlink(l, label));
+            projLinkChildren.push(hyperlink(l, l.url.replace(/^https?:\/\//, '')));
           });
           children.push(new Paragraph({ children: projLinkChildren, spacing: { after: 240 } }));
         }

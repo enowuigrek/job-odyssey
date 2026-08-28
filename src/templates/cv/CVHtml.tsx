@@ -77,7 +77,7 @@ function ProjectLinks({ links }: { links: CVLink[] }) {
         <span key={link.label}>
           {i > 0 && <span className="cv-links-sep">|</span>}
           <a href={link.trackedUrl ?? link.url} target="_blank" rel="noreferrer">
-            {link.label.endsWith('GitHub') || link.label === 'GitHub' ? 'GitHub' : link.url.replace(/^https?:\/\//, '')}
+            {link.url.replace(/^https?:\/\//, '')}
           </a>
         </span>
       ))}

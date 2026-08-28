@@ -14,7 +14,7 @@
     "email": ""
   },
   "dependencies": {
-    "@react-pdf/renderer": "^4.4.1",
+    "@react-pdf/renderer": "^4.9.0",
     "@supabase/supabase-js": "^2.103.0",
     "date-fns": "^4.1.0",
     "docx": "^9.6.1",
