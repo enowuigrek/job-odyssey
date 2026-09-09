@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, FileText, Star, Trash2, Edit, Tag, Download, FileOutput, Eye, GripVertical } from 'lucide-react';
+import { Plus, FileText, Star, Trash2, Edit, Tag, Download, FileOutput, Eye, GripVertical, X } from 'lucide-react';
 
 import { useApp } from '../contexts/AppContext';
 import { getCVDataById } from '../lib/generateCV';
@@ -32,6 +32,7 @@ export function CVPage() {
   const [formError, setFormError] = useState<string | null>(null);
   const { confirm, ConfirmDialog } = useConfirm();
   const [previewCvId, setPreviewCvId] = useState<string | null>(null);
+  const [downloadError, setDownloadError] = useState<string | null>(null);
 
   // Listen for FAB click from Layout → navigate to editor
   const goToEditor = useCallback(() => navigate('/cv-editor'), [navigate]);
@@ -141,14 +142,15 @@ export function CVPage() {
   };
 
   const handleDownloadCV = async (cv: CV) => {
+    setDownloadError(null);
     if (!cv.fileName) {
-      console.warn('Plik CV niedostępny');
+      setDownloadError('Ten plik CV nie jest dostępny do pobrania.');
       return;
     }
 
     const url = await getCVFileUrl(cv.fileName);
     if (!url) {
-      console.error('Nie można pobrać pliku.');
+      setDownloadError('Nie udało się pobrać pliku — spróbuj ponownie za chwilę.');
       return;
     }
     const link = document.createElement('a');
@@ -200,6 +202,18 @@ export function CVPage() {
           className="w-full px-4 py-2 bg-dark-800 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-primary-500"
         />
       </div>
+
+      {downloadError && (
+        <div className="flex items-center justify-between gap-3 text-sm text-danger-400 bg-danger-500/10 px-4 py-2">
+          <span>{downloadError}</span>
+          <button
+            onClick={() => setDownloadError(null)}
+            className="text-danger-400 hover:text-danger-300 transition-colors cursor-pointer flex-shrink-0"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
 
       {/* CV List */}
       {filteredCVs.length === 0 ? (

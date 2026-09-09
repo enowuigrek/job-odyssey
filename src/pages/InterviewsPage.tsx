@@ -753,6 +753,11 @@ export function InterviewsPage() {
                           00:00
                         </span>
                       </div>
+                      {/* Wiersz ikonek akcji pod treścią — realna karta compact go zawsze pokazuje,
+                          bez tego placeholder wychodził niższy niż prawdziwa karta */}
+                      <div className="flex items-center justify-end gap-0.5 mt-1.5">
+                        <div className="p-1"><div className="w-3.5 h-3.5" /></div>
+                      </div>
                     </>
                   }
                   inlineAdd={renderInlineAdd(status)}
