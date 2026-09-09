@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, FileText, Star, Trash2, Edit, Tag, Download, FileOutput, Eye, GripVertical, X } from 'lucide-react';
+import { Plus, FileText, Star, Trash2, Edit, Tag, Download, FileOutput, Eye, GripVertical, X, Loader2 } from 'lucide-react';
 
 import { useApp } from '../contexts/AppContext';
 import { getCVDataById } from '../lib/generateCV';
@@ -33,6 +33,7 @@ export function CVPage() {
   const { confirm, ConfirmDialog } = useConfirm();
   const [previewCvId, setPreviewCvId] = useState<string | null>(null);
   const [downloadError, setDownloadError] = useState<string | null>(null);
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
 
   // Listen for FAB click from Layout → navigate to editor
   const goToEditor = useCallback(() => navigate('/cv-editor'), [navigate]);
@@ -148,18 +149,39 @@ export function CVPage() {
       return;
     }
 
-    const url = await getCVFileUrl(cv.fileName);
-    if (!url) {
+    setDownloadingId(cv.id);
+    try {
+      const url = await getCVFileUrl(cv.fileName);
+      if (!url) {
+        setDownloadError('Nie udało się pobrać pliku — spróbuj ponownie za chwilę.');
+        return;
+      }
+      // Pobranie jako blob zamiast bezpośredniego <a href={signedUrl} target="_blank"> —
+      // signed URL z Supabase jest z innej domeny, więc atrybut `download` bywa przez
+      // przeglądarkę ignorowany dla cross-origin, a `target="_blank"` po `await` (poza
+      // synchronicznym gestem użytkownika) potrafi zostać po cichu zablokowany jako popup
+      // (szczególnie Safari). Blob URL jest zawsze "same-origin", więc żaden z tych dwóch
+      // problemów tu nie występuje.
+      const response = await fetch(url);
+      if (!response.ok) {
+        setDownloadError(`Plik jest niedostępny na serwerze (błąd ${response.status}).`);
+        return;
+      }
+      const blob = await response.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = cv.fileName.split('/').pop() ?? cv.fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(blobUrl);
+    } catch (e) {
+      console.error('Download error:', e);
       setDownloadError('Nie udało się pobrać pliku — spróbuj ponownie za chwilę.');
-      return;
+    } finally {
+      setDownloadingId(null);
     }
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = cv.fileName.split('/').pop() ?? cv.fileName;
-    link.target = '_blank';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
   };
 
   const handleSetDefault = (cv: CV) => {
@@ -332,10 +354,15 @@ export function CVPage() {
                   {cv.fileName && (
                     <button
                       onClick={() => handleDownloadCV(cv)}
-                      className="p-1.5 text-slate-500 hover:text-success-400 transition-colors cursor-pointer"
+                      disabled={downloadingId === cv.id}
+                      className="p-1.5 text-slate-500 hover:text-success-400 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-wait"
                       title="Pobierz plik"
                     >
-                      <Download className="w-4 h-4" />
+                      {downloadingId === cv.id ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Download className="w-4 h-4" />
+                      )}
                     </button>
                   )}
                   <button
