@@ -57,9 +57,12 @@ async function authenticate(req: Request): Promise<string | null> {
   return data.user_id as string;
 }
 
-// Trzymać w zgodzie z normalizeUrlKey w src/lib/trackUrl.ts
+// Klucz oferty do wykrywania duplikatów: jak normalizeUrlKey z src/lib/trackUrl.ts, ale bez
+// query i # — linki z maili portali mają doklejone parametry śledzące (?sendid=…&utm_…),
+// a to wciąż ta sama oferta.
 function urlKey(u: string): string {
-  return u.trim().toLowerCase().replace(/^https?:\/\//, '').replace(/^www\./, '').replace(/\/+$/, '');
+  return u.trim().toLowerCase().replace(/[?#].*$/, '')
+    .replace(/^https?:\/\//, '').replace(/^www\./, '').replace(/\/+$/, '');
 }
 
 function isNonEmptyString(v: unknown): v is string {
