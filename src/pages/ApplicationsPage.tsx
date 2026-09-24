@@ -29,6 +29,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useUserSettings } from '../contexts/UserSettingsContext';
 import { TRIAL_APPLICATION_LIMIT, TRIAL_CV_LIMIT, TRIAL_LIMIT_MESSAGE_APPLICATION } from '../lib/planLimits';
 import { parseApplicationPackage, isDuplicateApplication } from '../lib/importPackage';
+import { cvFileName } from '../lib/cvFileName';
 import { TrackingLinksModal } from '../components/tracking/TrackingLinksModal';
 import { KanbanStatusTabs } from '../components/kanban/KanbanStatusTabs';
 import { KanbanColumn } from '../components/kanban/KanbanColumn';
@@ -260,7 +261,7 @@ export function ApplicationsPage() {
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `CV_${app.companyName.replace(/\s+/g, '_')}_tracked.pdf`;
+      a.download = cvFileName(cvData.name, app.companyName);
       a.click();
       URL.revokeObjectURL(url);
     } catch (err) {
