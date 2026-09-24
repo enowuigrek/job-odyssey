@@ -12,16 +12,24 @@ import {
   AlertCircle,
   Link2,
   Sparkles,
+  Bot,
 } from 'lucide-react';
 import { useApp } from '../contexts/AppContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useUserSettings } from '../contexts/UserSettingsContext';
 import { supabase } from '../lib/supabase';
-import { upsertUserSettings, deleteAllUserStorageFiles } from '../lib/db';
+import {
+  upsertUserSettings,
+  deleteAllUserStorageFiles,
+  getAgentTokenInfo,
+  regenerateAgentToken,
+  revokeAgentToken,
+  type AgentTokenInfo,
+} from '../lib/db';
 import { translateAuthError } from '../lib/authErrors';
 import { ensureHttps } from '../lib/trackUrl';
-import { Card, CardBody, CardHeader, PageHeader, Input, Button, Modal } from '../components/ui';
+import { Card, CardBody, CardHeader, PageHeader, Input, Button, Modal, useConfirm } from '../components/ui';
 import { TRIAL_CV_LIMIT, TRIAL_APPLICATION_LIMIT } from '../lib/planLimits';
 
 function StatusMsg({ type, text }: { type: 'ok' | 'err'; text: string }) {
@@ -98,6 +106,70 @@ export function SettingsPage() {
     } else {
       setCodeMsg({ type: 'ok', text: 'Kod przyjęty — masz teraz pełną wersję.' });
       setAccessCode('');
+    }
+  };
+
+  // Token agenta AI (edge function agent-api) — jawny token trzymamy tylko w stanie,
+  // do odświeżenia strony; w bazie jest wyłącznie hash
+  const { confirm, ConfirmDialog } = useConfirm();
+  const [agentToken, setAgentToken] = useState<AgentTokenInfo | null>(null);
+  const [newAgentToken, setNewAgentToken] = useState<string | null>(null);
+  const [agentMsg, setAgentMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
+  const [agentLoading, setAgentLoading] = useState(false);
+
+  useEffect(() => {
+    getAgentTokenInfo().then(setAgentToken);
+  }, []);
+
+  const handleGenerateAgentToken = async () => {
+    if (!user) return;
+    if (agentToken) {
+      const ok = await confirm({
+        title: 'Nowy token agenta',
+        message: 'Obecny token przestanie działać — agenta trzeba będzie skonfigurować nowym tokenem.',
+        confirmLabel: 'Wygeneruj nowy',
+      });
+      if (!ok) return;
+    }
+    setAgentLoading(true);
+    setAgentMsg(null);
+    try {
+      setNewAgentToken(await regenerateAgentToken(user.id));
+      setAgentToken(await getAgentTokenInfo());
+    } catch {
+      setAgentMsg({ type: 'err', text: 'Nie udało się wygenerować tokenu. Spróbuj ponownie.' });
+    }
+    setAgentLoading(false);
+  };
+
+  const handleRevokeAgentToken = async () => {
+    if (!user) return;
+    const ok = await confirm({
+      title: 'Odwołaj token agenta',
+      message: 'Agent straci dostęp do Twojego konta. Dodane już aplikacje zostają.',
+      confirmLabel: 'Odwołaj',
+      variant: 'danger',
+    });
+    if (!ok) return;
+    setAgentLoading(true);
+    try {
+      await revokeAgentToken(user.id);
+      setAgentToken(null);
+      setNewAgentToken(null);
+      setAgentMsg({ type: 'ok', text: 'Token odwołany.' });
+    } catch {
+      setAgentMsg({ type: 'err', text: 'Nie udało się odwołać tokenu. Spróbuj ponownie.' });
+    }
+    setAgentLoading(false);
+  };
+
+  const handleCopyAgentToken = async () => {
+    if (!newAgentToken) return;
+    try {
+      await navigator.clipboard.writeText(newAgentToken);
+      setAgentMsg({ type: 'ok', text: 'Skopiowano do schowka.' });
+    } catch {
+      setAgentMsg({ type: 'err', text: 'Nie udało się skopiować — zaznacz token i skopiuj ręcznie.' });
     }
   };
 
@@ -421,6 +493,65 @@ export function SettingsPage() {
           {domainMsg && <StatusMsg {...domainMsg} />}
         </CardBody>
       </Card>
+
+      {/* Agent AI token */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <Bot className="w-5 h-5 text-slate-400" />
+            <h2 className="font-semibold text-slate-100">Token agenta AI</h2>
+          </div>
+        </CardHeader>
+        <CardBody className="space-y-3">
+          <p className="text-sm text-slate-400">
+            Pozwala zewnętrznemu agentowi (np. Claude Code) dodawać na Twoje konto aplikacje
+            z dopasowanym CV i sprawdzać, gdzie już aplikowałeś — nic poza tym. Aplikacje od
+            agenta trafiają do kolumny „Zapisane” ze znaczkiem AI.
+          </p>
+          <p className="text-sm text-slate-400">
+            Adres API:{' '}
+            <code className="text-slate-300 break-all">
+              {(import.meta.env.VITE_SUPABASE_URL as string)}/functions/v1/agent-api
+            </code>
+          </p>
+          {newAgentToken ? (
+            <div className="space-y-2">
+              <p className="text-sm text-warning-400">
+                Skopiuj token teraz — później nie da się go odczytać, można tylko wygenerować nowy.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-2 sm:items-end">
+                <div className="flex-1">
+                  <Input readOnly value={newAgentToken} onFocus={e => e.target.select()} />
+                </div>
+                <Button onClick={handleCopyAgentToken} size="sm" variant="secondary">
+                  Kopiuj
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <p className="text-sm text-slate-300">
+              {agentToken
+                ? `Token aktywny od ${new Date(agentToken.createdAt).toLocaleDateString('pl-PL')}` +
+                  (agentToken.lastUsedAt
+                    ? `, ostatnio użyty ${new Date(agentToken.lastUsedAt).toLocaleString('pl-PL', { dateStyle: 'short', timeStyle: 'short' })}.`
+                    : ', jeszcze nieużyty.')
+                : 'Brak aktywnego tokenu.'}
+            </p>
+          )}
+          <div className="flex flex-wrap gap-2 pt-1">
+            <Button onClick={handleGenerateAgentToken} disabled={agentLoading} size="sm">
+              {agentLoading ? 'Chwila...' : agentToken ? 'Wygeneruj nowy token' : 'Wygeneruj token'}
+            </Button>
+            {agentToken && (
+              <Button onClick={handleRevokeAgentToken} disabled={agentLoading} size="sm" variant="secondary">
+                Odwołaj
+              </Button>
+            )}
+          </div>
+          {agentMsg && <StatusMsg {...agentMsg} />}
+        </CardBody>
+      </Card>
+      <ConfirmDialog />
 
       {/* Data Statistics */}
       <Card>

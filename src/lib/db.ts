@@ -583,6 +583,53 @@ export async function upsertUserSettings(userId: string, settings: { trackingDom
   if (error) console.error('upsertUserSettings failed:', error.message);
 }
 
+// ============================================================
+// Token agenta — edge function agent-api (zewnętrzny agent dodaje
+// aplikacje z CV). W bazie tylko hash; jawny token widać raz, przy generowaniu.
+// ============================================================
+
+export interface AgentTokenInfo {
+  createdAt: string;
+  lastUsedAt?: string;
+}
+
+export async function getAgentTokenInfo(): Promise<AgentTokenInfo | null> {
+  const { data, error } = await supabase
+    .from('agent_tokens')
+    .select('created_at, last_used_at')
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error || !data) return null;
+  return {
+    createdAt: data.created_at as string,
+    lastUsedAt: (data.last_used_at as string | null) ?? undefined,
+  };
+}
+
+async function sha256Hex(text: string): Promise<string> {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+/** Tworzy nowy token (poprzedni przestaje działać) i zwraca go jawnie — jedyny moment, gdy da się go odczytać */
+export async function regenerateAgentToken(userId: string): Promise<string> {
+  const bytes = crypto.getRandomValues(new Uint8Array(32));
+  const token = 'jo_' + btoa(String.fromCharCode(...bytes))
+    .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  await revokeAgentToken(userId);
+  const { error } = await supabase
+    .from('agent_tokens')
+    .insert({ user_id: userId, token_hash: await sha256Hex(token) });
+  if (error) throw new Error(error.message);
+  return token;
+}
+
+export async function revokeAgentToken(userId: string): Promise<void> {
+  const { error } = await supabase.from('agent_tokens').delete().eq('user_id', userId);
+  if (error) throw new Error(error.message);
+}
+
 /** Zwraca nowy plan przy sukcesie, albo czytelny (już po polsku) komunikat błędu z funkcji SQL */
 export async function redeemAccessCode(code: string): Promise<{ plan?: UserPlan; error?: string }> {
   const { data, error } = await supabase.rpc('redeem_access_code', { p_code: code });
