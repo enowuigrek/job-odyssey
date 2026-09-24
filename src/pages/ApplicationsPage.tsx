@@ -19,13 +19,16 @@ import {
   Linkedin,
   Globe,
   Eye,
+  Upload,
 } from 'lucide-react';
+import { v4 as uuidv4 } from 'uuid';
 import { pdf } from '@react-pdf/renderer';
 import type { DocumentProps } from '@react-pdf/renderer';
 import { useApp } from '../contexts/AppContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useUserSettings } from '../contexts/UserSettingsContext';
-import { TRIAL_APPLICATION_LIMIT, TRIAL_LIMIT_MESSAGE_APPLICATION } from '../lib/planLimits';
+import { TRIAL_APPLICATION_LIMIT, TRIAL_CV_LIMIT, TRIAL_LIMIT_MESSAGE_APPLICATION } from '../lib/planLimits';
+import { parseApplicationPackage, isDuplicateApplication } from '../lib/importPackage';
 import { TrackingLinksModal } from '../components/tracking/TrackingLinksModal';
 import { KanbanStatusTabs } from '../components/kanban/KanbanStatusTabs';
 import { KanbanColumn } from '../components/kanban/KanbanColumn';
@@ -37,7 +40,7 @@ import {
   createTrackingLinks,
   getTrackingLinksForApplication,
 } from '../lib/db';
-import { getCVDataById, prepareTrackedCV, collectCvLinks } from '../lib/generateCV';
+import { getCVDataById, prepareTrackedCV, collectCvLinks, saveCVDataById } from '../lib/generateCV';
 import { normalizeUrlKey } from '../lib/trackUrl';
 import { CVTemplate } from '../templates/cv/CVTemplate';
 import { CVHtml } from '../templates/cv/CVHtml';
@@ -446,6 +449,82 @@ export function ApplicationsPage() {
     setInlineAddStatus(null);
   };
 
+  // ── Import paczki: plik JSON z ofertami + gotowymi CV pod każdą (patrz lib/importPackage) ──
+  // Każda pozycja → nowe CV w Bazie CV + aplikacja "Zapisana" z tym CV podpiętym.
+  // Pozycje już obecne (ten sam link do oferty albo firma + stanowisko) są pomijane,
+  // więc ponowny import tej samej paczki niczego nie dubluje.
+  const importInputRef = useRef<HTMLInputElement>(null);
+  const [importMsg, setImportMsg] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null);
+
+  const handleImportPackage = async (file: File) => {
+    setImportMsg(null);
+    const parsed = parseApplicationPackage(await file.text());
+    if (!parsed.ok) {
+      setImportMsg({ kind: 'error', text: parsed.error });
+      return;
+    }
+
+    let appCount = state.applications.length;
+    let cvCount = state.cvs.length;
+    let imported = 0;
+    let duplicates = 0;
+    let stoppedByLimit = false;
+    const today = new Date().toISOString().split('T')[0];
+
+    for (const item of parsed.items) {
+      if (isDuplicateApplication(item, state.applications)) {
+        duplicates++;
+        continue;
+      }
+      if (plan === 'trial' && (appCount >= TRIAL_APPLICATION_LIMIT || (item.cv && cvCount >= TRIAL_CV_LIMIT))) {
+        stoppedByLimit = true;
+        break;
+      }
+
+      let cvId: string | undefined;
+      if (item.cv) {
+        cvId = uuidv4();
+        saveCVDataById(cvId, item.cv);
+        dispatch({
+          type: 'ADD_CV',
+          payload: {
+            id: cvId,
+            name: item.cvName || `${item.companyName} — ${item.position}`,
+            targetPosition: item.position,
+            data: item.cv,
+            isDefault: false,
+          },
+        });
+        cvCount++;
+      }
+
+      dispatch({
+        type: 'ADD_APPLICATION',
+        payload: {
+          companyName: item.companyName,
+          position: item.position,
+          jobUrl: item.jobUrl || '',
+          location: item.location || '',
+          salaryOffered: item.salaryOffered || '',
+          salaryExpected: '',
+          status: 'saved',
+          appliedDate: today,
+          notes: item.notes || '',
+          source: item.source || detectSourceFromUrl(item.jobUrl || ''),
+          cvId,
+          origin: 'ai',
+        },
+      });
+      appCount++;
+      imported++;
+    }
+
+    const parts = [`Zaimportowano ${imported} ${imported === 1 ? 'aplikację' : 'aplikacji'}.`];
+    if (duplicates) parts.push(`Pominięto ${duplicates} już istniejących.`);
+    if (stoppedByLimit) parts.push('Reszta nie weszła przez limit wersji próbnej — wpisz kod dostępu w Ustawieniach.');
+    setImportMsg({ kind: stoppedByLimit && imported === 0 ? 'error' : 'ok', text: parts.join(' ') });
+  };
+
   const inlineInputClass = 'w-full px-2 py-1.5 bg-dark-900 text-white text-sm placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-primary-500';
 
   // Zwykła funkcja (nie komponent!) — komponent definiowany w środku
@@ -612,6 +691,14 @@ export function ApplicationsPage() {
               <h3 className="font-semibold text-white text-sm truncate">
                 {app.companyName}
               </h3>
+              {app.origin === 'ai' && (
+                <span
+                  className="flex-shrink-0 px-1.5 py-px text-[10px] font-semibold uppercase tracking-wide bg-primary-500/20 text-primary-400"
+                  title="Przygotowana z importu paczki: oferta i CV dobrane przez AI"
+                >
+                  AI
+                </span>
+              )}
               {!compact && (
                 <Badge variant={getStatusBadgeVariant(app.status)}>
                   {getStatusLabel(app.status)}
@@ -722,6 +809,25 @@ export function ApplicationsPage() {
                   <LayoutGrid className="w-5 h-5" />
                 </button>
               </div>
+              <input
+                ref={importInputRef}
+                type="file"
+                accept="application/json,.json"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  e.target.value = '';
+                  if (file) handleImportPackage(file);
+                }}
+              />
+              <Button
+                variant="secondary"
+                onClick={() => importInputRef.current?.click()}
+                title="Zaimportuj plik JSON z ofertami i przygotowanymi pod nie CV"
+              >
+                <Upload className="w-4 h-4 md:mr-2" />
+                <span className="hidden md:inline">Importuj paczkę</span>
+              </Button>
               <div className="hidden md:block">
                 <Button onClick={() => openModal()}>
                   <Plus className="w-4 h-4 mr-2" />
@@ -731,6 +837,25 @@ export function ApplicationsPage() {
             </>
           }
         />
+        {importMsg && (
+          <div
+            className={`mt-3 flex items-start justify-between gap-3 px-3 py-2 text-sm border ${
+              importMsg.kind === 'ok'
+                ? 'text-success-400 bg-success-500/10 border-success-500/30'
+                : 'text-danger-400 bg-danger-500/10 border-danger-500/30'
+            }`}
+          >
+            <span>{importMsg.text}</span>
+            <button
+              type="button"
+              onClick={() => setImportMsg(null)}
+              className="text-slate-400 hover:text-slate-100 cursor-pointer"
+              aria-label="Zamknij"
+            >
+              ×
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Filters */}

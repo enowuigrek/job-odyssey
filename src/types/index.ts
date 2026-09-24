@@ -48,6 +48,9 @@ export interface JobApplication {
   cvId?: string; // powiązanie z konkretnym CV
   notes?: string;
   source?: string; // skąd znalazłem ofertę (LinkedIn, pracuj.pl, etc.)
+  /** Kto przygotował aplikację: 'ai' = z importu paczki (oferta + CV dobrane przez AI),
+   *  brak = dodana ręcznie. Pozwala porównać odzew obu źródeł na dashboardzie. */
+  origin?: 'ai';
   createdAt: string;
   updatedAt: string;
 }

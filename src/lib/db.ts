@@ -31,6 +31,7 @@ function mapApplication(row: Record<string, unknown>): JobApplication {
     cvId: row.cv_id as string | undefined,
     notes: row.notes as string | undefined,
     source: row.source as string | undefined,
+    origin: row.origin === 'ai' ? 'ai' : undefined,
     createdAt: row.created_at as string,
     updatedAt: row.updated_at as string,
   };
@@ -51,6 +52,9 @@ function toDbApplication(app: JobApplication, userId: string) {
     cv_id: app.cvId ?? null,
     notes: app.notes ?? null,
     source: app.source ?? null,
+    // Kolumna `origin` doszła migracją 20260924 — wysyłana tylko gdy ustawiona,
+    // żeby zwykły zapis ręcznej aplikacji nie zależał od tego, czy migracja już jest w bazie.
+    ...(app.origin ? { origin: app.origin } : {}),
     created_at: app.createdAt,
     updated_at: app.updatedAt,
   };

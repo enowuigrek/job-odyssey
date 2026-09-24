@@ -77,6 +77,28 @@ export function DashboardPage() {
     };
   }, [state.applications, state.interviews]);
 
+  // Odzew wg źródła aplikacji: przygotowane przez AI (import paczki) vs dodane ręcznie.
+  // Liczone tylko z wysłanych (bez "Zapisana"), żeby niewysłane oferty z paczki nie
+  // zaniżały odsetka. "Odzew" = każdy sygnał po wysłaniu: CV otwarte, rozmowa, oferta,
+  // także odmowa (firma zareagowała). Wycofane przeze mnie się nie liczą.
+  const originStats = useMemo(() => {
+    const interviewStatuses: ApplicationStatus[] = ['interview', 'pending', 'success', 'rejected_after_interview', 'offer_declined'];
+    const summarize = (apps: typeof state.applications) => {
+      const sent = apps.filter((a) => a.status !== 'saved');
+      const responded = sent.filter((a) => a.status !== 'applied' && a.status !== 'withdrawn');
+      return {
+        total: apps.length,
+        sent: sent.length,
+        interviews: sent.filter((a) => interviewStatuses.includes(a.status)).length,
+        rate: sent.length > 0 ? Math.round((responded.length / sent.length) * 100) : null,
+      };
+    };
+    return {
+      ai: summarize(state.applications.filter((a) => a.origin === 'ai')),
+      manual: summarize(state.applications.filter((a) => a.origin !== 'ai')),
+    };
+  }, [state.applications]);
+
   const recentApplications = useMemo(() => {
     return [...state.applications]
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
@@ -311,6 +333,35 @@ export function DashboardPage() {
           </CardBody>
         </Card>
       </div>
+
+      {/* Odzew wg źródła — widoczne dopiero, gdy są aplikacje z importu paczki */}
+      {originStats.ai.total > 0 && (
+        <Card>
+          <div className="px-4 md:px-6 py-4 border-b border-dark-700">
+            <h2 className="font-semibold text-slate-100 uppercase tracking-wide text-sm">Odzew wg źródła</h2>
+            <p className="text-xs text-slate-500 mt-1">
+              Tylko wysłane aplikacje. Odzew = CV otwarte, rozmowa, oferta lub odpowiedź odmowna.
+            </p>
+          </div>
+          <CardBody className="grid grid-cols-2 divide-x divide-dark-700 p-0">
+            {([
+              { key: 'ai', label: 'Przygotowane przez AI', data: originStats.ai },
+              { key: 'manual', label: 'Dodane ręcznie', data: originStats.manual },
+            ] as const).map(({ key, label, data }) => (
+              <div key={key} className="px-4 md:px-6 py-4">
+                <p className="text-xs text-slate-400 uppercase tracking-wide mb-2">{label}</p>
+                <p className="text-3xl font-bold text-slate-100 font-mono">
+                  {data.rate === null ? '–' : `${data.rate}%`}
+                </p>
+                <p className="text-xs text-slate-500 mt-1 font-mono">
+                  wysłane: {data.sent} · rozmowy: {data.interviews}
+                  {data.total > data.sent && ` · czeka: ${data.total - data.sent}`}
+                </p>
+              </div>
+            ))}
+          </CardBody>
+        </Card>
+      )}
 
       {/* Two columns */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
