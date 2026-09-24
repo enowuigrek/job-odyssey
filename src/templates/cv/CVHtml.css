@@ -165,7 +165,7 @@
 .cv-section-title {
   font-size: 11pt;
   font-weight: 300;
-  letter-spacing: 2pt;
+  letter-spacing: 0.8pt; /* max ~1pt — patrz sectionTitle w CVTemplate.tsx (czytelność dla ATS) */
   color: var(--teal);
   margin: 0;
 }

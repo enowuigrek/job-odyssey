@@ -123,7 +123,10 @@ const s = StyleSheet.create({
     color: TEAL,
     fontSize: 11,
     fontWeight: 300,
-    letterSpacing: 2,
+    // Max ~1 przy 11pt: przy większym rozstrzeleniu parsery ATS (pdf.js, poppler)
+    // czytają nagłówek jako "D O Ś W I A D C Z E N I E" i nie rozpoznają sekcji.
+    // Sprawdzone na wyrenderowanym PDF, 0.8 daje zapas.
+    letterSpacing: 0.8,
   },
   // ── Body text ────────────────────────────────────────────────────────
   body: {
@@ -427,10 +430,27 @@ interface CVTemplateProps {
   data: CVData;
 }
 
+/** "ŁUKASZ NOWAK" → "Łukasz Nowak" — imię w CV bywa wersalikami, w metadanych PDF ma być normalnie */
+function displayName(name: string): string {
+  const trimmed = name.trim();
+  if (trimmed !== trimmed.toLocaleUpperCase('pl')) return trimmed;
+  return trimmed
+    .toLocaleLowerCase('pl')
+    .replace(/(^|[\s-])(\p{L})/gu, (_, sep: string, ch: string) => sep + ch.toLocaleUpperCase('pl'));
+}
+
 export function CVTemplate({ data }: CVTemplateProps) {
   const sectionOrder = getSectionOrder(data);
+  const person = displayName(data.name || '');
   return (
-    <Document>
+    // Metadane czytają systemy rekrutacyjne (ATS) i podgląd PDF — bez tytułu
+    // część z nich pokazuje "Untitled"; język ułatwia parsowanie polskiego tekstu
+    <Document
+      title={person ? `${person} CV` : 'CV'}
+      author={person || undefined}
+      subject={data.subtitle || undefined}
+      language="pl"
+    >
       <Page size="A4" style={s.page}>
         {/* ── Header ──────────────────────────────────────────────── */}
         <View style={s.headerRow}>

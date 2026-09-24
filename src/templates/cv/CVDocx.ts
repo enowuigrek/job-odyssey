@@ -59,7 +59,9 @@ function run(text: string, opts: RunOpts = {}): TextRun {
 
 function sectionHeader(title: string): Paragraph {
   return new Paragraph({
-    children: [run(title, { color: TEAL, size: 22, characterSpacing: 40 })],
+    // 16 twips = 0.8pt, jak sectionTitle w CVTemplate.tsx (większe rozstrzelenie psuje
+    // parsowanie ATS, gdy ktoś zapisze DOCX z Worda jako PDF)
+    children: [run(title, { color: TEAL, size: 22, characterSpacing: 16 })],
     spacing: { before: 360, after: 160 },
     border: {
       bottom: { style: BorderStyle.SINGLE, size: 10, color: TEAL, space: 4 },
