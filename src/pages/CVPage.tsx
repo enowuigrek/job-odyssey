@@ -1,9 +1,10 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, FileText, Star, Trash2, Edit, Tag, Download, FileOutput, Eye, GripVertical, X, Loader2 } from 'lucide-react';
+import { Plus, FileText, Star, Trash2, Edit, Tag, Download, FileOutput, Eye, GripVertical, X, Loader2, ChevronRight, ExternalLink } from 'lucide-react';
 
 import { useApp } from '../contexts/AppContext';
 import { getCVDataById } from '../lib/generateCV';
+import { aiApplicationByCvId, isClosedApplication } from '../lib/cvGroups';
 import { useDragReorder } from '../hooks/useDragReorder';
 import { moveAt } from '../utils/array';
 import {
@@ -17,6 +18,9 @@ import {
   PageHeader,
   useConfirm,
   Checkbox,
+  Badge,
+  getStatusBadgeVariant,
+  getStatusLabel,
 } from '../components/ui';
 import { CV } from '../types';
 import { format, parseISO } from 'date-fns';
@@ -74,10 +78,29 @@ export function CVPage() {
       });
   }, [state.cvs, searchQuery]);
 
+  // Dopasowane do ofert (CV z aplikacji od AI) osobno — patrz src/lib/cvGroups.ts
+  const aiAppByCvId = useMemo(() => aiApplicationByCvId(state.applications), [state.applications]);
+  const ownCVs = useMemo(() => filteredCVs.filter(cv => !aiAppByCvId.has(cv.id)), [filteredCVs, aiAppByCvId]);
+  const matchedCVs = useMemo(
+    () =>
+      filteredCVs
+        .filter(cv => aiAppByCvId.has(cv.id))
+        .map(cv => ({ cv, app: aiAppByCvId.get(cv.id)! }))
+        // otwarte aplikacje na górze (najnowsze pierwsze), zamknięte na dole
+        .sort((a, b) =>
+          Number(isClosedApplication(a.app)) - Number(isClosedApplication(b.app)) ||
+          new Date(b.app.createdAt).getTime() - new Date(a.app.createdAt).getTime()
+        ),
+    [filteredCVs, aiAppByCvId]
+  );
+  const [matchedExpanded, setMatchedExpanded] = useState(false);
+  // Przy wyszukiwaniu pokazujemy też trafienia wśród dopasowanych
+  const showMatched = matchedExpanded || searchQuery.trim() !== '';
+
   const cvsDrag = useDragReorder((from, to) => {
     dispatch({
       type: 'REORDER_CVS',
-      payload: { orderedIds: moveAt(filteredCVs.map(c => c.id), from, to) },
+      payload: { orderedIds: moveAt(ownCVs.map(c => c.id), from, to) },
     });
   });
 
@@ -238,7 +261,7 @@ export function CVPage() {
       )}
 
       {/* CV List */}
-      {filteredCVs.length === 0 ? (
+      {ownCVs.length === 0 && matchedCVs.length === 0 ? (
         <EmptyState
           icon={FileText}
           title="Brak CV"
@@ -257,8 +280,14 @@ export function CVPage() {
           }
         />
       ) : (
+        <>
+        {ownCVs.length === 0 ? (
+          <p className="text-sm text-slate-500">
+            {searchQuery ? 'Żadne z Twoich CV nie pasuje do wyszukiwania.' : 'Nie masz jeszcze własnych CV.'}
+          </p>
+        ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {filteredCVs.map((cv, cvi) => {
+          {ownCVs.map((cv, cvi) => {
             const { isDragging, isDragOver, ...dragDom } = cvsDrag.getItemProps(cvi);
             return (
             <div
@@ -386,6 +415,84 @@ export function CVPage() {
             );
           })}
         </div>
+        )}
+
+        {/* Dopasowane do ofert — CV z aplikacji od AI, domyślnie zwinięte */}
+        {matchedCVs.length > 0 && (
+          <section className="space-y-3 pt-2">
+            <button
+              onClick={() => setMatchedExpanded(v => !v)}
+              className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-slate-400 hover:text-slate-200 transition-colors cursor-pointer"
+            >
+              <ChevronRight className={`w-4 h-4 transition-transform ${showMatched ? 'rotate-90' : ''}`} />
+              Dopasowane do ofert ({matchedCVs.length})
+            </button>
+            {showMatched && (
+              <>
+                <p className="text-xs text-slate-500">
+                  CV przygotowane przez AI pod konkretną ofertę. Pobierasz je z karty aplikacji, tu możesz je podejrzeć
+                  albo poprawić. Zamknięte aplikacje są na dole.
+                </p>
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                  {matchedCVs.map(({ cv, app }) => (
+                    <Card key={cv.id} fold className={`min-w-0 h-full ${isClosedApplication(app) ? 'opacity-60' : ''}`}>
+                      <CardBody>
+                        <div className="flex items-start justify-between gap-2 mb-3">
+                          <div className="min-w-0">
+                            <h3 className="font-semibold text-slate-100 truncate">{app.companyName}</h3>
+                            <p className="text-sm text-slate-400 truncate">{app.position}</p>
+                          </div>
+                          <Badge variant={getStatusBadgeVariant(app.status)} size="sm">
+                            {getStatusLabel(app.status)}
+                          </Badge>
+                        </div>
+                        <div className="flex items-center gap-2 pt-3 border-t border-dark-700">
+                          <span className="text-xs text-slate-500">
+                            {format(parseISO(cv.createdAt), 'd MMM yyyy', { locale: pl })}
+                          </span>
+                          <div className="flex-1" />
+                          {getCVDataById(cv.id) && (
+                            <>
+                              <button
+                                onClick={() => setPreviewCvId(cv.id)}
+                                className="p-1.5 text-slate-500 hover:text-primary-400 transition-colors cursor-pointer"
+                                title="Podgląd CV"
+                              >
+                                <Eye className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => navigate(`/cv-editor?edit=${cv.id}`)}
+                                className="p-1.5 text-slate-500 hover:text-primary-400 transition-colors cursor-pointer"
+                                title="Edytuj treść w generatorze"
+                              >
+                                <FileOutput className="w-4 h-4" />
+                              </button>
+                            </>
+                          )}
+                          <button
+                            onClick={() => navigate('/applications', { state: { openFor: app.id } })}
+                            className="p-1.5 text-slate-500 hover:text-primary-400 transition-colors cursor-pointer"
+                            title="Przejdź do aplikacji"
+                          >
+                            <ExternalLink className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(cv.id)}
+                            className="p-1.5 text-slate-500 hover:text-danger-400 transition-colors cursor-pointer"
+                            title="Usuń"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </CardBody>
+                    </Card>
+                  ))}
+                </div>
+              </>
+            )}
+          </section>
+        )}
+        </>
       )}
 
       {/* Modal */}

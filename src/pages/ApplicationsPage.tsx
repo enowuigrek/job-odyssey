@@ -30,6 +30,7 @@ import { useUserSettings } from '../contexts/UserSettingsContext';
 import { TRIAL_APPLICATION_LIMIT, TRIAL_CV_LIMIT, TRIAL_LIMIT_MESSAGE_APPLICATION } from '../lib/planLimits';
 import { parseApplicationPackage, isDuplicateApplication } from '../lib/importPackage';
 import { cvFileName } from '../lib/cvFileName';
+import { aiApplicationByCvId } from '../lib/cvGroups';
 import { TrackingLinksModal } from '../components/tracking/TrackingLinksModal';
 import { KanbanStatusTabs } from '../components/kanban/KanbanStatusTabs';
 import { KanbanColumn } from '../components/kanban/KanbanColumn';
@@ -41,7 +42,7 @@ import {
   createTrackingLinks,
   getTrackingLinksForApplication,
 } from '../lib/db';
-import { getCVDataById, prepareTrackedCV, collectCvLinks, saveCVDataById } from '../lib/generateCV';
+import { getCVDataById, prepareTrackedCV, collectCvLinks, saveCVDataById, deleteCVDataById } from '../lib/generateCV';
 import { normalizeUrlKey } from '../lib/trackUrl';
 import { CVTemplate } from '../templates/cv/CVTemplate';
 import { CVHtml } from '../templates/cv/CVHtml';
@@ -152,6 +153,10 @@ export function ApplicationsPage() {
   const [editingApplication, setEditingApplication] = useState<JobApplication | null>(null);
   const [viewMode, setViewMode] = useState<'list' | 'kanban'>('kanban');
   const { confirm, ConfirmDialog } = useConfirm();
+  // Listy wyboru CV pokazują tylko główne CV użytkownika — dopasowane do ofert
+  // (z aplikacji od AI) należą do swoich aplikacji, patrz src/lib/cvGroups.ts
+  const aiAppByCvId = useMemo(() => aiApplicationByCvId(state.applications), [state.applications]);
+  const ownCvs = useMemo(() => state.cvs.filter(cv => !aiAppByCvId.has(cv.id)), [state.cvs, aiAppByCvId]);
   const {
     expandedId,
     setExpandedId,
@@ -411,7 +416,23 @@ export function ApplicationsPage() {
       variant: 'danger',
     });
     if (!ok) return;
+    const app = state.applications.find(a => a.id === id);
     dispatch({ type: 'DELETE_APPLICATION', payload: id });
+
+    // CV dopasowane przez AI pod tę jedną ofertę bez aplikacji tylko zaśmieca Bazę CV
+    const matchedCv = app?.origin === 'ai' && app.cvId ? state.cvs.find(cv => cv.id === app.cvId) : undefined;
+    const usedElsewhere = matchedCv && state.applications.some(a => a.id !== id && a.cvId === matchedCv.id);
+    if (!matchedCv || usedElsewhere) return;
+    const removeCv = await confirm({
+      title: 'Dopasowane CV',
+      message: `Usunąć też CV „${matchedCv.name}” przygotowane pod tę ofertę?`,
+      confirmLabel: 'Usuń CV',
+      cancelLabel: 'Zostaw',
+      variant: 'danger',
+    });
+    if (!removeCv) return;
+    dispatch({ type: 'DELETE_CV', payload: matchedCv.id });
+    deleteCVDataById(matchedCv.id);
   };
 
   // ── Inline dodawanie w kolumnie kanbanu — "+" rozwija się w kartę ──────────
@@ -564,11 +585,11 @@ export function ApplicationsPage() {
             className={inlineInputClass}
           />
         </div>
-        {state.cvs.length > 0 && (
+        {ownCvs.length > 0 && (
           <Select
             label="CV do tej aplikacji"
             dense
-            options={[{ value: '', label: 'Bez CV' }, ...state.cvs.map(cv => ({ value: cv.id, label: cv.name }))]}
+            options={[{ value: '', label: 'Bez CV' }, ...ownCvs.map(cv => ({ value: cv.id, label: cv.name }))]}
             value={inlineForm.cvId}
             onChange={(e) => setInlineForm(f => ({ ...f, cvId: e.target.value }))}
           />
@@ -1096,9 +1117,10 @@ export function ApplicationsPage() {
               onChange={(e) => setFormData({ ...formData, cvId: e.target.value || undefined })}
               options={[
                 { value: '', label: '— Bez CV —' },
-                ...state.cvs.map(cv => ({
+                // główne CV + dopasowane CV tej aplikacji (cudzych dopasowanych nie pokazujemy)
+                ...[...ownCvs, ...state.cvs.filter(cv => cv.id === formData.cvId && aiAppByCvId.has(cv.id))].map(cv => ({
                   value: cv.id,
-                  label: `${cv.name}${cv.fileName ? ' 📎' : ''}${cv.isDefault ? ' ★' : ''}`,
+                  label: `${cv.name}${cv.fileName ? ' 📎' : ''}${cv.isDefault ? ' ★' : ''}${aiAppByCvId.has(cv.id) ? ' (dopasowane)' : ''}`,
                 })),
               ]}
             />

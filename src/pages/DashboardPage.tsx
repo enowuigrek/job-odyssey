@@ -13,6 +13,7 @@ import {
   LayoutDashboard,
 } from 'lucide-react';
 import { useApp } from '../contexts/AppContext';
+import { aiApplicationByCvId } from '../lib/cvGroups';
 import { Card, CardBody, Badge, getStatusBadgeVariant, getStatusLabel, getInterviewStatusLabel } from '../components/ui';
 import { format, isAfter, parseISO, isToday } from 'date-fns';
 import { pl } from 'date-fns/locale';
@@ -76,6 +77,13 @@ export function DashboardPage() {
       responseRate,
     };
   }, [state.applications, state.interviews]);
+
+  // CV dopasowane do ofert (z aplikacji od AI) liczymy osobno, żeby kafelek
+  // "Wersji CV" pokazywał główne CV, a nie rósł z każdą aplikacją od agenta
+  const matchedCvCount = useMemo(() => {
+    const ids = new Set(state.cvs.map(cv => cv.id));
+    return [...aiApplicationByCvId(state.applications).keys()].filter(id => ids.has(id)).length;
+  }, [state.cvs, state.applications]);
 
   // Odzew wg źródła aplikacji: przygotowane przez AI (import paczki) vs dodane ręcznie.
   // Liczone tylko z wysłanych (bez "Zapisana"), żeby niewysłane oferty z paczki nie
@@ -459,8 +467,11 @@ export function DashboardPage() {
       {/* Quick Stats Row */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="bg-dark-800 p-6 text-center">
-          <p className="text-3xl font-bold text-primary-400 font-mono">{state.cvs.length}</p>
+          <p className="text-3xl font-bold text-primary-400 font-mono">{state.cvs.length - matchedCvCount}</p>
           <p className="text-sm text-slate-400 uppercase tracking-wide mt-1">Wersji CV</p>
+          {matchedCvCount > 0 && (
+            <p className="text-xs text-slate-500 mt-1">+{matchedCvCount} dopasowanych do ofert</p>
+          )}
         </div>
 
         <div className="bg-dark-800 p-6 text-center">
