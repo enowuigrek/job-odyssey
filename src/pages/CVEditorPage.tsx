@@ -5,7 +5,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Plus, Trash2, Save, Eye, EyeOff, ArrowLeft, FileEdit, Pencil, Check, Loader2, ChevronDown, ChevronRight, Database, GripVertical, X, Columns2 } from 'lucide-react';
 import { pdf } from '@react-pdf/renderer';
 import type { DocumentProps } from '@react-pdf/renderer';
-import { Button, PageHeader, CollapsibleItem, Checkbox, Modal } from '../components/ui';
+import { Button, PageHeader, CollapsibleItem, Checkbox, Modal, Select } from '../components/ui';
 import { FieldLabel, TextInput, TextArea, LinksEditor, BulletsEditor, YearRangePicker, TagListEditor } from '../components/forms/FormPrimitives';
 import type { CVData } from '../templates/cv/types';
 import { defaultCVData } from '../templates/cv/defaultCVData';
@@ -541,6 +541,19 @@ export function CVEditorPage() {
           <div>
             <FieldLabel>Podtytuł / stanowisko</FieldLabel>
             <TextInput value={data.subtitle} onChange={v => set({ subtitle: v })} placeholder="Frontend Developer | React" />
+          </div>
+          <div>
+            <FieldLabel>Język CV</FieldLabel>
+            {/* zmienia stałe nagłówki sekcji i podpisy kontaktu; treść piszesz sam w wybranym języku */}
+            <Select
+              dense
+              value={data.language ?? 'pl'}
+              onChange={e => set({ language: e.target.value === 'en' ? 'en' : undefined })}
+              options={[
+                { value: 'pl', label: 'Polski' },
+                { value: 'en', label: 'Angielski (nagłówki sekcji po angielsku)' },
+              ]}
+            />
           </div>
           {data.photoUrl && (
             <div className="md:col-span-2 flex items-center gap-3">

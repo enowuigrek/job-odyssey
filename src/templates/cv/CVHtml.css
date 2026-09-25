@@ -28,6 +28,13 @@
   font-weight: 700;
   font-style: normal;
 }
+
+@font-face {
+  font-family: 'Inter';
+  src: url('/fonts/Inter-BoldItalic.ttf') format('truetype');
+  font-weight: 700;
+  font-style: italic;
+}
 @font-face {
   font-family: 'Inter';
   src: url('/fonts/Inter-BoldItalic.ttf') format('truetype');
@@ -130,6 +137,11 @@
   font-weight: 300;
   font-style: italic;
   margin: 0 0 2pt;
+}
+
+/* numer i mail pogrubione, podpisy zwykłe — jak contactValue w CVTemplate.tsx */
+.cv-contact-value {
+  font-weight: 700;
 }
 
 /* ── Inline links (contact/project) — pipe-separated, zgodne z InlineLinks w PDF ── */

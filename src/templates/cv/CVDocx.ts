@@ -13,6 +13,7 @@ import type { CVData, CVLink } from './types';
 import { TEAL_HEX as TEAL, TEAL_LIGHT_HEX as TEAL_LIGHT, GRAY_HEX as GRAY } from './colors';
 import { formatTechCategory, formatInterests } from './format';
 import { getSectionOrder } from './sectionOrder';
+import { cvLabels } from './labels';
 
 // ---------------------------------------------------------------------------
 // Design tokens
@@ -90,6 +91,7 @@ function hyperlink(link: CVLink, displayText?: string): ExternalHyperlink {
 // ---------------------------------------------------------------------------
 export async function buildCVDocx(data: CVData): Promise<Blob> {
   const children: Paragraph[] = [];
+  const L = cvLabels(data);
 
   // ── Zdjęcie ───────────────────────────────────────────────────────────
   // docx nie wspiera łatwo okrągłego przycinania obrazu (jak w PDF/podglądzie),
@@ -129,14 +131,20 @@ export async function buildCVDocx(data: CVData): Promise<Blob> {
 
   // ── Contact block (left border) ─────────────────────────────────────
   children.push(new Paragraph({
-    children: [run(`${data.contact.location}, tel: ${data.contact.phone}`, { italics: true, size: 17 })],
+    children: [
+      run(`${data.contact.location}, ${L.phone} `, { italics: true, size: 17 }),
+      run(data.contact.phone, { italics: true, bold: true, size: 17 }),
+    ],
     border: LEFT_BORDER,
     indent: LEFT_INDENT,
     spacing: { after: 40 },
   }));
 
   children.push(new Paragraph({
-    children: [run(`e-mail: ${data.contact.email}`, { italics: true, size: 17 })],
+    children: [
+      run(`${L.email} `, { italics: true, size: 17 }),
+      run(data.contact.email, { italics: true, bold: true, size: 17 }),
+    ],
     border: LEFT_BORDER,
     indent: LEFT_INDENT,
     spacing: { after: 60 },
@@ -159,13 +167,13 @@ export async function buildCVDocx(data: CVData): Promise<Blob> {
   for (const key of getSectionOrder(data)) {
     switch (key) {
       case 'profile':
-        children.push(sectionHeader((data.profileTitle || 'OPIS').toUpperCase()));
+        children.push(sectionHeader((data.profileTitle || L.profile).toUpperCase()));
         children.push(new Paragraph({
           children: [run(data.profile, { size: 18 })],
           spacing: { after: 100 },
         }));
         if (data.showApproach !== false && data.approach) {
-          children.push(sectionHeader((data.approachTitle || 'PODEJŚCIE DO PRACY').toUpperCase()));
+          children.push(sectionHeader((data.approachTitle || L.approach).toUpperCase()));
           children.push(new Paragraph({
             children: [run(data.approach, { size: 18 })],
             spacing: { after: 100 },
@@ -175,7 +183,7 @@ export async function buildCVDocx(data: CVData): Promise<Blob> {
 
       case 'technologies':
         if (data.showTechnologies === false) break;
-        children.push(sectionHeader((data.technologiesTitle || 'TECHNOLOGIE I NARZĘDZIA').toUpperCase()));
+        children.push(sectionHeader((data.technologiesTitle || L.technologies).toUpperCase()));
         for (const tech of data.technologies) {
           children.push(new Paragraph({
             tabStops: [{ type: TabStopType.LEFT, position: TECH_TAB }],
@@ -191,7 +199,7 @@ export async function buildCVDocx(data: CVData): Promise<Blob> {
 
       case 'projects':
         if (data.showProjects === false) break;
-        children.push(sectionHeader('WYBRANE PROJEKTY'));
+        children.push(sectionHeader(L.projects));
         for (const project of data.projects) {
           children.push(new Paragraph({
             children: [run(project.name, { bold: true, size: 19 })],
@@ -226,7 +234,7 @@ export async function buildCVDocx(data: CVData): Promise<Blob> {
         break;
 
       case 'experience':
-        children.push(sectionHeader('DOŚWIADCZENIE ZAWODOWE'));
+        children.push(sectionHeader(L.experience));
         for (const exp of data.experience) {
           const companyChildren: (TextRun | ExternalHyperlink)[] = [
             run(exp.company, { bold: true, size: 19 }),
@@ -265,7 +273,7 @@ export async function buildCVDocx(data: CVData): Promise<Blob> {
         break;
 
       case 'education':
-        children.push(sectionHeader('WYKSZTAŁCENIE'));
+        children.push(sectionHeader(L.education));
         for (const edu of data.education) {
           children.push(new Paragraph({
             children: [run(edu.school, { bold: true, size: 19 })],
@@ -292,7 +300,7 @@ export async function buildCVDocx(data: CVData): Promise<Blob> {
 
       case 'certificates':
         if (data.showCertificates === false || !data.certificates || data.certificates.length === 0) break;
-        children.push(sectionHeader((data.certificatesTitle || 'Certyfikaty').toUpperCase()));
+        children.push(sectionHeader((data.certificatesTitle || L.certificates).toUpperCase()));
         for (const cert of data.certificates) {
           const certChildren: (TextRun | ExternalHyperlink)[] = [
             cert.url
@@ -308,7 +316,7 @@ export async function buildCVDocx(data: CVData): Promise<Blob> {
         break;
 
       case 'interests':
-        children.push(sectionHeader('ZAINTERESOWANIA'));
+        children.push(sectionHeader(L.interests));
         children.push(new Paragraph({
           children: [run(formatInterests(data.interests), { size: 18 })],
           spacing: { after: 100 },

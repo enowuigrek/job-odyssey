@@ -13,6 +13,7 @@ import { CVData, CVLink, CVRole } from './types';
 import { TEAL, TEAL_LIGHT, BLACK, GRAY } from './colors';
 import { formatTechCategory, formatInterests } from './format';
 import { getSectionOrder } from './sectionOrder';
+import { cvLabels, cvLanguage } from './labels';
 
 // ---------------------------------------------------------------------------
 // Font registration
@@ -85,6 +86,10 @@ const s = StyleSheet.create({
     borderLeftColor: TEAL,
     paddingLeft: 10,
     marginBottom: 20,
+  },
+  // Numer i mail pogrubione, podpisy ("tel:", "e-mail:") zwykłe — rekruter od razu widzi dane
+  contactValue: {
+    fontWeight: 'bold',
   },
   contactLine: {
     fontStyle: 'italic',
@@ -442,6 +447,7 @@ function displayName(name: string): string {
 export function CVTemplate({ data }: CVTemplateProps) {
   const sectionOrder = getSectionOrder(data);
   const person = displayName(data.name || '');
+  const L = cvLabels(data);
   return (
     // Metadane czytają systemy rekrutacyjne (ATS) i podgląd PDF — bez tytułu
     // część z nich pokazuje "Untitled"; język ułatwia parsowanie polskiego tekstu
@@ -449,7 +455,7 @@ export function CVTemplate({ data }: CVTemplateProps) {
       title={person ? `${person} CV` : 'CV'}
       author={person || undefined}
       subject={data.subtitle || undefined}
-      language="pl"
+      language={cvLanguage(data)}
     >
       <Page size="A4" style={s.page}>
         {/* ── Header ──────────────────────────────────────────────── */}
@@ -460,9 +466,9 @@ export function CVTemplate({ data }: CVTemplateProps) {
 
             <View style={s.contactBlock}>
               <Text style={s.contactLine}>
-                {data.contact.location}, tel: {data.contact.phone}
+                {data.contact.location}, {L.phone} <Text style={s.contactValue}>{data.contact.phone}</Text>
               </Text>
-              <Text style={s.contactLine}>e-mail: {data.contact.email}</Text>
+              <Text style={s.contactLine}>{L.email} <Text style={s.contactValue}>{data.contact.email}</Text></Text>
               <InlineLinks links={data.contact.links} />
             </View>
           </View>
@@ -478,12 +484,12 @@ export function CVTemplate({ data }: CVTemplateProps) {
               <>
                 {/* Nagłówek + tekst razem — zapobiega osieroconemu nagłówkowi na dole strony */}
                 <View wrap={false}>
-                  <SectionHeader title={(data.profileTitle || 'OPIS').toUpperCase()} />
+                  <SectionHeader title={(data.profileTitle || L.profile).toUpperCase()} />
                   <Text style={s.body}>{data.profile}</Text>
                 </View>
                 {data.showApproach !== false && data.approach ? (
                   <View wrap={false}>
-                    <SectionHeader title={(data.approachTitle || 'PODEJŚCIE DO PRACY').toUpperCase()} />
+                    <SectionHeader title={(data.approachTitle || L.approach).toUpperCase()} />
                     <Text style={s.body}>{data.approach}</Text>
                   </View>
                 ) : null}
@@ -495,7 +501,7 @@ export function CVTemplate({ data }: CVTemplateProps) {
                 {data.technologies.length > 0 ? (
                   <>
                     <View wrap={false}>
-                      <SectionHeader title={(data.technologiesTitle || 'TECHNOLOGIE I NARZĘDZIA').toUpperCase()} />
+                      <SectionHeader title={(data.technologiesTitle || L.technologies).toUpperCase()} />
                       <TechRow tech={data.technologies[0]} />
                     </View>
                     {data.technologies.slice(1).map(tech => (
@@ -503,7 +509,7 @@ export function CVTemplate({ data }: CVTemplateProps) {
                     ))}
                   </>
                 ) : (
-                  <SectionHeader title={(data.technologiesTitle || 'TECHNOLOGIE I NARZĘDZIA').toUpperCase()} />
+                  <SectionHeader title={(data.technologiesTitle || L.technologies).toUpperCase()} />
                 )}
               </>
             )}
@@ -516,7 +522,7 @@ export function CVTemplate({ data }: CVTemplateProps) {
                         nagłówkowi na dole strony (ten sam wzorzec co firma + pierwsza rola
                         w Doświadczeniu) */}
                     <View wrap={false}>
-                      <SectionHeader title="WYBRANE PROJEKTY" />
+                      <SectionHeader title={L.projects} />
                       <ProjectEntry project={data.projects[0]} />
                     </View>
                     {data.projects.slice(1).map(project => (
@@ -526,14 +532,14 @@ export function CVTemplate({ data }: CVTemplateProps) {
                     ))}
                   </>
                 ) : (
-                  <SectionHeader title="WYBRANE PROJEKTY" />
+                  <SectionHeader title={L.projects} />
                 )}
               </>
             )}
 
             {key === 'experience' && (
               <>
-                <SectionHeader title="DOŚWIADCZENIE ZAWODOWE" />
+                <SectionHeader title={L.experience} />
                 {data.experience.map(exp => (
                   <View key={exp.company}>
                     {/* Company header + first role block kept together — prevents orphan heading */}
@@ -574,7 +580,7 @@ export function CVTemplate({ data }: CVTemplateProps) {
                 {data.education.length > 0 ? (
                   <>
                     <View wrap={false}>
-                      <SectionHeader title="WYKSZTAŁCENIE" />
+                      <SectionHeader title={L.education} />
                       <EduEntry edu={data.education[0]} />
                     </View>
                     {data.education.slice(1).map(edu => (
@@ -582,7 +588,7 @@ export function CVTemplate({ data }: CVTemplateProps) {
                     ))}
                   </>
                 ) : (
-                  <SectionHeader title="WYKSZTAŁCENIE" />
+                  <SectionHeader title={L.education} />
                 )}
               </>
             )}
@@ -598,7 +604,7 @@ export function CVTemplate({ data }: CVTemplateProps) {
               <>
                 {/* Nagłówek + pierwszy certyfikat razem — zapobiega osieroconemu nagłówkowi na dole strony */}
                 <View wrap={false}>
-                  <SectionHeader title={(data.certificatesTitle || 'Certyfikaty').toUpperCase()} />
+                  <SectionHeader title={(data.certificatesTitle || L.certificates).toUpperCase()} />
                   <CertRow cert={data.certificates[0]} />
                 </View>
                 {data.certificates.slice(1).map((cert, ci) => (
@@ -609,7 +615,7 @@ export function CVTemplate({ data }: CVTemplateProps) {
 
             {key === 'interests' && (
               <View wrap={false}>
-                <SectionHeader title="ZAINTERESOWANIA" />
+                <SectionHeader title={L.interests} />
                 <Text style={s.interests}>{formatInterests(data.interests)}</Text>
               </View>
             )}

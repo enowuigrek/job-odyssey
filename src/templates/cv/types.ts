@@ -68,6 +68,8 @@ export interface CVData {
   /** Publiczny URL przyciętego zdjęcia profilowego (jeśli user je dodał i showPhoto !== false) */
   photoUrl?: string;
   showPhoto?: boolean;
+  /** Język stałych etykiet (nagłówki sekcji, "tel:"/"phone:"); brak = polski. Treść CV pisze się w tym samym języku. */
+  language?: 'pl' | 'en';
   /** Editable header for "PROFIL" section */
   profileTitle?: string;
   profile: string;

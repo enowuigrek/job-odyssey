@@ -3,6 +3,7 @@ import './CVHtml.css';
 import { CVData, CVLink } from './types';
 import { formatTechCategory, formatInterests } from './format';
 import { getSectionOrder } from './sectionOrder';
+import { cvLabels } from './labels';
 
 interface Props {
   data: CVData;
@@ -87,6 +88,7 @@ function ProjectLinks({ links }: { links: CVLink[] }) {
 
 export function CVHtml({ data, preview = false, editable = false, onChange }: Props) {
   const sectionOrder = getSectionOrder(data);
+  const L = cvLabels(data);
   const page = (
     <div className="cv-page cv-root">
       {/* ── Header ──────────────────────────────────────────────── */}
@@ -102,10 +104,10 @@ export function CVHtml({ data, preview = false, editable = false, onChange }: Pr
           <div className="cv-contact-block">
             <p className="cv-contact-line">
               <EditableText value={data.contact.location} editable={editable} onCommit={v => onChange?.({ contact: { ...data.contact, location: v } })} />
-              , tel: <EditableText value={data.contact.phone} editable={editable} onCommit={v => onChange?.({ contact: { ...data.contact, phone: v } })} />
+              , {L.phone} <span className="cv-contact-value"><EditableText value={data.contact.phone} editable={editable} onCommit={v => onChange?.({ contact: { ...data.contact, phone: v } })} /></span>
             </p>
             <p className="cv-contact-line">
-              e-mail: <EditableText value={data.contact.email} editable={editable} onCommit={v => onChange?.({ contact: { ...data.contact, email: v } })} />
+              {L.email} <span className="cv-contact-value"><EditableText value={data.contact.email} editable={editable} onCommit={v => onChange?.({ contact: { ...data.contact, email: v } })} /></span>
             </p>
             <ContactLinks links={data.contact.links} />
           </div>
@@ -121,7 +123,7 @@ export function CVHtml({ data, preview = false, editable = false, onChange }: Pr
           {key === 'profile' && (
             <>
               <div className="cv-section-header">
-                <h2 className="cv-section-title">{(data.profileTitle || 'OPIS').toUpperCase()}</h2>
+                <h2 className="cv-section-title">{(data.profileTitle || L.profile).toUpperCase()}</h2>
               </div>
               <p className="cv-body">
                 <EditableText value={data.profile} editable={editable} multiline onCommit={v => onChange?.({ profile: v })} />
@@ -129,7 +131,7 @@ export function CVHtml({ data, preview = false, editable = false, onChange }: Pr
               {data.showApproach !== false && data.approach ? (
                 <>
                   <div className="cv-section-header">
-                    <h2 className="cv-section-title">{(data.approachTitle || 'PODEJŚCIE DO PRACY').toUpperCase()}</h2>
+                    <h2 className="cv-section-title">{(data.approachTitle || L.approach).toUpperCase()}</h2>
                   </div>
                   <p className="cv-body">
                     <EditableText value={data.approach} editable={editable} multiline onCommit={v => onChange?.({ approach: v })} />
@@ -142,7 +144,7 @@ export function CVHtml({ data, preview = false, editable = false, onChange }: Pr
           {key === 'technologies' && data.showTechnologies !== false && (
             <>
               <div className="cv-section-header">
-                <h2 className="cv-section-title">{(data.technologiesTitle || 'TECHNOLOGIE I NARZĘDZIA').toUpperCase()}</h2>
+                <h2 className="cv-section-title">{(data.technologiesTitle || L.technologies).toUpperCase()}</h2>
               </div>
               {data.technologies.map(tech => (
                 <div key={tech.category} className="cv-tech-row">
@@ -156,7 +158,7 @@ export function CVHtml({ data, preview = false, editable = false, onChange }: Pr
           {key === 'projects' && data.showProjects !== false && (
             <>
               <div className="cv-section-header">
-                <h2 className="cv-section-title">WYBRANE PROJEKTY</h2>
+                <h2 className="cv-section-title">{L.projects}</h2>
               </div>
               {data.projects.map(project => (
                 <div key={project.name} className="cv-project">
@@ -176,7 +178,7 @@ export function CVHtml({ data, preview = false, editable = false, onChange }: Pr
           {key === 'experience' && (
             <>
               <div className="cv-section-header">
-                <h2 className="cv-section-title">DOŚWIADCZENIE ZAWODOWE</h2>
+                <h2 className="cv-section-title">{L.experience}</h2>
               </div>
               {data.experience.map(exp => (
                 <div key={exp.company}>
@@ -210,7 +212,7 @@ export function CVHtml({ data, preview = false, editable = false, onChange }: Pr
           {key === 'education' && (
             <>
               <div className="cv-section-header">
-                <h2 className="cv-section-title">WYKSZTAŁCENIE</h2>
+                <h2 className="cv-section-title">{L.education}</h2>
               </div>
               {data.education.map(edu => (
                 <div key={edu.school} className="cv-edu-block">
@@ -244,7 +246,7 @@ export function CVHtml({ data, preview = false, editable = false, onChange }: Pr
           {key === 'certificates' && data.showCertificates !== false && data.certificates && data.certificates.length > 0 && (
             <>
               <div className="cv-section-header">
-                <h2 className="cv-section-title">{(data.certificatesTitle || 'Certyfikaty').toUpperCase()}</h2>
+                <h2 className="cv-section-title">{(data.certificatesTitle || L.certificates).toUpperCase()}</h2>
               </div>
               {data.certificates.map((cert, ci) => (
                 <div key={ci} className="cv-cert-row">
@@ -266,7 +268,7 @@ export function CVHtml({ data, preview = false, editable = false, onChange }: Pr
           {key === 'interests' && (
             <>
               <div className="cv-section-header">
-                <h2 className="cv-section-title">ZAINTERESOWANIA</h2>
+                <h2 className="cv-section-title">{L.interests}</h2>
               </div>
               <p className="cv-interests">{formatInterests(data.interests)}</p>
             </>
