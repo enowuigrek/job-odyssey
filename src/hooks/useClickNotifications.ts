@@ -17,7 +17,6 @@ export function useClickNotifications(onNewClicks?: (applicationIds: string[]) =
   const { user } = useAuth();
   const [notifications, setNotifications] = useState<ClickNotification[]>([]);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const prevNotifIdsRef = useRef<Set<string>>(new Set());
   // Strażnicy przed wyścigiem fetch/mutacja: odpowiedź na fetch rozpoczęty
   // PRZED oznaczeniem/usunięciem nie może przywrócić starej listy
   const epochRef = useRef(0);
@@ -31,15 +30,23 @@ export function useClickNotifications(onNewClicks?: (applicationIds: string[]) =
     const mapped = recent.map(n => ({ ...n, readAt: n.readAt ?? null }));
     setNotifications(mapped);
 
-    // Wykryj nowe kliknięcia (których nie było przy poprzednim fetch)
+    // Przy KAŻDYM odpytaniu zgłaszamy applicationId wszystkich klików z ostatnich 20 —
+    // nie tylko "nowych" względem poprzedniego fetcha ani nieprzeczytanych. Wcześniejsza
+    // wersja porównywała z zapamiętanym w pamięci zestawem ID: jeśli ta konkretna zakładka
+    // przegapiła jeden cykl (zakładka w tle, uśpiony komputer, wyścig przy remouncie) albo
+    // user zdążył otworzyć dzwonek (co ustawia readAt) zanim aktualizacja statusu zdążyła
+    // się odpalić, kliknięcie nigdy już nie zostawało uznane za "nowe" i status aplikacji
+    // zostawał na zawsze nieprzestawiony na "CV przeglądane" — zgłoszony bug, kliknięcie
+    // sprzed 3h wciąż wisiało w "Wysłana". handleNewClicks w stronach i sidebarze jest
+    // idempotentny (aktualizuje status tylko gdy wciąż jest "applied"/"saved"), więc
+    // zgłaszanie tego samego id co 30s jest nieszkodliwe — a jest samonaprawcze, bo
+    // próbuje ponownie przy każdym odpytaniu aż faktycznie się uda.
     if (onNewClicks) {
-      const newClicks = mapped.filter(n => !prevNotifIdsRef.current.has(n.id));
-      if (newClicks.length > 0) {
-        const appIds = [...new Set(newClicks.map(n => n.applicationId).filter(Boolean))];
+      const appIds = [...new Set(mapped.map(n => n.applicationId).filter(Boolean))];
+      if (appIds.length > 0) {
         onNewClicks(appIds);
       }
     }
-    prevNotifIdsRef.current = new Set(mapped.map(n => n.id));
   }, [user, onNewClicks]);
 
   useEffect(() => {
