@@ -17,7 +17,30 @@ import { aiApplicationByCvId } from '../lib/cvGroups';
 import { Card, CardBody, Badge, getStatusBadgeVariant, getStatusLabel, getInterviewStatusLabel } from '../components/ui';
 import { format, isAfter, parseISO, isToday } from 'date-fns';
 import { pl } from 'date-fns/locale';
-import { ApplicationStatus, InterviewStatus } from '../types';
+import { ApplicationStatus, InterviewStatus, JobApplication } from '../types';
+
+const INTERVIEW_STAGE_STATUSES: ApplicationStatus[] = ['interview', 'pending', 'success', 'rejected_after_interview', 'offer_declined'];
+
+/**
+ * Jedna definicja "odzewu" używana wszędzie na Dashboardzie — wcześniej kafelek
+ * "Odzew" u góry i "Odzew wg źródła" niżej liczyły to na dwa różne sposoby
+ * (górny zaliczał też Wycofane jako "odzew", dolny świadomie je wyklucza, bo
+ * wycofanie to decyzja kandydata, nie reakcja firmy) i dawały różne liczby dla
+ * tych samych danych — stąd zgłoszony "statystyka źle liczona".
+ * "Odzew" = każdy sygnał PO wysłaniu: CV otwarte, rozmowa, oferta, też odmowa
+ * (firma zareagowała). Wycofane przeze mnie się nie liczą. Zapisane (niewysłane)
+ * nie wchodzą ani do licznika, ani do mianownika.
+ */
+function summarizeResponseRate(apps: JobApplication[]) {
+  const sent = apps.filter((a) => a.status !== 'saved');
+  const responded = sent.filter((a) => a.status !== 'applied' && a.status !== 'withdrawn');
+  return {
+    total: apps.length,
+    sent: sent.length,
+    interviews: sent.filter((a) => INTERVIEW_STAGE_STATUSES.includes(a.status)).length,
+    rate: sent.length > 0 ? Math.round((responded.length / sent.length) * 100) : null,
+  };
+}
 
 export function DashboardPage() {
   const { state } = useApp();
@@ -59,14 +82,7 @@ export function DashboardPage() {
       (i) => i.status !== 'scheduled'
     ).length;
 
-    const responseRate =
-      totalApplications > 0
-        ? Math.round(
-            ((state.applications.filter((a) => a.status !== 'applied' && a.status !== 'saved').length) /
-              totalApplications) *
-              100
-          )
-        : 0;
+    const responseRate = summarizeResponseRate(state.applications).rate ?? 0;
 
     return {
       totalApplications,
@@ -86,24 +102,12 @@ export function DashboardPage() {
   }, [state.cvs, state.applications]);
 
   // Odzew wg źródła aplikacji: przygotowane przez AI (import paczki) vs dodane ręcznie.
-  // Liczone tylko z wysłanych (bez "Zapisana"), żeby niewysłane oferty z paczki nie
-  // zaniżały odsetka. "Odzew" = każdy sygnał po wysłaniu: CV otwarte, rozmowa, oferta,
-  // także odmowa (firma zareagowała). Wycofane przeze mnie się nie liczą.
+  // Ta sama definicja "odzewu" co kafelek wyżej (summarizeResponseRate) — podział na
+  // dwie grupy, które się sumują do całości, więc muszą liczyć dokładnie tak samo.
   const originStats = useMemo(() => {
-    const interviewStatuses: ApplicationStatus[] = ['interview', 'pending', 'success', 'rejected_after_interview', 'offer_declined'];
-    const summarize = (apps: typeof state.applications) => {
-      const sent = apps.filter((a) => a.status !== 'saved');
-      const responded = sent.filter((a) => a.status !== 'applied' && a.status !== 'withdrawn');
-      return {
-        total: apps.length,
-        sent: sent.length,
-        interviews: sent.filter((a) => interviewStatuses.includes(a.status)).length,
-        rate: sent.length > 0 ? Math.round((responded.length / sent.length) * 100) : null,
-      };
-    };
     return {
-      ai: summarize(state.applications.filter((a) => a.origin === 'ai')),
-      manual: summarize(state.applications.filter((a) => a.origin !== 'ai')),
+      ai: summarizeResponseRate(state.applications.filter((a) => a.origin === 'ai')),
+      manual: summarizeResponseRate(state.applications.filter((a) => a.origin !== 'ai')),
     };
   }, [state.applications]);
 
