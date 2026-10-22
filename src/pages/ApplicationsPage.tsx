@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useRef, useCallback, createElement } from 'react';
+import { useState, useMemo, useEffect, useRef, createElement } from 'react';
 import type { ReactElement } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
@@ -196,15 +196,6 @@ export function ApplicationsPage() {
       navigate('/applications', { replace: true, state: {} });
     }
   }, [location.state, state.applications, navigate]);
-  // Listen for FAB click from Layout
-  const openModalCallback = useCallback(() => openModal(), []);
-  useEffect(() => {
-    const handler = (e: Event) => {
-      if ((e as CustomEvent).detail === '/applications') openModalCallback();
-    };
-    window.addEventListener('fab-click', handler);
-    return () => window.removeEventListener('fab-click', handler);
-  }, [openModalCallback]);
 
   const [interviewPromptApp, setInterviewPromptApp] = useState<JobApplication | null>(null);
   const [trackingApp, setTrackingApp] = useState<JobApplication | null>(null);

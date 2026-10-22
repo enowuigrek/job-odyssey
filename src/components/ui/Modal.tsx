@@ -37,7 +37,9 @@ export function Modal({ isOpen, onClose, title, children, size = 'md', disableBa
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto">
+    // z-[60] — wyżej niż mobilny FAB i bottom nav (z-50), inaczej przy równym
+    // z-index wygrywały jako później w DOM i zasłaniały/blokowały przyciski modala
+    <div className="fixed inset-0 z-[60] overflow-y-auto">
       <div className="flex min-h-screen items-end sm:items-center justify-center p-2 sm:p-4">
         {/* Backdrop */}
         <div

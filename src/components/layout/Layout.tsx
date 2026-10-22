@@ -13,9 +13,9 @@ const dragStyle = { WebkitAppRegion: 'drag' } as React.CSSProperties;
 export function Layout() {
   const location = useLocation();
 
-  // Pages that have their own FAB (add button)
+  // Pages that have their own FAB (add button) — Aplikacje bez FAB,
+  // dodawanie przeniesione na inline "+" w kolumnach kanbana
   const fabPages: Record<string, { label: string; path?: string }> = {
-    '/applications': { label: '+ Nowa aplikacja' },
     '/interviews': { label: '+ Nowa rozmowa' },
     '/cv': { label: '+ Nowe CV' },
   };
